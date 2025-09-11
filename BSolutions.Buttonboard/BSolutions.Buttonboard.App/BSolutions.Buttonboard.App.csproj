@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <Configurations>Debug;Release;ll</Configurations>
+    <PublishTrimmed>true</PublishTrimmed>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="appsettings.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BSolutions.Buttonboard.Scenario.Horrorhouse\BSolutions.Buttonboard.Scenario.Horrorhouse.csproj" />
+    <ProjectReference Include="..\BSolutions.Buttonboard.Scenario\BSolutions.Buttonboard.Scenario.csproj" />
+    <ProjectReference Include="..\BSolutions.Buttonboard.Services\BSolutions.Buttonboard.Services.csproj" />
+  </ItemGroup>
+
+</Project>

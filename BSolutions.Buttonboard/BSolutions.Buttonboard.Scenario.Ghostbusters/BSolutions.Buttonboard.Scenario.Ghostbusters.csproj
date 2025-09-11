@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Configurations>Debug;Release;ll</Configurations>
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BSolutions.Buttonboard.Scenario\BSolutions.Buttonboard.Scenario.csproj" />
+  </ItemGroup>
+
+</Project>
