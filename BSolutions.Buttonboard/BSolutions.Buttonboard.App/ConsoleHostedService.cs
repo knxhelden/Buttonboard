@@ -29,45 +29,47 @@ namespace BSolutions.Buttonboard.App
 
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Starting…");
+            _logger.LogInformation("Starting runtime…");
 
-            // Linked CTS to combine host shutdown token (Ctrl+C) and custom cancellation requests
+            // Create a linked token so Ctrl+C and internal cancels are observed together
             _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             var ct = _cts.Token;
 
-            // 1) Establish MQTT connection (ManagedClient will auto-reconnect in the background)
+            // Start MQTT (managed client will auto-reconnect in the background)
             await _mqtt.ConnectAsync();
 
-            // 2) Prepare scenario
-            await _scenario.ResetAsync();   // if available: await _scenario.ResetAsync(ct);
-            await _scenario.SetupAsync();   // if available: await _scenario.SetupAsync(ct);
+            // Prepare scenario
+            await _scenario.ResetAsync(ct);
+            await _scenario.SetupAsync(ct);
 
-            // 3) Start long-running task in background (non-blocking)
-            _runTask = Task.Run(() => _scenario.RunAsync(), ct); // if available: () => _scenario.RunAsync(ct)
-
-            // StartAsync returns immediately → Host can respond to Ctrl+C
+            // Start long-running scenario without blocking host startup
+            _runTask = _scenario.RunAsync(ct);
         }
 
         public async Task StopAsync(CancellationToken cancellationToken)
         {
-            _logger.LogInformation("Stopping…");
+            _logger.LogInformation("Stopping runtime…");
 
             try
             {
-                // Request cancellation
+                // Request cooperative cancellation
                 _cts?.Cancel();
 
-                // Optional: scenario cleanup
-                await _scenario.ResetAsync(); // if available: await _scenario.ResetAsync(cancellationToken);
-
-                // Wait for the run task to finish (with timeout to avoid blocking shutdown)
                 if (_runTask != null)
                 {
-                    var completed = await Task.WhenAny(_runTask, Task.Delay(TimeSpan.FromSeconds(10), cancellationToken));
+                    // Wait for a graceful stop (adjust timeout if your scenario needs longer)
+                    var completed = await Task.WhenAny(
+                        _runTask,
+                        Task.Delay(TimeSpan.FromSeconds(15), cancellationToken));
+
                     if (completed != _runTask)
                         _logger.LogWarning("RunAsync did not stop within timeout.");
                 }
+
+                // Optional final cleanup
+                await _scenario.ResetAsync(cancellationToken);
             }
+            catch (OperationCanceledException) { /* expected on shutdown */ }
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "Error during StopAsync.");

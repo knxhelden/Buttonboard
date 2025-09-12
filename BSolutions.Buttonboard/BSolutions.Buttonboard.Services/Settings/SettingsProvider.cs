@@ -74,7 +74,9 @@ namespace BSolutions.Buttonboard.Services.Settings
                 Server = this._config.GetSection("Mqtt").GetSection("Server").Value,
                 Port = Convert.ToInt32(this._config.GetSection("Mqtt").GetSection("Port").Value),
                 Username = this._config.GetSection("Mqtt").GetSection("Username").Value,
-                Password = this._config.GetSection("Mqtt").GetSection("Password").Value
+                Password = this._config.GetSection("Mqtt").GetSection("Password").Value,
+                WillTopic = this._config.GetSection("Mqtt").GetSection("WillTopic").Value,
+                OnlineTopic = this._config.GetSection("Mqtt").GetSection("OnlineTopic").Value
             };
         }
 

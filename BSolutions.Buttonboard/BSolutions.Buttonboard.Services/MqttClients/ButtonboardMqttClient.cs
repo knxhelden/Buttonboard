@@ -3,6 +3,7 @@ using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Extensions.ManagedClient;
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BSolutions.Buttonboard.Services.MqttClients
@@ -13,18 +14,20 @@ namespace BSolutions.Buttonboard.Services.MqttClients
         private readonly ManagedMqttClientOptions _options;
         private bool _disposed;
 
-        public ButtonboardMqttClient(ISettingsProvider settingsProvider)
+        public ButtonboardMqttClient(ISettingsProvider settings)
         {
-            if (settingsProvider == null) throw new ArgumentNullException(nameof(settingsProvider));
-
             var factory = new MqttFactory();
             _client = factory.CreateManagedMqttClient();
 
             var clientOptions = new MqttClientOptionsBuilder()
-                .WithTcpServer(settingsProvider.Mqtt.Server, settingsProvider.Mqtt.Port)
-                .WithCredentials(settingsProvider.Mqtt.Username, settingsProvider.Mqtt.Password)
+                .WithTcpServer(settings.Mqtt.Server, settings.Mqtt.Port)
+                .WithCredentials(settings.Mqtt.Username, settings.Mqtt.Password)
                 .WithCleanSession()
                 .WithKeepAlivePeriod(TimeSpan.FromSeconds(30))
+                .WithWillTopic(settings.Mqtt.WillTopic ?? "buttonboard/status")
+                .WithWillPayload("offline")
+                .WithWillRetain()
+                .WithWillQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
                 .Build();
 
             _options = new ManagedMqttClientOptionsBuilder()
@@ -32,17 +35,15 @@ namespace BSolutions.Buttonboard.Services.MqttClients
                 .WithAutoReconnectDelay(TimeSpan.FromSeconds(5))
                 .Build();
 
-            // Events (nur Logging, keine Exceptions nach außen werfen)
-            _client.ConnectedAsync += e =>
-            {
-                Console.WriteLine($"[MQTT] Connected to broker '{settingsProvider.Mqtt.Server}:{settingsProvider.Mqtt.Port}'.");
-                return Task.CompletedTask;
-            };
 
-            _client.DisconnectedAsync += e =>
+            _client.ConnectedAsync += _ =>
             {
-                Console.WriteLine($"[MQTT] Disconnected: {e.Reason} {e.Exception?.Message}");
-                return Task.CompletedTask;
+                return _client.EnqueueAsync(new MqttApplicationMessageBuilder()
+                    .WithTopic(settings.Mqtt.OnlineTopic ?? "buttonboard/status")
+                    .WithPayload("online")
+                    .WithRetainFlag()
+                    .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                    .Build());
             };
         }
 
@@ -52,23 +53,16 @@ namespace BSolutions.Buttonboard.Services.MqttClients
         public async Task ConnectAsync()
         {
             if (_disposed) throw new ObjectDisposedException(nameof(ButtonboardMqttClient));
-
-            try
-            {
-                await _client.StartAsync(_options);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[MQTT] StartAsync failed: {ex.Message}");
-            }
+            try { await _client.StartAsync(_options); }
+            catch { /* swallow – ManagedClient reconnects in background */ }
         }
 
         /// <summary>
         /// Publishes a message. If offline, it will be queued and sent once connected.
         /// </summary>
-        public async Task PublishAsync(string topic, string payload)
+        public async Task PublishAsync(string topic, string payload, CancellationToken ct = default)
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(ButtonboardMqttClient));
+            if (_disposed || ct.IsCancellationRequested) return;
 
             var msg = new MqttApplicationMessageBuilder()
                 .WithTopic(topic)
@@ -76,14 +70,29 @@ namespace BSolutions.Buttonboard.Services.MqttClients
                 .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
                 .Build();
 
+            try { await _client.EnqueueAsync(msg); }
+            catch { /* swallow – do not crash the app */ }
+        }
+
+        public async Task StopAsync(CancellationToken ct = default)
+        {
+            if (_disposed) return;
+
+            // 1) Short flush phase: wait until pending queue is empty (or timeout)
+            var deadline = DateTime.UtcNow.AddSeconds(5);
             try
             {
-                await _client.EnqueueAsync(msg); // nur 1 Argument in v4!
+                while (_client.PendingApplicationMessagesCount > 0 &&
+                       DateTime.UtcNow < deadline &&
+                       !ct.IsCancellationRequested)
+                {
+                    await Task.Delay(100, ct);
+                }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[MQTT] Enqueue failed: {ex.Message}");
-            }
+            catch (OperationCanceledException) { /* ok on shutdown */ }
+
+            // 2) Stop managed client (disconnect + stop worker)
+            try { await _client.StopAsync(); } catch { /* ignore */ }
         }
 
         public void Dispose()

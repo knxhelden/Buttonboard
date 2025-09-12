@@ -1,15 +1,9 @@
-﻿using BSolutions.Buttonboard.Services.Enumerations;
-using BSolutions.Buttonboard.Services.Gpio;
+﻿using BSolutions.Buttonboard.Services.Gpio;
 using BSolutions.Buttonboard.Services.MqttClients;
 using BSolutions.Buttonboard.Services.RestApiClients;
 using BSolutions.Buttonboard.Services.Settings;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Collections.Generic;
-using System.Device.Gpio;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -46,189 +40,191 @@ namespace BSolutions.Buttonboard.Scenario
             IVlcPlayerClient vlc,
             IButtonboardMqttClient mqtt)
         {
-            this._logger = logger;
-            this._settings = settingsProvider;
-            this._gpioController = gpioController;
-            this._openhab = openhab;
-            this._vlc = vlc;
-            this._mqtt = mqtt;
+            _logger = logger;
+            _settings = settingsProvider;
+            _gpioController = gpioController;
+            _openhab = openhab;
+            _vlc = vlc;
+            _mqtt = mqtt;
 
-            this._gpioController.Initialize();
+            _gpioController.Initialize();
         }
 
         #endregion
 
         #region --- IScenario ---
 
-        public async Task RunAsync()
+        public async Task RunAsync(CancellationToken ct = default)
         {
-            this._logger.LogInformation($"Szenario wird gestartet ...");
-            await this._gpioController.LedOnAsync(Led.SystemGreen);
+            _logger.LogInformation($"Scenario is running…");
+            await _gpioController.LedOnAsync(Led.SystemGreen);
 
             try
             {
-                while (true)
+                while (!ct.IsCancellationRequested)
                 {
-                    if (this._gpioController.IsButtonPressed(Button.BottomLeft) && this._gpioController.IsButtonPressed(Button.BottomRight))
+                    if (_gpioController.IsButtonPressed(Button.BottomLeft) && _gpioController.IsButtonPressed(Button.BottomRight))
                     {
-                        this._logger.LogInformation("Szenario wird beendet ...");
+                        _logger.LogInformation("Scenario is terminated…");
                         break;
                     }
-                    else if (this._gpioController.IsButtonPressed(Button.TopCenter))
+                    else if (_gpioController.IsButtonPressed(Button.TopCenter))
                     {
-                        await this.RunScene1();
+                        await RunScene1(ct);
                     }
-                    else if (this._gpioController.IsButtonPressed(Button.BottomLeft))
+                    else if (_gpioController.IsButtonPressed(Button.BottomLeft))
                     {
-                        await this.RunScene2();
+                        await RunScene2(ct);
                     }
-                    else if (this._gpioController.IsButtonPressed(Button.BottomCenter))
+                    else if (_gpioController.IsButtonPressed(Button.BottomCenter))
                     {
-                        await this.RunScene3();
+                        await RunScene3(ct);
                     }
-                    else if (this._gpioController.IsButtonPressed(Button.BottomRight))
+                    else if (_gpioController.IsButtonPressed(Button.BottomRight))
                     {
-                        await this.RunScene4();
+                        await RunScene4(ct);
                     }
 
-                    Thread.Sleep(180);
+                    await Task.Delay(180, ct);
                 }
+            }
+            catch (OperationCanceledException)
+            {
+                // Cooperative shutdown: expected during Ctrl+C or service stop
+                _logger.LogInformation("Scenario cancellation requested. Shutting down gracefully…");
             }
             catch (Exception ex)
             {
-                await this._gpioController.LedOnAsync(Led.SystemYellow);
-                Console.WriteLine($"Es ist ein Fehler aufgetreten: {ex.Message}");
-                Console.WriteLine();
-                Console.WriteLine("Drücke eine beliebige Taste, um die Applikation zu beenden ...");
-                Console.WriteLine();
-                Console.ReadKey();
+                _logger.LogError(ex, "Scenario has an unexpected error ScenarioBase.RunAsync.");
             }
+
+            _logger.LogInformation($"Scenario has ended.");
         }
 
-        public virtual async Task SetupAsync()
+        public virtual async Task SetupAsync(CancellationToken ct = default)
         {
-            this._logger.LogInformation($"Szenario wird eingerichtet ...");
+            _logger.LogInformation($"Scenario is being set up…");
 
             // Button Top Center Led
-            await this._gpioController.LedOnAsync(Led.ButtonTopCenter);
+            await _gpioController.LedOnAsync(Led.ButtonTopCenter);
+
+            _logger.LogInformation($"Scenario has been set up.");
         }
 
-        public virtual async Task ResetAsync()
+        public virtual async Task ResetAsync(CancellationToken ct = default)
         {
-            this._logger.LogInformation($"Szenario wird zurückgesetzt ...");
+            _logger.LogInformation($"Scenario is being reset…");
 
             // GPIO
-            await this._gpioController.ResetAsync();
+            await _gpioController.ResetAsync();
 
             // History
-            this.IsScene1Played = false;
-            this.IsScene2Played = false;
-            this.IsScene3Played = false;
-            this.IsScene4Played = false;
+            IsScene1Played = false;
+            IsScene2Played = false;
+            IsScene3Played = false;
+            IsScene4Played = false;
+
+            _logger.LogInformation($"Scenario has been reset.");
         }
 
         #endregion
 
         #region --- Basic Scene Methods ---
 
-        protected virtual Task RunScene1()
+        protected virtual async Task RunScene1(CancellationToken ct = default)
         {
-            return Task.Run(() =>
-            {
-                this._logger.LogInformation("Szene 1 wurde gestartet ...");
+            _logger.LogInformation("Scene 1 has started…");
 
-                // Process LEDs
-                this._gpioController.LedOffAsync(Led.ProcessRed1);
-                this._gpioController.LedOffAsync(Led.ProcessRed2);
-                this._gpioController.LedOffAsync(Led.ProcessRed3);
-                this._gpioController.LedOffAsync(Led.ProcessYellow1);
-                this._gpioController.LedOffAsync(Led.ProcessYellow2);
-                this._gpioController.LedOffAsync(Led.ProcessYellow3);
-                this._gpioController.LedOffAsync(Led.ProcessGreen1);
-                this._gpioController.LedOffAsync(Led.ProcessGreen2);
-                this._gpioController.LedOffAsync(Led.ProcessGreen3);
+            // Process LEDs
+            await _gpioController.LedOffAsync(Led.ProcessRed1);
+            await _gpioController.LedOffAsync(Led.ProcessRed2);
+            await _gpioController.LedOffAsync(Led.ProcessRed3);
+            await _gpioController.LedOffAsync(Led.ProcessYellow1);
+            await _gpioController.LedOffAsync(Led.ProcessYellow2);
+            await _gpioController.LedOffAsync(Led.ProcessYellow3);
+            await _gpioController.LedOffAsync(Led.ProcessGreen1);
+            await _gpioController.LedOffAsync(Led.ProcessGreen2);
+            await _gpioController.LedOffAsync(Led.ProcessGreen3);
+
+            // Button LED
+            await _gpioController.LedOnAsync(Led.ButtonTopCenter);
+
+            // History
+            IsScene1Played = true;
+
+            _logger.LogInformation("Scene 1 has ended.");
+        }
+
+        protected virtual async Task RunScene2(CancellationToken ct = default)
+        {
+            if (IsScene1Played == false)
+            {
+                await _gpioController.LedsBlinkingAsync(5, 100);
+            }
+            else
+            {
+                _logger.LogInformation("Scene 2 has started…");
+
+                await _gpioController.LedOnAsync(Led.ProcessRed1);
+                await _gpioController.LedOnAsync(Led.ProcessRed2);
+                await _gpioController.LedOnAsync(Led.ProcessRed3);
 
                 // Button LED
-                this._gpioController.LedOnAsync(Led.ButtonTopCenter);
+                await _gpioController.LedOnAsync(Led.ButtonBottomLeft);
 
                 // History
-                this.IsScene1Played = true;
-            });
+                IsScene2Played = true;
+
+                _logger.LogInformation("Scene 2 has ended.");
+            }
         }
 
-        protected virtual Task RunScene2()
+        protected virtual async Task RunScene3(CancellationToken ct = default)
         {
-            return Task.Run(() =>
+            if (IsScene2Played == false)
             {
-                if(this.IsScene1Played == false)
-                {
-                    this._gpioController.LedsBlinkingAsync(5, 100);
-                }
-                else
-                {
-                    this._logger.LogInformation("Szene 2 wurde gestartet ...");
+                await _gpioController.LedsBlinkingAsync(5, 100);
+            }
+            else
+            {
+                _logger.LogInformation("Scene 3 has started…");
 
-                    this._gpioController.LedOnAsync(Led.ProcessRed1);
-                    this._gpioController.LedOnAsync(Led.ProcessRed2);
-                    this._gpioController.LedOnAsync(Led.ProcessRed3);
+                await _gpioController.LedOnAsync(Led.ProcessYellow1);
+                await _gpioController.LedOnAsync(Led.ProcessYellow2);
+                await _gpioController.LedOnAsync(Led.ProcessYellow3);
 
-                    // Button LED
-                    this._gpioController.LedOnAsync(Led.ButtonBottomLeft);
+                // Button LED
+                await _gpioController.LedOnAsync(Led.ButtonBottomCenter);
 
-                    // History
-                    this.IsScene2Played = true;
-                }
-            });
+                // History
+                IsScene3Played = true;
+
+                _logger.LogInformation("Scene 3 has ended.");
+            }
         }
 
-        protected virtual Task RunScene3()
+        protected virtual async Task RunScene4(CancellationToken ct = default)
         {
-            return Task.Run(() =>
+            if (IsScene3Played == false)
             {
-                if (this.IsScene2Played == false)
-                {
-                    this._gpioController.LedsBlinkingAsync(5, 100);
-                }
-                else
-                {
-                    this._logger.LogInformation("Szene 3 wurde gestartet ...");
-
-                    this._gpioController.LedOnAsync(Led.ProcessYellow1);
-                    this._gpioController.LedOnAsync(Led.ProcessYellow2);
-                    this._gpioController.LedOnAsync(Led.ProcessYellow3);
-
-                    // Button LED
-                    this._gpioController.LedOnAsync(Led.ButtonBottomCenter);
-
-                    // History
-                    this.IsScene3Played = true;
-                }
-            });
-        }
-
-        protected virtual Task RunScene4()
-        {
-            return Task.Run(() =>
+                await _gpioController.LedsBlinkingAsync(5, 100);
+            }
+            else
             {
-                if (this.IsScene3Played == false)
-                {
-                    this._gpioController.LedsBlinkingAsync(5, 100);
-                }
-                else
-                {
-                    this._logger.LogInformation("Szene 4 wurde gestartet ...");
+                _logger.LogInformation("Scene 4 has started…");
 
-                    this._gpioController.LedOnAsync(Led.ProcessGreen1);
-                    this._gpioController.LedOnAsync(Led.ProcessGreen2);
-                    this._gpioController.LedOnAsync(Led.ProcessGreen3);
+                await _gpioController.LedOnAsync(Led.ProcessGreen1);
+                await _gpioController.LedOnAsync(Led.ProcessGreen2);
+                await _gpioController.LedOnAsync(Led.ProcessGreen3);
 
-                    // Button LED
-                    this._gpioController.LedOnAsync(Led.ButtonBottomRight);
+                // Button LED
+                await _gpioController.LedOnAsync(Led.ButtonBottomRight);
 
-                    // History
-                    this.IsScene4Played = true;
-                }
-            });
+                // History
+                IsScene4Played = true;
+
+                _logger.LogInformation("Scene 4 has ended.");
+            }
         }
 
         #endregion
