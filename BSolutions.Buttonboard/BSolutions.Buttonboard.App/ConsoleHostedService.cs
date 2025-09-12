@@ -1,5 +1,6 @@
 ﻿using BSolutions.Buttonboard.Scenario;
 using BSolutions.Buttonboard.Services.MqttClients;
+using BSolutions.Buttonboard.Services.Runtimes;
 using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -13,6 +14,7 @@ namespace BSolutions.Buttonboard.App
     {
         private readonly ILogger _logger;
         private readonly IButtonboardMqttClient _mqtt;
+        private readonly ISceneLoader _sceneLoader;
         private readonly IScenario _scenario;
         private CancellationTokenSource? _cts;
         private Task? _runTask;
@@ -20,10 +22,12 @@ namespace BSolutions.Buttonboard.App
         public ConsoleHostedService(
             ILogger<ConsoleHostedService> logger,
             IButtonboardMqttClient mqtt,
+            ISceneLoader sceneLoader,
             IScenario scenario)
         {
             _logger = logger;
             _mqtt = mqtt;
+            _sceneLoader = sceneLoader;
             _scenario = scenario;
         }
 
@@ -35,8 +39,8 @@ namespace BSolutions.Buttonboard.App
             _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             var ct = _cts.Token;
 
-            // Start MQTT (managed client will auto-reconnect in the background)
             await _mqtt.ConnectAsync();
+            await _sceneLoader.StartAsync(ct);
 
             // Prepare scenario
             await _scenario.ResetAsync(ct);
@@ -68,6 +72,9 @@ namespace BSolutions.Buttonboard.App
 
                 // Optional final cleanup
                 await _scenario.ResetAsync(cancellationToken);
+
+                try { await _sceneLoader.StopAsync(cancellationToken); } catch { /* ignore */ }
+                try { await _mqtt.StopAsync(cancellationToken); } catch { /* ignore */ }
             }
             catch (OperationCanceledException) { /* expected on shutdown */ }
             catch (Exception ex)
@@ -79,6 +86,7 @@ namespace BSolutions.Buttonboard.App
         public void Dispose()
         {
             _cts?.Dispose();
+            _sceneLoader?.Dispose();
         }
     }
 }
