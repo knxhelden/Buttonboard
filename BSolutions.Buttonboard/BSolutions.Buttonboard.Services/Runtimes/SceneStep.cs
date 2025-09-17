@@ -5,13 +5,15 @@ namespace BSolutions.Buttonboard.Services.Runtimes
 {
     public sealed class SceneStep
     {
+        public SceneStep() { }
+
         [JsonPropertyName("name")]
         public string Name { get; set; } = string.Empty;
 
         /// <summary>
         /// Absolute timestamp in milliseconds for step start since scene start.
         /// </summary>
-        [JsonPropertyName("atMs")]
+        [JsonPropertyName("startAtMs")]
         public int StartAtMs { get; set; }
 
         /// <summary>

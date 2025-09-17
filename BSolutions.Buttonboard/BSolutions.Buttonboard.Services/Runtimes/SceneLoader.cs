@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.Json.Serialization.Metadata;
 
 namespace BSolutions.Buttonboard.Services.Runtimes
 {
@@ -21,11 +22,12 @@ namespace BSolutions.Buttonboard.Services.Runtimes
         private readonly FileSystemWatcher _watcher;
         private readonly ConcurrentDictionary<string, SceneDefinition> _cache = new(StringComparer.OrdinalIgnoreCase);
 
-        private readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions
+        private readonly JsonSerializerOptions _jsonOptions = new()
         {
             PropertyNameCaseInsensitive = true,
             ReadCommentHandling = JsonCommentHandling.Skip,
-            AllowTrailingCommas = true
+            AllowTrailingCommas = true,
+            TypeInfoResolver = new DefaultJsonTypeInfoResolver()
         };
 
         #region --- Constructor ---
@@ -109,6 +111,8 @@ namespace BSolutions.Buttonboard.Services.Runtimes
 
                 if (!File.Exists(path)) return;
 
+                _logger.LogInformation("Loading scene from path '{0}'…", path);
+
                 using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 using var sr = new StreamReader(fs);
                 var json = await sr.ReadToEndAsync();
@@ -118,7 +122,7 @@ namespace BSolutions.Buttonboard.Services.Runtimes
 
                 var key = Path.GetFileNameWithoutExtension(path);
                 _cache[key] = Normalize(def);
-                _logger.LogDebug("Scene loaded: {Key}", key);
+                _logger.LogInformation("Scene loaded: {Key}.", key);
             }
             catch (Exception ex)
             {

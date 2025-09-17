@@ -5,6 +5,9 @@ namespace BSolutions.Buttonboard.Services.Runtimes
 {
     public sealed class SceneDefinition
     {
+
+        public SceneDefinition() { }
+
         [JsonPropertyName("name")]
         public string Name { get; set; } = "Unnamed Scene";
 

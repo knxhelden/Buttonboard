@@ -297,7 +297,7 @@ namespace BSolutions.Buttonboard.Scenario.Horrorhouse
 
             // Audio
             await _openhab.SendCommandAsync(_audioPlayer1.VolumeItem, _audioPlayer1.Volume.ToString());
-            await _openhab.SendCommandAsync(_audioPlayer2.VolumeItem, _audioPlayer2.Volume.ToString());
+            //await _openhab.SendCommandAsync(_audioPlayer2.VolumeItem, _audioPlayer2.Volume.ToString());
         }
 
         public override async Task ResetAsync(CancellationToken ct = default)
