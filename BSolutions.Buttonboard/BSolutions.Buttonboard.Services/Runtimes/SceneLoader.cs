@@ -48,9 +48,9 @@ namespace BSolutions.Buttonboard.Services.Runtimes
                 NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size
             };
 
-            _watcher.Changed += (_, e) => LoadSceneToCache(e.FullPath);
-            _watcher.Created += (_, e) => LoadSceneToCache(e.FullPath);
-            _watcher.Renamed += (_, e) => LoadSceneToCache(e.FullPath);
+            _watcher.Changed += async (_, e) => await LoadSceneToCacheAsync(e.FullPath);
+            _watcher.Created += async (_, e) => await LoadSceneToCacheAsync(e.FullPath);
+            _watcher.Renamed += async (_, e) => await LoadSceneToCacheAsync(e.FullPath);
             _watcher.Deleted += (_, e) => RemoveSceneFromCache(e.FullPath);
         }
 
@@ -67,7 +67,7 @@ namespace BSolutions.Buttonboard.Services.Runtimes
             foreach (var file in Directory.EnumerateFiles(_scenesDirectory, "*.json"))
             {
                 ct.ThrowIfCancellationRequested();
-                LoadSceneToCache(file);
+                await LoadSceneToCacheAsync(file);
                 // Cooperative pacing if there are many files
                 await Task.Yield();
             }
@@ -100,17 +100,19 @@ namespace BSolutions.Buttonboard.Services.Runtimes
         /// Loads a scene from the given file path and updates the cache (upsert).
         /// Intended to be called from FileSystemWatcher events (Changed/Created/Renamed).
         /// </summary>
-        private void LoadSceneToCache(string path)
+        private async Task LoadSceneToCacheAsync(string path)
         {
             try
             {
-                // Small debounce if an editor is still writing
-                Task.Delay(50).Wait();
+                // Small debounce to let editors finish writing
+                await Task.Delay(50);
 
-                if (!File.Exists(path))
-                    return;
+                if (!File.Exists(path)) return;
 
-                var json = File.ReadAllText(path);
+                using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                using var sr = new StreamReader(fs);
+                var json = await sr.ReadToEndAsync();
+
                 var def = JsonSerializer.Deserialize<SceneDefinition>(json, _jsonOptions);
                 if (def is null) return;
 

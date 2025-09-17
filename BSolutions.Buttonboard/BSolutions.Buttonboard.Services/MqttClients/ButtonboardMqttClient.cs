@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace BSolutions.Buttonboard.Services.MqttClients
 {
-    public sealed class ButtonboardMqttClient : IButtonboardMqttClient
+    public sealed class ButtonboardMqttClient : IButtonboardMqttClient, IDisposable
     {
         private readonly IManagedMqttClient _client;
         private readonly ManagedMqttClientOptions _options;

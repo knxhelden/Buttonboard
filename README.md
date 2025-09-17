@@ -99,6 +99,7 @@ The script will:
 - Install all required dependencies
 - Set up Webmin system administration tool
 - Configure Samba shared folder for buttonboard app deployment
+  *(by default the path is `/opt/buttonboard` on the Raspberry Pi and exposes it as a network share `\\buttonboard\deploy`)*
 
 ## 🚀 Setzen des aktiven Szenarios
 
