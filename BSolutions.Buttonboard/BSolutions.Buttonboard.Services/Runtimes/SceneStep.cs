@@ -12,8 +12,8 @@ namespace BSolutions.Buttonboard.Services.Runtimes
         /// <summary>
         /// Absolute timestamp in milliseconds for step start since scene start.
         /// </summary>
-        [JsonPropertyName("startAtMs")]
-        public int StartAtMs { get; set; }
+        [JsonPropertyName("atMs")]
+        public int AtMs { get; set; }
 
         /// <summary>
         /// Aktion, z. B. "audio.play", "video.next", "video.pause", "gpio.on", "gpio.off", "mqtt.pub"

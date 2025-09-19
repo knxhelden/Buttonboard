@@ -102,21 +102,6 @@ The script will:
   
 *(By default the app path is `/opt/buttonboard` on the Raspberry Pi and exposes it as a network share `\\buttonboard\deploy`)*
 
-## 🚀 Setzen des aktiven Szenarios
-
-Das aktive Szenario wird in der **`Program.cs`** des Projekts `BSolutions.Buttonboard.App` definiert:
-
-```csharp
-.ConfigureServices((context, services) =>
-{
-    services.AddHostedService<ConsoleHostedService>()
-    [...]
-    .AddSingleton<IScenario, MichaelMyersScenario>(); 
-    // 👆 Hier wird das aktive Szenario gesetzt
-})
-```
-👉 Durch den Austausch von `MichaelMyersScenario` kannst du dein gewünschtes Szenario aktivieren.
-
 ---
 
 ## 📦 Deployment & Execution of the Buttonboard App
@@ -159,13 +144,3 @@ Für das Debuggen gibt es zwei empfehlenswerte Ansätze:
 ### Installation des Visual Studio Remote Debugger
 
 [Weitere Informationen](https://github.com/nforgeio/RaspberryDebugger)
-
----
-
-## ✅ Quickstart-Checkliste  
-
-- [ ] Szenario in `Program.cs` setzen  
-- [ ] Build via Publish Profile  
-- [ ] Deployment ins Samba-Verzeichnis `/home/tbremus/Runtime`  
-- [ ] `chmod +x` setzen  
-- [ ] App starten 🚀  

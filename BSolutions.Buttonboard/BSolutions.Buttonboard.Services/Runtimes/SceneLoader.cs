@@ -159,7 +159,7 @@ namespace BSolutions.Buttonboard.Services.Runtimes
 
             def.Steps = def.Steps
                 .Where(s => s != null && !string.IsNullOrWhiteSpace(s.Action))
-                .OrderBy(s => s.StartAtMs)
+                .OrderBy(s => s.AtMs)
                 .ToList();
 
             return def;

@@ -60,11 +60,11 @@ namespace BSolutions.Buttonboard.Services.Runtimes
 
                         var sw = Stopwatch.StartNew();
 
-                        foreach (var step in scene.Steps.OrderBy(s => s.StartAtMs))
+                        foreach (var step in scene.Steps.OrderBy(s => s.AtMs))
                         {
                             token.ThrowIfCancellationRequested();
 
-                            var delay = step.StartAtMs - (int)sw.ElapsedMilliseconds;
+                            var delay = step.AtMs - (int)sw.ElapsedMilliseconds;
                             if (delay > 0)
                                 await Task.Delay(delay, token);
 
@@ -76,7 +76,7 @@ namespace BSolutions.Buttonboard.Services.Runtimes
                             catch (Exception ex)
                             {
                                 _log.LogError(ex, "Step '{StepName}' failed at t={At}ms (action={Action})",
-                                    step.Name ?? "(unnamed)", step.StartAtMs, step.Action);
+                                    step.Name ?? "(unnamed)", step.AtMs, step.Action);
 
                                 // einfache Fehlerpolitik: „continue“ (Default), „abort“ optional via OnError
                                 if (string.Equals(step.OnError, "abort", StringComparison.OrdinalIgnoreCase))
