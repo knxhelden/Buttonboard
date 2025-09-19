@@ -17,7 +17,7 @@ namespace BSolutions.Buttonboard.Scenario
         protected readonly ISettingsProvider _settings;
         protected readonly IOpenHabClient _openhab;
         protected readonly IVlcPlayerClient _vlc;
-        protected readonly IButtonboardMqttClient _mqtt;
+        protected readonly IMqttClient _mqtt;
         protected readonly IButtonboardGpioController _gpioController;
 
         #endregion
@@ -38,7 +38,7 @@ namespace BSolutions.Buttonboard.Scenario
             IButtonboardGpioController gpioController,
             IOpenHabClient openhab,
             IVlcPlayerClient vlc,
-            IButtonboardMqttClient mqtt)
+            IMqttClient mqtt)
         {
             _logger = logger;
             _settings = settingsProvider;

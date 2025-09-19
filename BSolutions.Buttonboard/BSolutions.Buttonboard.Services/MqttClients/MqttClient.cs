@@ -8,13 +8,13 @@ using System.Threading.Tasks;
 
 namespace BSolutions.Buttonboard.Services.MqttClients
 {
-    public sealed class ButtonboardMqttClient : IButtonboardMqttClient, IDisposable
+    public sealed class MqttClient : IMqttClient, IDisposable
     {
         private readonly IManagedMqttClient _client;
         private readonly ManagedMqttClientOptions _options;
         private bool _disposed;
 
-        public ButtonboardMqttClient(ISettingsProvider settings)
+        public MqttClient(ISettingsProvider settings)
         {
             var factory = new MqttFactory();
             _client = factory.CreateManagedMqttClient();
@@ -52,7 +52,7 @@ namespace BSolutions.Buttonboard.Services.MqttClients
         /// </summary>
         public async Task ConnectAsync()
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(ButtonboardMqttClient));
+            if (_disposed) throw new ObjectDisposedException(nameof(MqttClient));
             try { await _client.StartAsync(_options); }
             catch { /* swallow – ManagedClient reconnects in background */ }
         }

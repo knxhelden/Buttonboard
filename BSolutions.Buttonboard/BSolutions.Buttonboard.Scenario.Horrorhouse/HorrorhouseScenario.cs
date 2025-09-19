@@ -20,7 +20,7 @@ namespace BSolutions.Buttonboard.Scenario.Horrorhouse
             IButtonboardGpioController gpioController,
             IOpenHabClient openhab,
             IVlcPlayerClient vlc,
-            IButtonboardMqttClient mqtt)
+            IMqttClient mqtt)
             : base(logger, settingsProvider, gpioController, openhab, vlc, mqtt)
         {
             _audioPlayer1 = _settings.OpenHAB.Audio.Players.Single(p => p.Name == "Player1");

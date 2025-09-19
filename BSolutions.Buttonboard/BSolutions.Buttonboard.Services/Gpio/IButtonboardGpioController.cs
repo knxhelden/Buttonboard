@@ -1,15 +1,15 @@
-﻿using System.Threading.Tasks;
-using BSolutions.Buttonboard.Services.Enumerations;
+﻿using System.Threading;
+using System.Threading.Tasks;
 
 namespace BSolutions.Buttonboard.Services.Gpio
 {
     public interface IButtonboardGpioController
     {
         void Initialize();
-        Task ResetAsync();
-        Task LedOffAsync(Led led);
-        Task LedOnAsync(Led led);
+        Task ResetAsync(CancellationToken ct = default);
+        Task LedOnAsync(Led led, CancellationToken ct = default);
+        Task LedOffAsync(Led led, CancellationToken ct = default);
         bool IsButtonPressed(Button button);
-        Task LedsBlinkingAsync(int repetitions, int intervall = 500);
+        Task LedsBlinkingAsync(int repetitions, int intervalMs = 500, CancellationToken ct = default);
     }
 }

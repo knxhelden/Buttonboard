@@ -13,7 +13,7 @@ namespace BSolutions.Buttonboard.App
     internal sealed class ConsoleHostedService : IHostedService, IDisposable
     {
         private readonly ILogger _logger;
-        private readonly IButtonboardMqttClient _mqtt;
+        private readonly IMqttClient _mqtt;
         private readonly ISceneLoader _sceneLoader;
         private readonly IScenario _scenario;
         private CancellationTokenSource? _cts;
@@ -21,7 +21,7 @@ namespace BSolutions.Buttonboard.App
 
         public ConsoleHostedService(
             ILogger<ConsoleHostedService> logger,
-            IButtonboardMqttClient mqtt,
+            IMqttClient mqtt,
             ISceneLoader sceneLoader,
             IScenario scenario)
         {

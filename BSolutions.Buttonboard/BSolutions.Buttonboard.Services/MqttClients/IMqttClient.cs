@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 
 namespace BSolutions.Buttonboard.Services.MqttClients
 {
-    public interface IButtonboardMqttClient
+    public interface IMqttClient
     {
         Task ConnectAsync();
         Task PublishAsync(string topic, string payload, CancellationToken ct = default);

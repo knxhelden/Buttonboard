@@ -45,7 +45,7 @@ namespace BSolutions.Buttonboard.App
                     })
                     .AddSingleton<GpioController>()
                     .AddSingleton<IOpenHabClient, OpenHabClient>()
-                    .AddSingleton<IButtonboardMqttClient, ButtonboardMqttClient>()
+                    .AddSingleton<IMqttClient, MqttClient>()
                     .AddSingleton<IButtonboardGpioController, ButtonboardGpioController>()
                     .AddSingleton<IVlcPlayerClient, VlcPlayerClient>()
                     .AddSingleton<IScenario, HorrorhouseScenario>(); // Change the scenario to use here

@@ -1,114 +1,138 @@
-﻿using BSolutions.Buttonboard.Services.Attributes;
-using BSolutions.Buttonboard.Services.Enumerations;
-using BSolutions.Buttonboard.Services.Extensions;
+﻿using BSolutions.Buttonboard.Services.Extensions;
 using BSolutions.Buttonboard.Services.Settings;
 using System;
-using System.Collections.Generic;
 using System.Device.Gpio;
-using System.Linq;
-using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace BSolutions.Buttonboard.Services.Gpio
 {
-    public class ButtonboardGpioController : IButtonboardGpioController
+    public class ButtonboardGpioController : IButtonboardGpioController, IDisposable
     {
-        private readonly GpioController _gpioController;
+        private readonly System.Device.Gpio.GpioController _gpio;
 
         #region --- Constructor ---
 
-        public ButtonboardGpioController(ISettingsProvider settingsProvider, GpioController gpioController)
+        public ButtonboardGpioController(ISettingsProvider settingsProvider,
+                              System.Device.Gpio.GpioController gpioController)
         {
-            this._gpioController = gpioController;
+            _gpio = gpioController;
         }
 
         #endregion
 
-        #region --- IButtonboardGpioController ---
+        #region --- IGpioController ---
 
         public void Initialize()
         {
             // Buttons
             foreach (Button button in Enum.GetValues<Button>())
             {
-                this._gpioController.OpenPin(button.GetGpio(), PinMode.Input);
+                var pin = button.GetGpio();
+                if (!_gpio.IsPinOpen(pin))
+                    _gpio.OpenPin(pin, PinMode.Input);
             }
 
             // LEDs
-            foreach(Led led in Enum.GetValues<Led>())
+            foreach (Led led in Enum.GetValues<Led>())
             {
-                this._gpioController.OpenPin(led.GetGpio(), PinMode.Output);
+                var pin = led.GetGpio();
+                if (!_gpio.IsPinOpen(pin))
+                    _gpio.OpenPin(pin, PinMode.Output);
+                // Default: aus
+                _gpio.Write(pin, PinValue.Low);
             }
         }
 
-        public Task ResetAsync()
+        public Task ResetAsync(CancellationToken ct = default)
         {
-            return Task.Run(() =>
+            // reine IO-Operation → synchron, aber ct respektieren, falls aufgerufen wird, während cancel requested ist
+            ct.ThrowIfCancellationRequested();
+            foreach (Led led in Enum.GetValues<Led>())
             {
-                // LEDs
-                foreach (Led led in Enum.GetValues<Led>())
-                {
-                    this._gpioController.Write(led.GetGpio(), PinValue.Low);
-                }
-            });
+                _gpio.Write(led.GetGpio(), PinValue.Low);
+            }
+            return Task.CompletedTask;
         }
 
-        public Task LedOnAsync(Led led)
+        public Task LedOnAsync(Led led, CancellationToken ct = default)
         {
-            return Task.Run(() =>
-            {
-                this._gpioController.Write(led.GetGpio(), PinValue.High);
-            });
+            ct.ThrowIfCancellationRequested();
+            _gpio.Write(led.GetGpio(), PinValue.High);
+            return Task.CompletedTask;
         }
 
-        public Task LedOffAsync(Led led)
+        public Task LedOffAsync(Led led, CancellationToken ct = default)
         {
-            return Task.Run(() =>
-            {
-                this._gpioController.Write(led.GetGpio(), PinValue.Low);
-            });
+            ct.ThrowIfCancellationRequested();
+            _gpio.Write(led.GetGpio(), PinValue.Low);
+            return Task.CompletedTask;
         }
 
         public bool IsButtonPressed(Button button)
         {
-            return this._gpioController.Read(button.GetGpio()) == PinValue.High;
+            return _gpio.Read(button.GetGpio()) == PinValue.High;
         }
 
-        public Task LedsBlinkingAsync(int repetitions, int intervall = 500)
+        public async Task LedsBlinkingAsync(int repetitions, int intervalMs = 500, CancellationToken ct = default)
         {
-            return Task.Run(() =>
+            // Einfache Blink-Show für die neun Prozess-LEDs (deine Auswahl beibehalten)
+            Led[] leds =
             {
-                for (int i = 1; i <= repetitions; i++)
-                {
-                    this._gpioController.Write(Led.ProcessRed1.GetGpio(), PinValue.High);
-                    this._gpioController.Write(Led.ProcessRed2.GetGpio(), PinValue.High);
-                    this._gpioController.Write(Led.ProcessRed3.GetGpio(), PinValue.High);
-                    this._gpioController.Write(Led.ProcessYellow1.GetGpio(), PinValue.High);
-                    this._gpioController.Write(Led.ProcessYellow2.GetGpio(), PinValue.High);
-                    this._gpioController.Write(Led.ProcessYellow3.GetGpio(), PinValue.High);
-                    this._gpioController.Write(Led.ProcessGreen1.GetGpio(), PinValue.High);
-                    this._gpioController.Write(Led.ProcessGreen2.GetGpio(), PinValue.High);
-                    this._gpioController.Write(Led.ProcessGreen3.GetGpio(), PinValue.High);
-                    Thread.Sleep(intervall);
-                    this._gpioController.Write(Led.ProcessRed1.GetGpio(), PinValue.Low);
-                    this._gpioController.Write(Led.ProcessRed2.GetGpio(), PinValue.Low);
-                    this._gpioController.Write(Led.ProcessRed3.GetGpio(), PinValue.Low);
-                    this._gpioController.Write(Led.ProcessYellow1.GetGpio(), PinValue.Low);
-                    this._gpioController.Write(Led.ProcessYellow2.GetGpio(), PinValue.Low);
-                    this._gpioController.Write(Led.ProcessYellow3.GetGpio(), PinValue.Low);
-                    this._gpioController.Write(Led.ProcessGreen1.GetGpio(), PinValue.Low);
-                    this._gpioController.Write(Led.ProcessGreen2.GetGpio(), PinValue.Low);
-                    this._gpioController.Write(Led.ProcessGreen3.GetGpio(), PinValue.Low);
-                    Thread.Sleep(intervall);
-                }
-            });
+                Led.ProcessRed1, Led.ProcessRed2, Led.ProcessRed3,
+                Led.ProcessYellow1, Led.ProcessYellow2, Led.ProcessYellow3,
+                Led.ProcessGreen1, Led.ProcessGreen2, Led.ProcessGreen3
+            };
+
+            for (int i = 0; i < repetitions; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+
+                // an
+                foreach (var led in leds)
+                    _gpio.Write(led.GetGpio(), PinValue.High);
+
+                await Task.Delay(intervalMs, ct).ConfigureAwait(false);
+
+                // aus
+                foreach (var led in leds)
+                    _gpio.Write(led.GetGpio(), PinValue.Low);
+
+                await Task.Delay(intervalMs, ct).ConfigureAwait(false);
+            }
         }
 
         #endregion
 
-        
+        public void Dispose()
+        {
+            try
+            {
+                // Alle Pins sicher aus und schließen
+                foreach (Led led in Enum.GetValues<Led>())
+                {
+                    var pin = led.GetGpio();
+                    if (_gpio.IsPinOpen(pin))
+                    {
+                        _gpio.Write(pin, PinValue.Low);
+                        _gpio.ClosePin(pin);
+                    }
+                }
+                foreach (Button button in Enum.GetValues<Button>())
+                {
+                    var pin = button.GetGpio();
+                    if (_gpio.IsPinOpen(pin))
+                        _gpio.ClosePin(pin);
+                }
+            }
+            catch
+            {
+                // Absichtlich schlucken – Dispose darf App nicht crashen
+            }
+            finally
+            {
+                _gpio?.Dispose();
+            }
+        }
     }
 }
