@@ -50,9 +50,9 @@ namespace BSolutions.Buttonboard.Services.Runtimes
                 NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size
             };
 
-            _watcher.Changed += async (_, e) => await LoadSceneToCacheAsync(e.FullPath);
-            _watcher.Created += async (_, e) => await LoadSceneToCacheAsync(e.FullPath);
-            _watcher.Renamed += async (_, e) => await LoadSceneToCacheAsync(e.FullPath);
+            _watcher.Changed += (_, e) => _ = Task.Run(() => LoadSceneToCacheAsync(e.FullPath));
+            _watcher.Created += (_, e) => _ = Task.Run(() => LoadSceneToCacheAsync(e.FullPath));
+            _watcher.Renamed += (_, e) => _ = Task.Run(() => LoadSceneToCacheAsync(e.FullPath));
             _watcher.Deleted += (_, e) => RemoveSceneFromCache(e.FullPath);
         }
 

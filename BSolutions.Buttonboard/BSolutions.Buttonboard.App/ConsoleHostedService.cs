@@ -1,4 +1,5 @@
 ﻿using BSolutions.Buttonboard.Scenario;
+using BSolutions.Buttonboard.Services.Gpio;
 using BSolutions.Buttonboard.Services.MqttClients;
 using BSolutions.Buttonboard.Services.Runtimes;
 using BSolutions.Buttonboard.Services.Settings;
@@ -14,6 +15,7 @@ namespace BSolutions.Buttonboard.App
     {
         private readonly ILogger _logger;
         private readonly IMqttClient _mqtt;
+        private readonly IButtonboardGpioController _gpio;
         private readonly ISceneLoader _sceneLoader;
         private readonly IScenario _scenario;
         private CancellationTokenSource? _cts;
@@ -22,11 +24,13 @@ namespace BSolutions.Buttonboard.App
         public ConsoleHostedService(
             ILogger<ConsoleHostedService> logger,
             IMqttClient mqtt,
+            IButtonboardGpioController gpio,
             ISceneLoader sceneLoader,
             IScenario scenario)
         {
             _logger = logger;
             _mqtt = mqtt;
+            _gpio = gpio;
             _sceneLoader = sceneLoader;
             _scenario = scenario;
         }
@@ -39,7 +43,9 @@ namespace BSolutions.Buttonboard.App
             _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             var ct = _cts.Token;
 
+            // Start services
             await _mqtt.ConnectAsync();
+            _gpio.Initialize();
             await _sceneLoader.StartAsync(ct);
 
             // Prepare scenario

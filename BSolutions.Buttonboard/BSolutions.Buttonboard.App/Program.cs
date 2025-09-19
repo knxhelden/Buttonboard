@@ -1,5 +1,4 @@
 ﻿using BSolutions.Buttonboard.Scenario;
-using BSolutions.Buttonboard.Scenario.Horrorhouse;
 using BSolutions.Buttonboard.Services.Gpio;
 using BSolutions.Buttonboard.Services.MqttClients;
 using BSolutions.Buttonboard.Services.RestApiClients;
@@ -48,7 +47,9 @@ namespace BSolutions.Buttonboard.App
                     .AddSingleton<IMqttClient, MqttClient>()
                     .AddSingleton<IButtonboardGpioController, ButtonboardGpioController>()
                     .AddSingleton<IVlcPlayerClient, VlcPlayerClient>()
-                    .AddSingleton<IScenario, HorrorhouseScenario>(); // Change the scenario to use here
+                    .AddSingleton<IScenario, ScenarioRuntime>()
+                    .AddSingleton<ISceneRuntime, SceneRuntime>()
+                    .AddSingleton<IActionExecutor, ActionExecutor>();
                 })
                 .RunConsoleAsync();
         }

@@ -37,8 +37,6 @@ namespace BSolutions.Buttonboard.Services.Runtimes
                 if (IsRunning)
                 {
                     _log.LogInformation("Scene '{SceneKey}' requested but '{Current}' is still running. Ignoring.", sceneKey, CurrentSceneKey);
-                    // Policy-Alternative: Cancel & restart:
-                    // await CancelCoreAsync(); // dann unten weiter starten
                     return false;
                 }
 

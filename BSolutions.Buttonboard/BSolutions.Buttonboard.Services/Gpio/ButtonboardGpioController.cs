@@ -39,7 +39,7 @@ namespace BSolutions.Buttonboard.Services.Gpio
                 var pin = led.GetGpio();
                 if (!_gpio.IsPinOpen(pin))
                     _gpio.OpenPin(pin, PinMode.Output);
-                // Default: aus
+                // Default: off
                 _gpio.Write(pin, PinValue.Low);
             }
         }
