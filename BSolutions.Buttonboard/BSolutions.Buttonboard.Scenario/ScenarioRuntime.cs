@@ -189,8 +189,6 @@ namespace BSolutions.Buttonboard.Scenario
             {
                 _logger.LogWarning("Setup scene not started (missing, busy, or error).");
             }
-
-            _logger.LogInformation("Scenario has been set up.");
         }
 
         /// <summary>
@@ -205,8 +203,6 @@ namespace BSolutions.Buttonboard.Scenario
             await _gpio.ResetAsync();
 
             _stage = 0; // Next allowed scene is the first scene again.
-
-            _logger.LogInformation("Scenario has been reset.");
         }
 
         #endregion

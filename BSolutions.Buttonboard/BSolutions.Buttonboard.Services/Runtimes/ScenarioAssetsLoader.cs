@@ -116,7 +116,6 @@ namespace BSolutions.Buttonboard.Services.Runtimes
                 if (def is null) return;
 
                 _cache[key] = Normalize(def, key);
-                _logger.LogInformation("Scenario asset loaded: {Key}", key);
             }
             catch (Exception ex)
             {
