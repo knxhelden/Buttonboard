@@ -19,7 +19,7 @@ namespace BSolutions.Buttonboard.Scenario
         #region --- Fields ---
 
         private readonly ILogger _logger;
-        private readonly ISceneRuntime _sceneRuntime;
+        private readonly IScenarioAssetRuntime _sceneRuntime;
         private readonly IButtonboardGpioController _gpio;
 
         /// <summary>
@@ -99,7 +99,7 @@ namespace BSolutions.Buttonboard.Scenario
         /// <param name="gpio">GPIO controller to read buttons and control LEDs.</param>
         public ScenarioRuntime(
             ILogger<ScenarioRuntime> logger,
-            ISceneRuntime sceneRuntime,
+            IScenarioAssetRuntime sceneRuntime,
             IButtonboardGpioController gpio)
         {
             _logger = logger;

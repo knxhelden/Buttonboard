@@ -27,7 +27,7 @@ namespace BSolutions.Buttonboard.Services.Runtimes
         private readonly ILogger<ScenarioAssetsLoader> _logger;
         private readonly string _assetsDirectory;
         private readonly FileSystemWatcher _watcher;
-        private readonly ConcurrentDictionary<string, SceneDefinition> _cache = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, ScenarioAssetDefinition> _cache = new(StringComparer.OrdinalIgnoreCase);
 
         private readonly JsonSerializerOptions _jsonOptions = new()
         {
@@ -78,9 +78,9 @@ namespace BSolutions.Buttonboard.Services.Runtimes
             return Task.CompletedTask;
         }
 
-        public bool TryGet(string key, out SceneDefinition? asset) => _cache.TryGetValue(key, out asset);
+        public bool TryGet(string key, out ScenarioAssetDefinition? asset) => _cache.TryGetValue(key, out asset);
 
-        public bool TryGetSetup(out SceneDefinition? setup) =>
+        public bool TryGetSetup(out ScenarioAssetDefinition? setup) =>
             TryGet(WellKnownKeys.Setup, out setup);
 
         public IEnumerable<string> Keys => _cache.Keys;
@@ -102,10 +102,10 @@ namespace BSolutions.Buttonboard.Services.Runtimes
                 using var sr = new StreamReader(fs);
                 var json = await sr.ReadToEndAsync();
 
-                SceneDefinition? def;
+                ScenarioAssetDefinition? def;
                 try
                 {
-                    def = JsonSerializer.Deserialize<SceneDefinition>(json, _jsonOptions);
+                    def = JsonSerializer.Deserialize<ScenarioAssetDefinition>(json, _jsonOptions);
                 }
                 catch (JsonException jx)
                 {
@@ -140,7 +140,7 @@ namespace BSolutions.Buttonboard.Services.Runtimes
             }
         }
 
-        private SceneDefinition Normalize(SceneDefinition def, string key)
+        private ScenarioAssetDefinition Normalize(ScenarioAssetDefinition def, string key)
         {
             def.Steps ??= new();
             def.Steps = def.Steps

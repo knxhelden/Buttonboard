@@ -48,7 +48,7 @@ namespace BSolutions.Buttonboard.App
                     .AddSingleton<IButtonboardGpioController, ButtonboardGpioController>()
                     .AddSingleton<IVlcPlayerClient, VlcPlayerClient>()
                     .AddSingleton<IScenario, ScenarioRuntime>()
-                    .AddSingleton<ISceneRuntime, SceneRuntime>()
+                    .AddSingleton<IScenarioAssetRuntime, ScenarioAssetRuntime>()
                     .AddSingleton<IActionExecutor, ActionExecutor>();
                 })
                 .RunConsoleAsync();
