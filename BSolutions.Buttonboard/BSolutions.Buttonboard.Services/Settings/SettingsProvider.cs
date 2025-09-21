@@ -22,7 +22,7 @@ namespace BSolutions.Buttonboard.Services.Settings
             var app = new Application
             {
                 TestOperation = bool.TryParse(_config["Application:TestOperation"], out var test) && test,
-                ScenesFolder = _config["Application:ScenesFolder"] ?? "scenes"
+                ScenarioAssetsFolder = _config["Application:ScenarioAssetsForder"] ?? "assets"
             };
 
             // OpenHAB + Audio

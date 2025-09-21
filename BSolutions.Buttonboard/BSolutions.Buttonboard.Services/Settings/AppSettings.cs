@@ -6,7 +6,7 @@ namespace BSolutions.Buttonboard.Services.Settings
     public sealed class Application
     {
         public bool TestOperation { get; init; }
-        public required string ScenesFolder { get; init; }
+        public required string ScenarioAssetsFolder { get; init; }
     }
 
     public sealed class OpenHAB

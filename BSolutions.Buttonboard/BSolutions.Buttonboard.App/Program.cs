@@ -40,7 +40,7 @@ namespace BSolutions.Buttonboard.App
                     {
                         var logger = sp.GetRequiredService<ILogger<ScenarioAssetsLoader>>();
                         var settings = sp.GetRequiredService<ISettingsProvider>();
-                        var path = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, settings.Application.ScenesFolder));
+                        var path = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, settings.Application.ScenarioAssetsFolder));
                         Directory.CreateDirectory(path);
                         return new ScenarioAssetsLoader(logger, path);
                     })
