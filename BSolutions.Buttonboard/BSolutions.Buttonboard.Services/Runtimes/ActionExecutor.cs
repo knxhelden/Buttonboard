@@ -31,12 +31,12 @@ namespace BSolutions.Buttonboard.Services.Runtimes
     {
         #region --- Fields ---
 
-        protected readonly ILogger _logger;
-        protected readonly ISettingsProvider _settings;
-        protected readonly IOpenHabClient _openhab;
-        protected readonly IVlcPlayerClient _vlc;
-        protected readonly IMqttClient _mqtt;
-        protected readonly IButtonboardGpioController _gpio;
+        private readonly ILogger _logger;
+        private readonly ISettingsProvider _settings;
+        private readonly IOpenHabClient _openhab;
+        private readonly IVlcPlayerClient _vlc;
+        private readonly IMqttClient _mqtt;
+        private readonly IButtonboardGpioController _gpio;
 
         #endregion
 
