@@ -36,11 +36,11 @@ namespace BSolutions.Buttonboard.App
                 {
                     services.AddHostedService<ConsoleHostedService>()
                     .AddSingleton<ISettingsProvider, SettingsProvider>()
-                    .AddSingleton<ISceneLoader>(sp =>
+                    .AddSingleton<IScenarioAssetsLoader>(sp =>
                     {
-                        var logger = sp.GetRequiredService<ILogger<SceneLoader>>();
+                        var logger = sp.GetRequiredService<ILogger<ScenarioAssetsLoader>>();
                         var path = Path.Combine(AppContext.BaseDirectory, "scenes");
-                        return new SceneLoader(logger, path);
+                        return new ScenarioAssetsLoader(logger, path);
                     })
                     .AddSingleton<GpioController>()
                     .AddSingleton<IOpenHabClient, OpenHabClient>()

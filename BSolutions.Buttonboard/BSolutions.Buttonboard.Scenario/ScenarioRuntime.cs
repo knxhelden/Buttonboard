@@ -180,7 +180,16 @@ namespace BSolutions.Buttonboard.Scenario
         public async Task SetupAsync(CancellationToken ct = default)
         {
             _logger.LogInformation("Scenario is being set up…");
-            await _gpio.LedOnAsync(Led.ButtonTopCenter); // Example: "ready" indicator.
+
+            // Versuche die Setup-Szene (Setup.json) zu starten.
+            // StartAsync gibt false zurück, wenn bereits eine Szene läuft
+            // oder wenn "setup" nicht gefunden werden konnte.
+            var started = await _sceneRuntime.StartAsync("setup", ct);
+            if (!started)
+            {
+                _logger.LogWarning("Setup scene not started (missing, busy, or error).");
+            }
+
             _logger.LogInformation("Scenario has been set up.");
         }
 

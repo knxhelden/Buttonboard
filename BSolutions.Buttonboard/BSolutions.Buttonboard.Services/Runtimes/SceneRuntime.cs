@@ -10,7 +10,7 @@ namespace BSolutions.Buttonboard.Services.Runtimes
     public sealed class SceneRuntime : ISceneRuntime, IDisposable
     {
         private readonly ILogger<SceneRuntime> _log;
-        private readonly ISceneLoader _loader;
+        private readonly IScenarioAssetsLoader _loader;
         private readonly IActionExecutor _executor;
 
         private readonly SemaphoreSlim _gate = new(1, 1);
@@ -20,7 +20,7 @@ namespace BSolutions.Buttonboard.Services.Runtimes
         public bool IsRunning { get; private set; }
         public string? CurrentSceneKey { get; private set; }
 
-        public SceneRuntime(ILogger<SceneRuntime> log, ISceneLoader loader, IActionExecutor executor)
+        public SceneRuntime(ILogger<SceneRuntime> log, IScenarioAssetsLoader loader, IActionExecutor executor)
         {
             _log = log;
             _loader = loader;
