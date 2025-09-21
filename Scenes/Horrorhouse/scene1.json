@@ -1,0 +1,39 @@
+{
+  "name": "Szene 1: Willkommensgruss eines Skeletts",
+  "version": 1,
+  "steps": [
+    {
+      "name": "Audiosprur abspielen",
+      "atMs": 0,
+      "action": "audio.play",
+      "args": {
+        "url": "http://192.168.20.28:9000/music/35402/download/Szene1.MP3",
+        "player": "Player1"
+      }
+    },
+    {
+      "name": "Video abspielen",
+      "atMs": 0,
+      "action": "video.next",
+      "args": { "player": "Mediaplayer5" }
+    },
+    {
+      "name": "Video stoppen",
+      "atMs": 60000,
+      "action": "video.pause",
+      "args": { "player": "Mediaplayer5" }
+    },
+    {
+      "name": "Led Oben Zentral: AUS",
+      "atMs": 60000,
+      "action": "gpio.off",
+      "args": { "pin": "ButtonTopCenter" }
+    },
+    {
+      "name": "Led Unten Links: AN",
+      "atMs": 60000,
+      "action": "gpio.on",
+      "args": { "pin": "ButtonBottomLeft" }
+    }
+  ]
+}

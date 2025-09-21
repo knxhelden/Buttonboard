@@ -1,0 +1,12 @@
+{
+  "name": "Setup: Horrorhouse Szenario",
+  "version": 1,
+  "steps": [
+    {
+      "name": "Led Oben Mitte: AN",
+      "atMs": 0,
+      "action": "gpio.on",
+      "args": { "pin": "ButtonTopCenter" }
+    }
+  ]
+}
