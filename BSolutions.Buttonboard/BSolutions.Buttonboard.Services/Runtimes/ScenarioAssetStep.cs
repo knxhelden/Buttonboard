@@ -18,7 +18,7 @@ namespace BSolutions.Buttonboard.Services.Runtimes
         /// Has no functional impact on execution.
         /// </summary>
         [JsonPropertyName("name")]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         /// <summary>
         /// Absolute timestamp in milliseconds from the start of the asset
@@ -35,7 +35,7 @@ namespace BSolutions.Buttonboard.Services.Runtimes
         /// </para>
         /// </summary>
         [JsonPropertyName("action")]
-        public string Action { get; set; }
+        public string Action { get; set; } = string.Empty;
 
         /// <summary>
         /// Optional arguments for the action, expressed as a dictionary.

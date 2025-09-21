@@ -6,12 +6,12 @@ namespace BSolutions.Buttonboard.Services.Settings
     public class Application
     {
         public bool TestOperation { get; set; }
-        public string ScenesFolder { get; set; }
+        public string ScenesFolder { get; set; } = string.Empty;
     }
 
     public class OpenHAB
     {
-        public Uri BaseUri { get; set; }
+        public Uri BaseUri { get; set; } = null!;
         public Audio Audio { get; set; } = new Audio();
     }
 
@@ -22,11 +22,11 @@ namespace BSolutions.Buttonboard.Services.Settings
 
     public class AudioPlayer
     {
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
         public int Volume { get; set; }
-        public string StreamItem { get; set; }
-        public string VolumeItem { get; set; }
-        public string ControlItem { get; set; }
+        public string StreamItem { get; set; } = string.Empty;
+        public string VolumeItem { get; set; } = string.Empty;
+        public string ControlItem { get; set; } = string.Empty;
     }
 
     public class VLC
@@ -36,18 +36,18 @@ namespace BSolutions.Buttonboard.Services.Settings
 
     public class VLCPlayer
     {
-        public string Name { get; set; }
-        public string BaseUri { get; set; }
-        public string Password { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string BaseUri { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
     }
 
     public class Mqtt
     {
-        public string Server { get; set; }
+        public string Server { get; set; } = string.Empty;
         public int Port { get; set; }
-        public string Username { get; set; }
-        public string Password { get; set; }
-        public string WillTopic { get; set; }
-        public string OnlineTopic { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+        public string WillTopic { get; set; } = string.Empty;
+        public string OnlineTopic { get; set; } = string.Empty;
     }
 }

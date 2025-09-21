@@ -15,7 +15,7 @@ namespace BSolutions.Buttonboard.Services.Settings
 
         public Application Application { get; set; }
 
-        public Audio Audio { get; private set; }
+        public Audio Audio { get; private set; } = new Audio();
 
         public OpenHAB OpenHAB { get; private set; }
 

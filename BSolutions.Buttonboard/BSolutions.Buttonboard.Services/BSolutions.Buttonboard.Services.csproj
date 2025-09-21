@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Configurations>Debug;Release;ll</Configurations>
     <PublishTrimmed>false</PublishTrimmed>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>
