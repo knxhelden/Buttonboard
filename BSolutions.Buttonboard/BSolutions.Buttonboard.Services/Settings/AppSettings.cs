@@ -3,51 +3,51 @@ using System.Collections.Generic;
 
 namespace BSolutions.Buttonboard.Services.Settings
 {
-    public class Application
+    public sealed class Application
     {
-        public bool TestOperation { get; set; }
-        public string ScenesFolder { get; set; } = string.Empty;
+        public bool TestOperation { get; init; }
+        public required string ScenesFolder { get; init; }
     }
 
-    public class OpenHAB
+    public sealed class OpenHAB
     {
-        public Uri BaseUri { get; set; } = null!;
-        public Audio Audio { get; set; } = new Audio();
+        public required Uri BaseUri { get; init; }
+        public required Audio Audio { get; init; }
     }
 
-    public class Audio
+    public sealed class Audio
     {
-        public List<AudioPlayer> Players { get; set; } = new List<AudioPlayer>();
+        public List<AudioPlayer> Players { get; init; } = new();
     }
 
-    public class AudioPlayer
+    public sealed class AudioPlayer
     {
-        public string Name { get; set; } = string.Empty;
-        public int Volume { get; set; }
-        public string StreamItem { get; set; } = string.Empty;
-        public string VolumeItem { get; set; } = string.Empty;
-        public string ControlItem { get; set; } = string.Empty;
+        public required string Name { get; init; }
+        public int Volume { get; init; }
+        public required string StreamItem { get; init; }
+        public required string VolumeItem { get; init; }
+        public required string ControlItem { get; init; }
     }
 
-    public class VLC
+    public sealed class VLC
     {
-        public List<VLCPlayer> Players = new List<VLCPlayer>();
+        public List<VLCPlayer> Players { get; init; } = new();
     }
 
-    public class VLCPlayer
+    public sealed class VLCPlayer
     {
-        public string Name { get; set; } = string.Empty;
-        public string BaseUri { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
+        public required string Name { get; init; }
+        public required string BaseUri { get; init; }
+        public required string Password { get; init; }
     }
 
-    public class Mqtt
+    public sealed class Mqtt
     {
-        public string Server { get; set; } = string.Empty;
-        public int Port { get; set; }
-        public string Username { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-        public string WillTopic { get; set; } = string.Empty;
-        public string OnlineTopic { get; set; } = string.Empty;
+        public required string Server { get; init; }
+        public int Port { get; init; }
+        public required string Username { get; init; }
+        public required string Password { get; init; }
+        public required string WillTopic { get; init; }
+        public required string OnlineTopic { get; init; }
     }
 }

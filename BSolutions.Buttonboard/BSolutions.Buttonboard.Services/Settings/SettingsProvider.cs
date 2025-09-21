@@ -1,85 +1,82 @@
 ﻿using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BSolutions.Buttonboard.Services.Settings
 {
-    public class SettingsProvider : ISettingsProvider
+    public sealed class SettingsProvider : ISettingsProvider
     {
-        protected readonly IConfiguration _config;
+        private readonly IConfiguration _config;
 
-        #region --- Properties ---
-
-        public Application Application { get; set; }
-
-        public Audio Audio { get; private set; } = new Audio();
-
-        public OpenHAB OpenHAB { get; private set; }
-
-        public VLC VLC { get; private set; } = new VLC();
-
-        public Mqtt Mqtt { get; private set; }
-
-        #endregion
-
-        #region --- Constructor ---
+        public Application Application { get; }
+        public Audio Audio { get; }
+        public OpenHAB OpenHAB { get; }
+        public VLC VLC { get; }
+        public Mqtt Mqtt { get; }
 
         public SettingsProvider(IConfiguration configuration)
         {
-            this._config = configuration;
+            _config = configuration;
 
-            IConfigurationSection gpioSection = this._config.GetSection("Buttonboard").GetSection("GPIO");
-
-            // Parse settings to object
-            this.Application = new Application
+            // Application
+            var app = new Application
             {
-                TestOperation = Convert.ToBoolean(this._config.GetSection("Application").GetSection("TestOperation").Value)
+                TestOperation = bool.TryParse(_config["Application:TestOperation"], out var test) && test,
+                ScenesFolder = _config["Application:ScenesFolder"] ?? "scenes"
             };
 
-            // OpenHAB settings
-            this.OpenHAB = new OpenHAB
+            // OpenHAB + Audio
+            var ohBase = _config["OpenHAB:BaseUri"] ?? throw new InvalidOperationException("OpenHAB:BaseUri missing.");
+            var audioPlayers = new List<AudioPlayer>();
+            foreach (var s in _config.GetSection("OpenHAB:Audio").GetChildren())
             {
-                BaseUri = new Uri(this._config.GetSection("OpenHAB").GetSection("BaseUri").Value)
-            };
-
-            foreach (var configItem in this._config.GetSection("OpenHAB").GetSection("Audio").GetChildren())
-            {
-                this.OpenHAB.Audio.Players.Add(new AudioPlayer
+                audioPlayers.Add(new AudioPlayer
                 {
-                    Name = configItem.Key,
-                    Volume = Convert.ToInt32(configItem.GetSection("Volume").Value),
-                    ControlItem = configItem.GetSection("ControlItem").Value,
-                    StreamItem = configItem.GetSection("StreamItem").Value,
-                    VolumeItem = configItem.GetSection("VolumeItem").Value
+                    Name = s.Key,
+                    Volume = int.TryParse(s["Volume"], out var vol) ? vol : 0,
+                    ControlItem = s["ControlItem"] ?? string.Empty,
+                    StreamItem = s["StreamItem"] ?? string.Empty,
+                    VolumeItem = s["VolumeItem"] ?? string.Empty
                 });
             }
 
-            // VLC settings
-            foreach(var configItem in this._config.GetSection("VLC").GetChildren())
+            var openhab = new OpenHAB
             {
-                this.VLC.Players.Add(new VLCPlayer
+                BaseUri = new Uri(ohBase),
+                Audio = new Audio { Players = audioPlayers }
+            };
+
+            // VLC
+            var vlcPlayers = new List<VLCPlayer>();
+            foreach (var s in _config.GetSection("VLC").GetChildren())
+            {
+                vlcPlayers.Add(new VLCPlayer
                 {
-                    Name = configItem.Key,
-                    BaseUri = configItem.GetSection("BaseUri").Value,
-                    Password = configItem.GetSection("Password").Value
+                    Name = s.Key,
+                    BaseUri = s["BaseUri"] ?? string.Empty,
+                    Password = s["Password"] ?? string.Empty
                 });
             }
 
-            // MQTT settings
-            this.Mqtt = new Mqtt
+            var vlc = new VLC { Players = vlcPlayers };
+
+            // MQTT
+            var mqtt = new Mqtt
             {
-                Server = this._config.GetSection("Mqtt").GetSection("Server").Value,
-                Port = Convert.ToInt32(this._config.GetSection("Mqtt").GetSection("Port").Value),
-                Username = this._config.GetSection("Mqtt").GetSection("Username").Value,
-                Password = this._config.GetSection("Mqtt").GetSection("Password").Value,
-                WillTopic = this._config.GetSection("Mqtt").GetSection("WillTopic").Value,
-                OnlineTopic = this._config.GetSection("Mqtt").GetSection("OnlineTopic").Value
+                Server = _config["Mqtt:Server"] ?? string.Empty,
+                Port = int.TryParse(_config["Mqtt:Port"], out var port) ? port : 1883,
+                Username = _config["Mqtt:Username"] ?? string.Empty,
+                Password = _config["Mqtt:Password"] ?? string.Empty,
+                WillTopic = _config["Mqtt:WillTopic"] ?? string.Empty,
+                OnlineTopic = _config["Mqtt:OnlineTopic"] ?? string.Empty
             };
+
+            // Assign
+            Application = app;
+            OpenHAB = openhab;
+            Audio = openhab.Audio;
+            VLC = vlc;
+            Mqtt = mqtt;
         }
-
-        #endregion
     }
 }

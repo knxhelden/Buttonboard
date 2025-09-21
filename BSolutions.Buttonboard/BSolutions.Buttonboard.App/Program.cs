@@ -39,7 +39,9 @@ namespace BSolutions.Buttonboard.App
                     .AddSingleton<IScenarioAssetsLoader>(sp =>
                     {
                         var logger = sp.GetRequiredService<ILogger<ScenarioAssetsLoader>>();
-                        var path = Path.Combine(AppContext.BaseDirectory, "scenes");
+                        var settings = sp.GetRequiredService<ISettingsProvider>();
+                        var path = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, settings.Application.ScenesFolder));
+                        Directory.CreateDirectory(path);
                         return new ScenarioAssetsLoader(logger, path);
                     })
                     .AddSingleton<GpioController>()
