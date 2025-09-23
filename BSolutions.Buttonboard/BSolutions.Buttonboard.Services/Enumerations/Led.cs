@@ -1,12 +1,23 @@
 ﻿using BSolutions.Buttonboard.Services.Attributes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace BSolutions.Buttonboard.Services.Gpio
 {
+    /// <summary>
+    /// Logical identifiers for the board's LEDs.
+    /// </summary>
+    /// <remarks>
+    /// Each member is decorated with <see cref="ButtonboardGpioAttribute"/> that maps the LED
+    /// to its physical GPIO pin number. Use your helpers (e.g., <c>led.GetGpio()</c>) to resolve
+    /// the pin at runtime.
+    /// <para>
+    /// Groups:
+    /// <list type="bullet">
+    ///   <item><description><b>Process*</b>: three columns (Red/Yellow/Green) used for process/progress feedback.</description></item>
+    ///   <item><description><b>Button*</b>: backlight LEDs for the physical buttons.</description></item>
+    ///   <item><description><b>System*</b>: reserved for global system status (e.g., warnings, ok).</description></item>
+    /// </list>
+    /// </para>
+    /// </remarks>
     public enum Led
     {
         [ButtonboardGpio(23)]
