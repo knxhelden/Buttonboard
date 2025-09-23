@@ -51,7 +51,7 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
 
             await Task.Delay(50, ct).ConfigureAwait(false);
 
-            _logger.LogInformation("[SIM] VLC command for player '{Player}': {Command}", player.Name, command);
+            _logger.LogInformation("[SIM/Vlc] VLC command for player '{Player}': {Command}", player.Name, command);
         }
     }
 }

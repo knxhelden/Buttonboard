@@ -11,12 +11,31 @@ using System.Threading.Tasks;
 
 namespace BSolutions.Buttonboard.Services.RestApiClients
 {
+    /// <summary>
+    /// HTTP client for interacting with the openHAB REST API.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Base address is taken from <see cref="ISettingsProvider"/> (<c>OpenHAB.BaseUri</c>).
+    /// Requests use <c>text/plain</c> for commands and states.
+    /// </para>
+    /// <para>
+    /// On handled failures, the client logs the error and signals a system warning by
+    /// switching on <see cref="Led.SystemYellow"/> via the GPIO controller.
+    /// </para>
+    /// </remarks>
     public class OpenHabClient : RestApiClientBase, IOpenHabClient
     {
         private readonly IButtonboardGpioController _gpio;
 
         #region --- Constructor ---
 
+        /// <summary>
+        /// Creates a new <see cref="OpenHabClient"/>.
+        /// </summary>
+        /// <param name="logger">Logger for diagnostics and error reporting.</param>
+        /// <param name="settingsProvider">Provides <c>OpenHAB.BaseUri</c> for the underlying <see cref="_httpClient"/>.</param>
+        /// <param name="gpio">GPIO controller used to signal failures via LEDs.</param>
         public OpenHabClient(ILogger<OpenHabClient> logger, ISettingsProvider settingsProvider, IButtonboardGpioController gpio)
             : base (logger, settingsProvider)
         {
@@ -29,18 +48,22 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
         #region --- IOpenHabClient ---
 
         /// <summary>
-        /// Sends a command to an item.
+        /// Sends a command to an item (POST <c>/items/{itemname}</c>), using a strongly-typed command.
         /// </summary>
         /// <param name="itemname">The item name.</param>
         /// <param name="command">The command to be sent to the item.</param>
+        /// <param name="ct">Cancellation token.</param>
         public Task SendCommandAsync(string itemname, OpenHabCommand command, CancellationToken ct = default)
             => SendCommandAsync(itemname, command.ToString(), ct);
 
         /// <summary>
-        /// Sends a command to an item.
+        /// Sends a command to an item (POST <c>/items/{itemname}</c>), using a raw plain-text body.
         /// </summary>
         /// <param name="itemname">The item name.</param>
-        /// <param name="command">The request body information to be sent to the item.</param>
+        /// <param name="requestBody">The request body to be sent as <c>text/plain</c>.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <exception cref="HttpRequestException">Thrown on non-success HTTP status codes.</exception>
+        /// <exception cref="OperationCanceledException">Thrown if the operation is canceled.</exception>
         public async Task SendCommandAsync(string itemname, string requestBody, CancellationToken ct = default)
         {
             var relativeUri = $"items/{itemname}";
@@ -80,10 +103,15 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
         }
 
         /// <summary>
-        /// Gets the state of an item.
+        /// Gets the current state of an item (GET <c>/items/{itemname}/state</c>).
         /// </summary>
         /// <param name="itemname">The item name.</param>
-        /// <returns>Returns the state of the item.</returns>
+        /// <param name="ct">Cancellation token.</param>
+        /// <returns>
+        /// The state string on success; <c>null</c> if an exception was handled and signaled.
+        /// </returns>
+        /// <exception cref="HttpRequestException">Thrown on non-success HTTP status codes.</exception>
+        /// <exception cref="OperationCanceledException">Thrown if the operation is canceled.</exception>
         public async Task<string?> GetStateAsync(string itemname, CancellationToken ct = default)
         {
             var relativeUri = $"items/{itemname}/state";
@@ -121,10 +149,13 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
         }
 
         /// <summary>
-        /// Updates the state of an item.
+        /// Updates the state of an item (PUT <c>/items/{itemname}/state</c>).
         /// </summary>
         /// <param name="itemname">The item name.</param>
-        /// <param name="command">The command to be sent to the item.</param>
+        /// <param name="command">The state to PUT as plain text.</param>
+        /// <param name="ct">Cancellation token.</param>
+        /// <exception cref="HttpRequestException">Thrown on non-success HTTP status codes.</exception>
+        /// <exception cref="OperationCanceledException">Thrown if the operation is canceled.</exception>
         public async Task UpdateStateAsync(string itemname, OpenHabCommand command, CancellationToken ct = default)
         {
             var relativeUri = $"items/{itemname}/state";

@@ -46,7 +46,11 @@ namespace BSolutions.Buttonboard.App
                         return new ScenarioAssetsLoader(logger, path);
                     })
                     .AddSingleton<GpioController>()
-                    .AddSingleton<IOpenHabClient, OpenHabClient>()
+                    .AddByMode<IOpenHabClient, OpenHabClient, OpenHabClientMock>(sp =>
+                    {
+                        var app = sp.GetRequiredService<ISettingsProvider>().Application;
+                        return app.OperationMode == OperationMode.Simulated;
+                    })
                     .AddSingleton<IMqttClient, MqttClient>()
                     .AddSingleton<IButtonboardGpioController, ButtonboardGpioController>()
                     .AddByMode<IVlcPlayerClient, VlcPlayerClient, VlcPlayerClientMock>(sp =>
