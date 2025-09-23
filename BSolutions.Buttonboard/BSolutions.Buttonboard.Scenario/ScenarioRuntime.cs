@@ -32,7 +32,7 @@ namespace BSolutions.Buttonboard.Scenario
         /// <summary>
         /// Cached flag from settings: if true, stage order is ignored and any button may trigger its scene.
         /// </summary>
-        private readonly bool _testOperation;
+        private readonly bool _disableSceneOrder;
 
         /// <summary>
         /// Debounce window in milliseconds to suppress multiple triggers caused by mechanical button bounce.
@@ -115,7 +115,7 @@ namespace BSolutions.Buttonboard.Scenario
             _gpio = gpio;
 
             // Cache flag once at startup (hot-reload not required here).
-            _testOperation = _settings.Application.TestOperation;
+            _disableSceneOrder = _settings.Application.DisableSceneOrder;
 
             // Define available scenes (button ↔ key mapping).
             _scenes = new()
@@ -146,7 +146,7 @@ namespace BSolutions.Buttonboard.Scenario
         /// </summary>
         public async Task RunAsync(CancellationToken ct = default)
         {
-            _logger.LogInformation("Scenario is running… (TestOperation={Test})", _testOperation);
+            _logger.LogInformation("Scenario is running… (TestOperation={Test})", _disableSceneOrder);
             await _gpio.LedOnAsync(Led.SystemGreen);
 
             var sw = Stopwatch.StartNew();
@@ -258,7 +258,7 @@ namespace BSolutions.Buttonboard.Scenario
         /// </summary>
         private async Task TryTriggerSceneAsync(SceneDef scene, CancellationToken ct)
         {
-            if (_testOperation)
+            if (_disableSceneOrder)
             {
                 _logger.LogInformation("TestOperation active → starting scene {Key} regardless of stage.", scene.Key);
 

@@ -21,7 +21,7 @@ namespace BSolutions.Buttonboard.Services.Settings
             // Application
             var app = new Application
             {
-                TestOperation = bool.TryParse(_config["Application:TestOperation"], out var test) && test,
+                DisableSceneOrder = bool.TryParse(_config["Application:DisableSceneOrder"], out var test) && test,
                 ScenarioAssetsFolder = _config["Application:ScenarioAssetsFolder"] ?? "assets",
                 OperationMode = ParseEnumOrDefault(_config["Application:OperationMode"], OperationMode.Real)
             };

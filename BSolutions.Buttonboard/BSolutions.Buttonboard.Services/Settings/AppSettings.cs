@@ -5,7 +5,7 @@ namespace BSolutions.Buttonboard.Services.Settings
 {
     public sealed class Application
     {
-        public bool TestOperation { get; init; }
+        public bool DisableSceneOrder { get; init; }
         public OperationMode OperationMode { get; set; } = OperationMode.Real;
         public required string ScenarioAssetsFolder { get; init; }
     }
