@@ -8,12 +8,40 @@ using System.Threading.Tasks;
 
 namespace BSolutions.Buttonboard.Services.MqttClients
 {
+    /// <summary>
+    /// MQTT client implementation based on <see cref="IManagedMqttClient"/> from the MQTTnet library.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The client uses <see cref="ManagedMqttClientOptions"/> to provide automatic reconnection and 
+    /// message queuing. Messages published while offline are enqueued and delivered once a connection
+    /// is re-established.
+    /// </para>
+    /// <para>
+    /// Connection details (server, port, credentials, topics) are provided by <see cref="ISettingsProvider"/>.
+    /// A "last will" message (<c>offline</c>) is configured on the <c>WillTopic</c>. When successfully connected,
+    /// the client automatically publishes an <c>online</c> message to the <c>OnlineTopic</c>.
+    /// </para>
+    /// <para>
+    /// The client is disposable. After disposal, further calls to <see cref="ConnectAsync"/> or 
+    /// <see cref="PublishAsync"/> will be ignored or throw <see cref="ObjectDisposedException"/>.
+    /// </para>
+    /// </remarks>
     public sealed class MqttClient : IMqttClient, IDisposable
     {
         private readonly IManagedMqttClient _client;
         private readonly ManagedMqttClientOptions _options;
         private bool _disposed;
 
+        #region --- Constructor ---
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MqttClient"/> class with options
+        /// derived from application settings.
+        /// </summary>
+        /// <param name="settings">
+        /// Provides MQTT configuration (server, port, username, password, topics).
+        /// </param>
         public MqttClient(ISettingsProvider settings)
         {
             var factory = new MqttFactory();
@@ -47,9 +75,16 @@ namespace BSolutions.Buttonboard.Services.MqttClients
             };
         }
 
+        #endregion
+
         /// <summary>
-        /// Starts the managed client. Will auto-reconnect in the background.
+        /// Starts the managed MQTT client. 
         /// </summary>
+        /// <remarks>
+        /// The client will attempt to auto-reconnect in the background if the initial 
+        /// connection or a later connection attempt fails.
+        /// </remarks>
+        /// <exception cref="ObjectDisposedException">Thrown if the client has already been disposed.</exception>
         public async Task ConnectAsync()
         {
             if (_disposed) throw new ObjectDisposedException(nameof(MqttClient));
@@ -58,8 +93,16 @@ namespace BSolutions.Buttonboard.Services.MqttClients
         }
 
         /// <summary>
-        /// Publishes a message. If offline, it will be queued and sent once connected.
+        /// Publishes a message to a given topic.
         /// </summary>
+        /// <remarks>
+        /// If the client is not currently connected, the message is enqueued and sent once 
+        /// a connection is available. Messages are sent with QoS 1 (at-least-once).
+        /// </remarks>
+        /// <param name="topic">The MQTT topic to publish to.</param>
+        /// <param name="payload">The message payload (UTF-8 encoded).</param>
+        /// <param name="ct">Cancellation token for aborting the publish operation.</param>
+        /// <exception cref="ObjectDisposedException">Thrown if the client has already been disposed.</exception>
         public async Task PublishAsync(string topic, string payload, CancellationToken ct = default)
         {
             if (_disposed || ct.IsCancellationRequested) return;
@@ -74,6 +117,16 @@ namespace BSolutions.Buttonboard.Services.MqttClients
             catch { /* swallow – do not crash the app */ }
         }
 
+        /// <summary>
+        /// Stops the client and attempts a graceful shutdown.
+        /// </summary>
+        /// <remarks>
+        /// <list type="number">
+        ///   <item><description>Flush pending messages for up to 5 seconds or until <paramref name="ct"/> cancels.</description></item>
+        ///   <item><description>Stop the managed client (disconnect + worker shutdown).</description></item>
+        /// </list>
+        /// </remarks>
+        /// <param name="ct">Cancellation token for aborting the stop operation.</param>
         public async Task StopAsync(CancellationToken ct = default)
         {
             if (_disposed) return;
@@ -95,6 +148,12 @@ namespace BSolutions.Buttonboard.Services.MqttClients
             try { await _client.StopAsync(); } catch { /* ignore */ }
         }
 
+        /// <summary>
+        /// Disposes the client, ensuring shutdown and resource cleanup.
+        /// </summary>
+        /// <remarks>
+        /// Invokes <see cref="StopAsync(CancellationToken)"/> synchronously during disposal.
+        /// </remarks>
         public void Dispose()
         {
             if (_disposed) return;

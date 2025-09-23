@@ -51,7 +51,11 @@ namespace BSolutions.Buttonboard.App
                         var app = sp.GetRequiredService<ISettingsProvider>().Application;
                         return app.OperationMode == OperationMode.Simulated;
                     })
-                    .AddSingleton<IMqttClient, MqttClient>()
+                    .AddByMode<IMqttClient, MqttClient, MqttClientMock>(sp =>
+                    {
+                        var app = sp.GetRequiredService<ISettingsProvider>().Application;
+                        return app.OperationMode == OperationMode.Simulated;
+                    })
                     .AddSingleton<IButtonboardGpioController, ButtonboardGpioController>()
                     .AddByMode<IVlcPlayerClient, VlcPlayerClient, VlcPlayerClientMock>(sp =>
                     {
