@@ -22,7 +22,8 @@ namespace BSolutions.Buttonboard.Services.Settings
             var app = new Application
             {
                 TestOperation = bool.TryParse(_config["Application:TestOperation"], out var test) && test,
-                ScenarioAssetsFolder = _config["Application:ScenarioAssetsForder"] ?? "assets"
+                ScenarioAssetsFolder = _config["Application:ScenarioAssetsFolder"] ?? "assets",
+                OperationMode = ParseEnumOrDefault(_config["Application:OperationMode"], OperationMode.Real)
             };
 
             // OpenHAB + Audio
@@ -77,6 +78,14 @@ namespace BSolutions.Buttonboard.Services.Settings
             Audio = openhab.Audio;
             VLC = vlc;
             Mqtt = mqtt;
+        }
+
+        private static TEnum ParseEnumOrDefault<TEnum>(string? value, TEnum fallback)
+            where TEnum : struct, Enum
+        {
+            return Enum.TryParse<TEnum>(value, ignoreCase: true, out var parsed)
+                ? parsed
+                : fallback;
         }
     }
 }

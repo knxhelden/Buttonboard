@@ -1,4 +1,5 @@
-﻿using BSolutions.Buttonboard.Scenario;
+﻿using BSolutions.Buttonboard.App.Extensions;
+using BSolutions.Buttonboard.Scenario;
 using BSolutions.Buttonboard.Services.Gpio;
 using BSolutions.Buttonboard.Services.MqttClients;
 using BSolutions.Buttonboard.Services.RestApiClients;
@@ -48,7 +49,11 @@ namespace BSolutions.Buttonboard.App
                     .AddSingleton<IOpenHabClient, OpenHabClient>()
                     .AddSingleton<IMqttClient, MqttClient>()
                     .AddSingleton<IButtonboardGpioController, ButtonboardGpioController>()
-                    .AddSingleton<IVlcPlayerClient, VlcPlayerClient>()
+                    .AddByMode<IVlcPlayerClient, VlcPlayerClient, VlcPlayerClientMock>(sp =>
+                    {
+                        var app = sp.GetRequiredService<ISettingsProvider>().Application;
+                        return app.OperationMode == OperationMode.Simulated;
+                    })
                     .AddSingleton<IScenario, ScenarioRuntime>()
                     .AddSingleton<IScenarioAssetRuntime, ScenarioAssetRuntime>()
                     .AddSingleton<IActionExecutor, ActionExecutor>();
