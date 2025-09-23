@@ -7,12 +7,32 @@ using System.Threading.Tasks;
 
 namespace BSolutions.Buttonboard.Services.Gpio
 {
+    /// <summary>
+    /// Default implementation of <see cref="IButtonboardGpioController"/> using
+    /// <see cref="System.Device.Gpio.GpioController"/> to access the Raspberry Pi GPIO pins.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Responsibilities:
+    /// <list type="bullet">
+    ///   <item><description>Initializes button pins as <c>Input</c> and LED pins as <c>Output</c>.</description></item>
+    ///   <item><description>Provides asynchronous methods to set/reset LED states.</description></item>
+    ///   <item><description>Exposes synchronous checks for button states.</description></item>
+    ///   <item><description>Ensures safe cleanup of pins during disposal.</description></item>
+    /// </list>
+    /// </para>
+    /// </remarks>
     public class ButtonboardGpioController : IButtonboardGpioController, IDisposable
     {
         private readonly System.Device.Gpio.GpioController _gpio;
 
         #region --- Constructor ---
 
+        /// <summary>
+        /// Creates a new <see cref="ButtonboardGpioController"/>.
+        /// </summary>
+        /// <param name="settingsProvider">Provides GPIO mapping configuration (not directly used here, reserved for future extensions).</param>
+        /// <param name="gpioController">The underlying GPIO controller.</param>
         public ButtonboardGpioController(ISettingsProvider settingsProvider,
                               System.Device.Gpio.GpioController gpioController)
         {
@@ -23,6 +43,7 @@ namespace BSolutions.Buttonboard.Services.Gpio
 
         #region --- IGpioController ---
 
+        /// <inheritdoc />
         public void Initialize()
         {
             // Buttons
@@ -44,6 +65,7 @@ namespace BSolutions.Buttonboard.Services.Gpio
             }
         }
 
+        /// <inheritdoc />
         public Task ResetAsync(CancellationToken ct = default)
         {
             // reine IO-Operation → synchron, aber ct respektieren, falls aufgerufen wird, während cancel requested ist
@@ -55,6 +77,7 @@ namespace BSolutions.Buttonboard.Services.Gpio
             return Task.CompletedTask;
         }
 
+        /// <inheritdoc />
         public Task LedOnAsync(Led led, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
@@ -62,6 +85,7 @@ namespace BSolutions.Buttonboard.Services.Gpio
             return Task.CompletedTask;
         }
 
+        /// <inheritdoc />
         public Task LedOffAsync(Led led, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
@@ -69,11 +93,13 @@ namespace BSolutions.Buttonboard.Services.Gpio
             return Task.CompletedTask;
         }
 
+        /// <inheritdoc />
         public bool IsButtonPressed(Button button)
         {
             return _gpio.Read(button.GetGpio()) == PinValue.High;
         }
 
+        /// <inheritdoc />
         public async Task LedsBlinkingAsync(int repetitions, int intervalMs = 500, CancellationToken ct = default)
         {
             // Einfache Blink-Show für die neun Prozess-LEDs (deine Auswahl beibehalten)
@@ -104,6 +130,20 @@ namespace BSolutions.Buttonboard.Services.Gpio
 
         #endregion
 
+        /// <summary>
+        /// Disposes the GPIO controller by closing all pins and releasing resources.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// During disposal:
+        /// <list type="bullet">
+        ///   <item><description>All LED pins are set to <c>Low</c> and closed.</description></item>
+        ///   <item><description>All button pins are closed.</description></item>
+        ///   <item><description>Underlying <see cref="GpioController"/> is disposed.</description></item>
+        /// </list>
+        /// Any exceptions during cleanup are intentionally swallowed to avoid crashes during application shutdown.
+        /// </para>
+        /// </remarks>
         public void Dispose()
         {
             try
