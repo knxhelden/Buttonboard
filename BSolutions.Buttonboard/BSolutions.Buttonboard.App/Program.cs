@@ -56,7 +56,11 @@ namespace BSolutions.Buttonboard.App
                         var app = sp.GetRequiredService<ISettingsProvider>().Application;
                         return app.OperationMode == OperationMode.Simulated;
                     })
-                    .AddSingleton<IButtonboardGpioController, ButtonboardGpioController>()
+                    .AddByMode<IButtonboardGpioController, ButtonboardGpioController, ButtonboardGpioControllerMock>(sp =>
+                    {
+                        var app = sp.GetRequiredService<ISettingsProvider>().Application;
+                        return app.OperationMode == OperationMode.Simulated;
+                    })
                     .AddByMode<IVlcPlayerClient, VlcPlayerClient, VlcPlayerClientMock>(sp =>
                     {
                         var app = sp.GetRequiredService<ISettingsProvider>().Application;
