@@ -155,15 +155,31 @@ namespace BSolutions.Buttonboard.Scenario
             {
                 while (!ct.IsCancellationRequested)
                 {
-                    // Termination combo → cancel current scene and exit.
+                    // Terminierungs-Kombination → statt break: sauberer Neustart
                     if (_gpio.IsButtonPressed(Button.BottomLeft) && _gpio.IsButtonPressed(Button.BottomRight))
                     {
-                        _logger.LogInformation("Termination combo detected → cancel current scene.");
+                        _logger.LogInformation("Termination combo detected → restart scenario.");
+
+                        // Läuft eine Szene? Erst beenden.
                         await _sceneRuntime.CancelAsync();
-                        break;
+
+                        // GPIO & interner Zustand zurücksetzen
+                        await _gpio.ResetAsync();   // LEDs/Outputs aus
+                        _stage = 0;                 // wieder Start bei Szene 1 (RequiredStage=0)
+                        ResetEdgeTracking();        // Debounce/Edge-Cache leeren
+
+                        // Optionale „frische“ Startanzeige
+                        await _gpio.LedOnAsync(Led.SystemGreen);
+
+                        // Run through the scenario setup again
+                        await SetupAsync(ct);
+
+                        // WICHTIG: Im Loop bleiben
+                        await Task.Delay(PollDelayMs, ct);
+                        continue;
                     }
 
-                    // Poll all scene triggers.
+                    // Poll aller Szene-Trigger
                     foreach (var s in _scenes)
                     {
                         HandleButtonRisingEdge(sw, s.TriggerButton, () => TryTriggerSceneAsync(s, ct));
@@ -287,6 +303,16 @@ namespace BSolutions.Buttonboard.Scenario
             }
 
             _stage = (scene.RequiredStage + 1) % _scenes.Count;
+        }
+
+        private void ResetEdgeTracking()
+        {
+            foreach (var b in Enum.GetValues<Button>())
+            {
+                // Set "lastState" to the current hardware state so that no fake rising edge is detected if it is still held.
+                _lastState[b] = _gpio.IsButtonPressed(b);
+                _lastFireMs[b] = -1;
+            }
         }
 
         #endregion
