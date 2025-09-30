@@ -155,31 +155,29 @@ namespace BSolutions.Buttonboard.Scenario
             {
                 while (!ct.IsCancellationRequested)
                 {
-                    // Terminierungs-Kombination → statt break: sauberer Neustart
+                    // Termination combination → When the buttons are pressed, the scenario is restarted
                     if (_gpio.IsButtonPressed(Button.BottomLeft) && _gpio.IsButtonPressed(Button.BottomRight))
                     {
                         _logger.LogInformation("Termination combo detected → restart scenario.");
 
-                        // Läuft eine Szene? Erst beenden.
+                        // Is a scene running? Stop it first.
                         await _sceneRuntime.CancelAsync();
 
-                        // GPIO & interner Zustand zurücksetzen
-                        await _gpio.ResetAsync();   // LEDs/Outputs aus
-                        _stage = 0;                 // wieder Start bei Szene 1 (RequiredStage=0)
-                        ResetEdgeTracking();        // Debounce/Edge-Cache leeren
+                        // Reset GPIO & internal state
+                        await _gpio.ResetAsync();
+                        _stage = 0;
+                        ResetEdgeTracking();
 
-                        // Optionale „frische“ Startanzeige
+
                         await _gpio.LedOnAsync(Led.SystemGreen);
 
                         // Run through the scenario setup again
                         await SetupAsync(ct);
 
-                        // WICHTIG: Im Loop bleiben
                         await Task.Delay(PollDelayMs, ct);
                         continue;
                     }
 
-                    // Poll aller Szene-Trigger
                     foreach (var s in _scenes)
                     {
                         HandleButtonRisingEdge(sw, s.TriggerButton, () => TryTriggerSceneAsync(s, ct));
