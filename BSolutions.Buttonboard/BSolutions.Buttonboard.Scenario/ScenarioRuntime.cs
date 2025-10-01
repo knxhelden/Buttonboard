@@ -199,13 +199,22 @@ namespace BSolutions.Buttonboard.Scenario
                             _resetInProgress = false;
                         }
                     }
-
-                    foreach (var s in _scenes)
+                    else
                     {
-                        HandleButtonRisingEdge(sw, s.TriggerButton, () => TryTriggerSceneAsync(s, ct));
-                    }
+                        if (_resetInProgress || comboPressedNow)
+                        {
+                            await Task.Delay(PollDelayMs, ct);
+                        }
+                        else
+                        {
+                            foreach (var s in _scenes)
+                            {
+                                HandleButtonRisingEdge(sw, s.TriggerButton, () => TryTriggerSceneAsync(s, ct));
+                            }
 
-                    await Task.Delay(PollDelayMs, ct);
+                            await Task.Delay(PollDelayMs, ct);
+                        }
+                    }
                 }
             }
             catch (OperationCanceledException)
