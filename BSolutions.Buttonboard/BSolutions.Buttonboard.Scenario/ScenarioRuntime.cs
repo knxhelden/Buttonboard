@@ -52,6 +52,9 @@ namespace BSolutions.Buttonboard.Scenario
         /// </summary>
         private int _stage = 0;
 
+        private bool _lastResetComboPressed = false;
+        private bool _resetInProgress = false;
+
         /// <summary>
         /// Last observed pressed-state per button (for rising-edge detection).
         /// </summary>
@@ -155,27 +158,46 @@ namespace BSolutions.Buttonboard.Scenario
             {
                 while (!ct.IsCancellationRequested)
                 {
+                    var comboPressedNow = _gpio.IsButtonPressed(Button.BottomLeft) && _gpio.IsButtonPressed(Button.BottomRight);
+                    var resetEdge = comboPressedNow && !_lastResetComboPressed;
+                    _lastResetComboPressed = comboPressedNow;
+
                     // Termination combination → When the buttons are pressed, the scenario is restarted
-                    if (_gpio.IsButtonPressed(Button.BottomLeft) && _gpio.IsButtonPressed(Button.BottomRight))
+                    if (resetEdge && !_resetInProgress)
                     {
-                        _logger.LogInformation("Termination combo detected → restart scenario.");
+                        _resetInProgress = true;
 
-                        // Is a scene running? Stop it first.
-                        await _sceneRuntime.CancelAsync();
+                        try
+                        {
+                            _logger.LogInformation("Termination combo detected → restart scenario.");
 
-                        // Reset GPIO & internal state
-                        await _gpio.ResetAsync();
-                        _stage = 0;
-                        ResetEdgeTracking();
+                            // Is a scene running? Stop it first.
+                            await _sceneRuntime.CancelAsync();
+
+                            // Reset GPIO & internal state
+                            await _gpio.ResetAsync();
+                            _stage = 0;
+                            ResetEdgeTracking();
 
 
-                        await _gpio.LedOnAsync(Led.SystemGreen);
+                            await _gpio.LedOnAsync(Led.SystemGreen);
 
-                        // Run through the scenario setup again
-                        await SetupAsync(ct);
+                            // Run through the scenario setup again
+                            _logger.LogInformation("Reset: running setup…");
+                            await SetupAsync(ct);
+                            _logger.LogInformation("Reset: setup finished.");
 
-                        await Task.Delay(PollDelayMs, ct);
-                        continue;
+                            while (_gpio.IsButtonPressed(Button.BottomLeft) || _gpio.IsButtonPressed(Button.BottomRight))
+                                await Task.Delay(20, ct);
+
+                            _lastResetComboPressed = false;
+                            await Task.Delay(PollDelayMs, ct);
+                            continue;
+                        }
+                        finally
+                        {
+                            _resetInProgress = false;
+                        }
                     }
 
                     foreach (var s in _scenes)
