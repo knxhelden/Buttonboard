@@ -1,4 +1,5 @@
 ﻿using BSolutions.Buttonboard.Services.Enumerations;
+using BSolutions.Buttonboard.Services.Logging;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
@@ -13,21 +14,19 @@ using System.Threading.Tasks;
 namespace BSolutions.Buttonboard.Services.Loaders
 {
     /// <summary>
-    /// Loads scenario assets (scenes and setup) from JSON files into a thread-safe cache
-    /// and keeps them up-to-date using a FileSystemWatcher (hot-reload).
-    /// The lookup key is the file name without the ".json" extension.
+    /// Loader implementation for <see cref="IScenarioAssetsLoader"/>.
+    /// Watches a directory for <c>*.json</c> files, keeps a thread-safe in-memory cache,
+    /// and normalizes assets (step filtering/sorting, kind detection).
     /// </summary>
     public sealed class ScenarioAssetsLoader : IScenarioAssetsLoader, IDisposable
     {
-        public static class WellKnownKeys
-        {
-            public const string Setup = "setup";
-        }
+        #region --- Fields ---
 
         private readonly ILogger<ScenarioAssetsLoader> _logger;
         private readonly string _assetsDirectory;
         private readonly FileSystemWatcher _watcher;
-        private readonly ConcurrentDictionary<string, ScenarioAssetDefinition> _cache = new(StringComparer.OrdinalIgnoreCase);
+        private readonly ConcurrentDictionary<string, ScenarioAssetDefinition> _cache =
+            new(StringComparer.OrdinalIgnoreCase);
 
         private readonly JsonSerializerOptions _jsonOptions = new()
         {
@@ -37,12 +36,25 @@ namespace BSolutions.Buttonboard.Services.Loaders
             TypeInfoResolver = new DefaultJsonTypeInfoResolver()
         };
 
+        #endregion
+
+        #region --- Constructor ---
+
+        /// <summary>
+        /// Creates a new <see cref="ScenarioAssetsLoader"/>.
+        /// </summary>
+        /// <param name="logger">Logger instance for this loader.</param>
+        /// <param name="assetsDirectory">Directory that contains the scenario JSON files.</param>
+        /// <exception cref="ArgumentNullException">Thrown when <paramref name="assetsDirectory"/> is null.</exception>
         public ScenarioAssetsLoader(ILogger<ScenarioAssetsLoader> logger, string assetsDirectory)
         {
-            _logger = logger;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _assetsDirectory = assetsDirectory ?? throw new ArgumentNullException(nameof(assetsDirectory));
+
+            // Ensure directory exists (no-op if already present).
             Directory.CreateDirectory(_assetsDirectory);
 
+            // Configure file watcher (no events until StartAsync enables it).
             _watcher = new FileSystemWatcher(_assetsDirectory, "*.json")
             {
                 IncludeSubdirectories = false,
@@ -50,57 +62,76 @@ namespace BSolutions.Buttonboard.Services.Loaders
                 NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size
             };
 
+            // Use background tasks to avoid blocking the watcher event thread.
             _watcher.Changed += (_, e) => _ = Task.Run(() => LoadAssetToCacheAsync(e.FullPath));
             _watcher.Created += (_, e) => _ = Task.Run(() => LoadAssetToCacheAsync(e.FullPath));
             _watcher.Renamed += (_, e) => _ = Task.Run(() => LoadAssetToCacheAsync(e.FullPath));
             _watcher.Deleted += (_, e) => RemoveAssetFromCache(e.FullPath);
         }
 
-        #region IScenarioAssetsLoader
+        #endregion
 
+        #region --- IScenarioAssetsLoader ---
+
+        /// <inheritdoc />
         public async Task StartAsync(CancellationToken ct = default)
         {
             foreach (var file in Directory.EnumerateFiles(_assetsDirectory, "*.json"))
             {
                 ct.ThrowIfCancellationRequested();
-                await LoadAssetToCacheAsync(file);
-                await Task.Yield(); // pacing
+                await LoadAssetToCacheAsync(file).ConfigureAwait(false);
+                await Task.Yield(); // small pacing to keep startup responsive
             }
 
             _watcher.EnableRaisingEvents = true;
-            _logger.LogInformation("ScenarioAssetsLoader started. Watching directory: {Dir}", _assetsDirectory);
+
+            _logger.LogInformation(LogEvents.LoaderStarted,
+                "ScenarioAssetsLoader started. Watching directory {Dir}", _assetsDirectory);
         }
 
+        /// <inheritdoc />
         public Task StopAsync(CancellationToken ct = default)
         {
             _watcher.EnableRaisingEvents = false;
-            _logger.LogInformation("ScenarioAssetsLoader stopped.");
+            _logger.LogInformation(LogEvents.LoaderStopped, "ScenarioAssetsLoader stopped");
             return Task.CompletedTask;
         }
 
-        public bool TryGet(string key, out ScenarioAssetDefinition? asset) => _cache.TryGetValue(key, out asset);
+        /// <inheritdoc />
+        public bool TryGet(string key, out ScenarioAssetDefinition? asset) =>
+            _cache.TryGetValue(key, out asset);
 
+        /// <inheritdoc />
         public bool TryGetSetup(out ScenarioAssetDefinition? setup) =>
             TryGet(WellKnownKeys.Setup, out setup);
 
+        /// <inheritdoc />
         public IEnumerable<string> Keys => _cache.Keys;
 
         #endregion
 
+        #region --- Helpers ---
+
+        /// <summary>
+        /// Loads or reloads a single asset file into the cache.
+        /// </summary>
         private async Task LoadAssetToCacheAsync(string path)
         {
             try
             {
-                await Task.Delay(75); // small debounce for editors
+                // Debounce: file editors may trigger multiple rapid events.
+                await Task.Delay(75).ConfigureAwait(false);
 
-                if (!File.Exists(path)) return;
+                if (!File.Exists(path))
+                    return;
 
                 var key = Path.GetFileNameWithoutExtension(path);
-                _logger.LogInformation("Loading scenario asset '{Key}' from '{Path}'…", key, path);
+                _logger.LogDebug("Loading scenario asset {Key} from {Path}…", key, path);
 
+                // Share read to allow editors to keep the file open.
                 using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 using var sr = new StreamReader(fs);
-                var json = await sr.ReadToEndAsync();
+                var json = await sr.ReadToEndAsync().ConfigureAwait(false);
 
                 ScenarioAssetDefinition? def;
                 try
@@ -109,20 +140,37 @@ namespace BSolutions.Buttonboard.Services.Loaders
                 }
                 catch (JsonException jx)
                 {
-                    _logger.LogWarning(jx, "JSON parse failed for {Path}. JsonPath={JsonPath}", path, jx.Path);
+                    // Parsing errors are expected during editing; log as Warning with JSON path context.
+                    _logger.LogWarning(LogEvents.AssetJsonInvalid, jx,
+                        "JSON parse failed for {Path}. JsonPath={JsonPath}", path, jx.Path);
                     return;
                 }
 
-                if (def is null) return;
+                if (def is null)
+                    return;
 
-                _cache[key] = Normalize(def, key);
+                def = Normalize(def, key);
+                _cache[key] = def;
+
+                _logger.LogInformation(LogEvents.AssetLoaded,
+                    "Scenario asset loaded: {Key} (Kind {Kind}, Steps {StepCount})",
+                    key, def.Kind, def.Steps?.Count ?? 0);
+            }
+            catch (OperationCanceledException)
+            {
+                // If a token is introduced in the future, a canceled load is not an error.
+                _logger.LogInformation("Loading scenario asset canceled");
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Error while loading scenario asset (Path: {Path})", path);
+                _logger.LogError(LogEvents.AssetLoadError, ex,
+                    "Error while loading scenario asset. Path={Path}", path);
             }
         }
 
+        /// <summary>
+        /// Removes an asset from the cache if present.
+        /// </summary>
         private void RemoveAssetFromCache(string path)
         {
             try
@@ -130,16 +178,19 @@ namespace BSolutions.Buttonboard.Services.Loaders
                 var key = Path.GetFileNameWithoutExtension(path);
                 if (_cache.TryRemove(key, out _))
                 {
-                    _logger.LogDebug("Scenario asset removed: {Key}", key);
+                    _logger.LogInformation(LogEvents.AssetRemoved, "Scenario asset removed: {Key}", key);
                 }
             }
             catch
             {
-                // ignore
+                // Best-effort removal: ignore unexpected exceptions.
             }
         }
 
-        private ScenarioAssetDefinition Normalize(ScenarioAssetDefinition def, string key)
+        /// <summary>
+        /// Ensures a consistent shape: filters invalid steps, sorts by time and sets the asset kind.
+        /// </summary>
+        private static ScenarioAssetDefinition Normalize(ScenarioAssetDefinition def, string key)
         {
             def.Steps ??= new();
             def.Steps = def.Steps
@@ -154,6 +205,13 @@ namespace BSolutions.Buttonboard.Services.Loaders
             return def;
         }
 
+        #endregion
+
+        #region --- IDisposable ---
+
+        /// <inheritdoc />
         public void Dispose() => _watcher.Dispose();
+
+        #endregion
     }
 }
