@@ -50,5 +50,23 @@ namespace BSolutions.Buttonboard.Services.Logging
         public static readonly EventId GpioBlinkEnd = new(6021, nameof(GpioBlinkEnd));
         public static readonly EventId GpioButtonRead = new(6030, nameof(GpioButtonRead));
         public static readonly EventId GpioOperationErr = new(6099, nameof(GpioOperationErr));
+
+        // --- MQTT ---
+        public static readonly EventId MqttConnecting = new(7000, nameof(MqttConnecting));
+        public static readonly EventId MqttConnected = new(7001, nameof(MqttConnected));
+        public static readonly EventId MqttDisconnected = new(7002, nameof(MqttDisconnected));
+        public static readonly EventId MqttConnectFailed = new(7003, nameof(MqttConnectFailed));
+
+        public static readonly EventId MqttOnlineAnnounced = new(7010, nameof(MqttOnlineAnnounced));
+
+        public static readonly EventId MqttPublishEnqueued = new(7020, nameof(MqttPublishEnqueued));
+        public static readonly EventId MqttPublishDropped = new(7021, nameof(MqttPublishDropped));
+        public static readonly EventId MqttInvalidTopic = new(7022, nameof(MqttInvalidTopic));
+
+        public static readonly EventId MqttStopping = new(7030, nameof(MqttStopping));
+        public static readonly EventId MqttStopped = new(7031, nameof(MqttStopped));
+        public static readonly EventId MqttPendingDrained = new(7032, nameof(MqttPendingDrained));
+
+        public static readonly EventId MqttError = new(7099, nameof(MqttError));
     }
 }

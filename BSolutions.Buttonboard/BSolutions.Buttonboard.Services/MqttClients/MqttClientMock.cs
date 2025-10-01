@@ -1,113 +1,150 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BSolutions.Buttonboard.Services.Logging;
+using Microsoft.Extensions.Logging;
 
 namespace BSolutions.Buttonboard.Services.MqttClients
 {
     /// <summary>
-    /// In-memory mock implementation of <see cref="IMqttClient"/> for tests and local development.
+    /// In-memory mock of <see cref="IMqttClient"/> for tests and local development.
+    /// Simulates connect/publish/stop without a real broker and stores messages per topic.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// This mock does not connect to a real MQTT broker. Instead, it simulates connection,
-    /// logs all operations, and stores published messages in memory.
-    /// </para>
-    /// <para>
-    /// Behavior:
-    /// <list type="bullet">
-    ///   <item><description><see cref="ConnectAsync"/> simply marks the client as connected.</description></item>
-    ///   <item><description><see cref="PublishAsync"/> logs the message and stores it in an in-memory queue per topic.</description></item>
-    ///   <item><description><see cref="StopAsync"/> clears the connected flag and flushes the queues.</description></item>
-    /// </list>
-    /// Artificial delays (10–25 ms) are applied to mimic async I/O.
-    /// </para>
-    /// </remarks>
     public sealed class MqttClientMock : IMqttClient, IDisposable
     {
         private readonly ILogger<MqttClientMock> _logger;
-        private readonly ConcurrentDictionary<string, List<string>> _messages = new(StringComparer.OrdinalIgnoreCase);
-        private bool _connected;
-        private bool _disposed;
+
+        // Per-topic queues to be thread-safe under concurrent publishes.
+        private readonly ConcurrentDictionary<string, ConcurrentQueue<string>> _messages =
+            new(StringComparer.OrdinalIgnoreCase);
+
+        private volatile bool _connected;
+        private volatile bool _disposed;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="MqttClientMock"/> class.
+        /// Creates a new <see cref="MqttClientMock"/>.
         /// </summary>
-        /// <param name="logger">Logger for diagnostics and simulation traces.</param>
         public MqttClientMock(ILogger<MqttClientMock> logger)
         {
-            _logger = logger;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         /// <inheritdoc />
         public async Task ConnectAsync()
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(MqttClientMock));
+            ThrowIfDisposed();
+
+            _logger.LogInformation(LogEvents.MqttConnecting, "Starting MQTT mock client");
             await Task.Delay(25).ConfigureAwait(false); // simulate latency
+
             _connected = true;
-            _logger.LogInformation("[SIM/MQTT] Connected to broker (mock).");
+            _logger.LogInformation(LogEvents.MqttConnected,
+                "MQTT mock connected (no real broker)");
         }
 
         /// <inheritdoc />
         public async Task PublishAsync(string topic, string payload, CancellationToken ct = default)
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(MqttClientMock));
+            ThrowIfDisposed();
+
             if (string.IsNullOrWhiteSpace(topic))
-                throw new ArgumentException("MQTT topic must not be null or whitespace.", nameof(topic));
+            {
+                _logger.LogWarning(LogEvents.MqttInvalidTopic, "Publish skipped: empty topic");
+                throw new ArgumentException("Topic must not be null or whitespace.", nameof(topic));
+            }
+            if (ct.IsCancellationRequested) return;
 
             await Task.Delay(10, ct).ConfigureAwait(false); // simulate latency
 
             if (!_connected)
             {
-                _logger.LogWarning("[SIM/MQTT] Publish while disconnected. Topic={Topic}, Payload={Payload}", topic, payload);
+                _logger.LogWarning(LogEvents.MqttPublishDropped,
+                    "Publish while disconnected Topic {Topic} PayloadLength {Length}",
+                    topic, payload?.Length ?? 0);
                 return;
             }
 
-            _logger.LogInformation("[SIM/MQTT] Publish -> Topic: {Topic}, Payload: {Payload}", topic, payload);
+            var q = _messages.GetOrAdd(topic, _ => new ConcurrentQueue<string>());
+            q.Enqueue(payload ?? string.Empty);
 
-            // Store in memory
-            _messages.AddOrUpdate(
-                topic,
-                _ => new List<string> { payload },
-                (_, list) =>
-                {
-                    list.Add(payload);
-                    return list;
-                });
+            var pending = _messages.Sum(kvp => kvp.Value.Count);
+            _logger.LogInformation(LogEvents.MqttPublishEnqueued,
+                "MQTT mock publish enqueued Topic {Topic} PayloadLength {Length} Pending {Pending}",
+                topic, (payload?.Length ?? 0), pending);
         }
 
         /// <inheritdoc />
         public async Task StopAsync(CancellationToken ct = default)
         {
             if (_disposed) return;
-            await Task.Delay(20, ct).ConfigureAwait(false); // simulate latency
+
+            _logger.LogInformation(LogEvents.MqttStopping,
+                "Stopping MQTT mock client. Pending {Pending}", TotalPending());
+
+            // Simulate a short drain phase (mock simply waits; does not forward anywhere)
+            var deadline = DateTime.UtcNow.AddMilliseconds(250);
+            try
+            {
+                while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
+                {
+                    await Task.Delay(25, ct).ConfigureAwait(false);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // fine – shutdown bounded by caller
+            }
+
             _connected = false;
-            _logger.LogInformation("[SIM/MQTT] Disconnected from broker (mock).");
+            _logger.LogInformation(LogEvents.MqttStopped, "MQTT mock client stopped");
         }
 
         /// <summary>
-        /// Retrieves all messages published to a given topic during the mock lifetime.
+        /// Returns a snapshot of all messages published to a given topic.
         /// </summary>
-        /// <param name="topic">The topic to query.</param>
-        /// <returns>A copy of the message list for the topic, or empty list if none.</returns>
         public IReadOnlyList<string> GetMessages(string topic)
         {
-            if (_messages.TryGetValue(topic, out var list))
-            {
-                return list.ToArray();
-            }
-            return Array.Empty<string>();
+            if (topic is null) throw new ArgumentNullException(nameof(topic));
+            return _messages.TryGetValue(topic, out var q)
+                ? q.ToArray()
+                : Array.Empty<string>();
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Clears all stored messages for a given topic (test helper).
+        /// </summary>
+        public void ClearTopic(string topic)
+        {
+            if (topic is null) throw new ArgumentNullException(nameof(topic));
+            _messages.TryRemove(topic, out _);
+        }
+
+        /// <summary>
+        /// Clears all stored messages across all topics (test helper).
+        /// </summary>
+        public void ClearAll() => _messages.Clear();
+
+        /// <summary>
+        /// Disposes the mock and clears all state.
+        /// </summary>
         public void Dispose()
         {
             if (_disposed) return;
             _disposed = true;
+
+            _connected = false;
             _messages.Clear();
-            _logger.LogDebug("[SIM/MQTT] Mock disposed.");
+            _logger.LogDebug("MQTT mock disposed");
+        }
+
+        private int TotalPending() => _messages.Sum(kvp => kvp.Value.Count);
+
+        private void ThrowIfDisposed()
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(MqttClientMock));
         }
     }
 }
