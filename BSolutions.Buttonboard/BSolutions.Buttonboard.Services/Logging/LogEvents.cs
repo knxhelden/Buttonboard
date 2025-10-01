@@ -41,7 +41,7 @@ namespace BSolutions.Buttonboard.Services.Logging
 
         public static readonly EventId ExecMqttPublish = new(5400, nameof(ExecMqttPublish));
 
-        // --- GPIO ---
+        // GPIO
         public static readonly EventId GpioInitialized = new(6000, nameof(GpioInitialized));
         public static readonly EventId GpioReset = new(6001, nameof(GpioReset));
         public static readonly EventId GpioLedOn = new(6010, nameof(GpioLedOn));
@@ -51,7 +51,7 @@ namespace BSolutions.Buttonboard.Services.Logging
         public static readonly EventId GpioButtonRead = new(6030, nameof(GpioButtonRead));
         public static readonly EventId GpioOperationErr = new(6099, nameof(GpioOperationErr));
 
-        // --- MQTT ---
+        // MQTT
         public static readonly EventId MqttConnecting = new(7000, nameof(MqttConnecting));
         public static readonly EventId MqttConnected = new(7001, nameof(MqttConnected));
         public static readonly EventId MqttDisconnected = new(7002, nameof(MqttDisconnected));
@@ -68,5 +68,12 @@ namespace BSolutions.Buttonboard.Services.Logging
         public static readonly EventId MqttPendingDrained = new(7032, nameof(MqttPendingDrained));
 
         public static readonly EventId MqttError = new(7099, nameof(MqttError));
+
+        // OpenHAB
+        public static readonly EventId OpenHabCommandSent = new(8100, nameof(OpenHabCommandSent));
+        public static readonly EventId OpenHabStateRead = new(8101, nameof(OpenHabStateRead));
+        public static readonly EventId OpenHabStateUpdated = new(8102, nameof(OpenHabStateUpdated));
+        public static readonly EventId OpenHabNonSuccess = new(8103, nameof(OpenHabNonSuccess));
+        public static readonly EventId OpenHabError = new(8104, nameof(OpenHabError));
     }
 }

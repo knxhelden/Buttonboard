@@ -1,5 +1,6 @@
 ﻿using BSolutions.Buttonboard.Services.Enumerations;
 using BSolutions.Buttonboard.Services.Gpio;
+using BSolutions.Buttonboard.Services.Logging;
 using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Logging;
 using System;
@@ -13,80 +14,67 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
 {
     /// <summary>
     /// HTTP client for interacting with the openHAB REST API.
-    /// </summary>
-    /// <remarks>
-    /// <para>
     /// Base address is taken from <see cref="ISettingsProvider"/> (<c>OpenHAB.BaseUri</c>).
-    /// Requests use <c>text/plain</c> for commands and states.
-    /// </para>
-    /// <para>
-    /// On handled failures, the client logs the error and signals a system warning by
-    /// switching on <see cref="Led.SystemYellow"/> via the GPIO controller.
-    /// </para>
-    /// </remarks>
+    /// Uses <c>text/plain</c> for commands and states.
+    /// On handled failures, turns on <see cref="Led.SystemYellow"/> as a visual warning.
+    /// </summary>
     public class OpenHabClient : RestApiClientBase, IOpenHabClient
     {
+        private static readonly MediaTypeWithQualityHeaderValue PlainText = new("text/plain");
         private readonly IButtonboardGpioController _gpio;
-
-        #region --- Constructor ---
 
         /// <summary>
         /// Creates a new <see cref="OpenHabClient"/>.
         /// </summary>
-        /// <param name="logger">Logger for diagnostics and error reporting.</param>
+        /// <param name="logger">Logger for diagnostics.</param>
         /// <param name="settingsProvider">Provides <c>OpenHAB.BaseUri</c> for the underlying <see cref="_httpClient"/>.</param>
         /// <param name="gpio">GPIO controller used to signal failures via LEDs.</param>
-        public OpenHabClient(ILogger<OpenHabClient> logger, ISettingsProvider settingsProvider, IButtonboardGpioController gpio)
-            : base (logger, settingsProvider)
+        public OpenHabClient(
+            ILogger<OpenHabClient> logger,
+            ISettingsProvider settingsProvider,
+            IButtonboardGpioController gpio)
+            : base(logger, settingsProvider) // ILogger<OpenHabClient> is covariant to ILogger<RestApiClientBase>
         {
-            this._httpClient.BaseAddress = this._settings.OpenHAB.BaseUri;
-            this._gpio = gpio;
+            _httpClient.BaseAddress = _settings.OpenHAB.BaseUri;
+            _gpio = gpio ?? throw new ArgumentNullException(nameof(gpio));
         }
 
-        #endregion
-
-        #region --- IOpenHabClient ---
-
-        /// <summary>
-        /// Sends a command to an item (POST <c>/items/{itemname}</c>), using a strongly-typed command.
-        /// </summary>
-        /// <param name="itemname">The item name.</param>
-        /// <param name="command">The command to be sent to the item.</param>
-        /// <param name="ct">Cancellation token.</param>
+        /// <inheritdoc />
         public Task SendCommandAsync(string itemname, OpenHabCommand command, CancellationToken ct = default)
             => SendCommandAsync(itemname, command.ToString(), ct);
 
-        /// <summary>
-        /// Sends a command to an item (POST <c>/items/{itemname}</c>), using a raw plain-text body.
-        /// </summary>
-        /// <param name="itemname">The item name.</param>
-        /// <param name="requestBody">The request body to be sent as <c>text/plain</c>.</param>
-        /// <param name="ct">Cancellation token.</param>
-        /// <exception cref="HttpRequestException">Thrown on non-success HTTP status codes.</exception>
-        /// <exception cref="OperationCanceledException">Thrown if the operation is canceled.</exception>
+        /// <inheritdoc />
         public async Task SendCommandAsync(string itemname, string requestBody, CancellationToken ct = default)
         {
-            var relativeUri = $"items/{itemname}";
-            using var content = new StringContent(requestBody, Encoding.UTF8, "text/plain");
+            itemname = (itemname ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(itemname))
+                throw new ArgumentException("Item name must not be null or whitespace.", nameof(itemname));
 
-            _logger.LogDebug("URL: {Url} // Command: {Body}", relativeUri, requestBody);
+            var relativeUri = $"items/{itemname}";
+            using var content = new StringContent(requestBody ?? string.Empty, Encoding.UTF8, "text/plain");
 
             try
             {
-                using var request = new HttpRequestMessage(HttpMethod.Post, relativeUri)
-                {
-                    Content = content
-                };
+                using var request = new HttpRequestMessage(HttpMethod.Post, relativeUri) { Content = content };
                 request.Headers.Accept.Clear();
-                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
+                request.Headers.Accept.Add(PlainText);
 
-                using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct)
-                                                      .ConfigureAwait(false);
+                _logger.LogInformation(LogEvents.OpenHabCommandSent,
+                    "openHAB POST command Item {Item} BodyLength {Length}",
+                    itemname, requestBody?.Length ?? 0);
+
+                using var response = await _httpClient
+                    .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct)
+                    .ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    var msg = $"The openHAB request to uri '{relativeUri}' was unsuccessful (Status Code: {response.StatusCode}).";
-                    throw new HttpRequestException(msg);
+                    _logger.LogWarning(LogEvents.OpenHabNonSuccess,
+                        "openHAB non-success POST Item {Item} -> {StatusCode}",
+                        itemname, (int)response.StatusCode);
+
+                    try { await _gpio.LedOnAsync(Led.SystemYellow).ConfigureAwait(false); } catch { /* ignore */ }
+                    response.EnsureSuccessStatusCode(); // throws HttpRequestException
                 }
             }
             catch (OperationCanceledException)
@@ -96,43 +84,45 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred during an openHAB service call: {Url}", relativeUri);
-                await _gpio.LedOnAsync(Led.SystemYellow).ConfigureAwait(false);
+                _logger.LogError(LogEvents.OpenHabError, ex,
+                    "openHAB request failed POST Item {Item}", itemname);
+                try { await _gpio.LedOnAsync(Led.SystemYellow).ConfigureAwait(false); } catch { /* ignore */ }
                 throw;
             }
         }
 
-        /// <summary>
-        /// Gets the current state of an item (GET <c>/items/{itemname}/state</c>).
-        /// </summary>
-        /// <param name="itemname">The item name.</param>
-        /// <param name="ct">Cancellation token.</param>
-        /// <returns>
-        /// The state string on success; <c>null</c> if an exception was handled and signaled.
-        /// </returns>
-        /// <exception cref="HttpRequestException">Thrown on non-success HTTP status codes.</exception>
-        /// <exception cref="OperationCanceledException">Thrown if the operation is canceled.</exception>
+        /// <inheritdoc />
         public async Task<string?> GetStateAsync(string itemname, CancellationToken ct = default)
         {
+            itemname = (itemname ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(itemname))
+                throw new ArgumentException("Item name must not be null or whitespace.", nameof(itemname));
+
             var relativeUri = $"items/{itemname}/state";
 
             try
             {
                 using var request = new HttpRequestMessage(HttpMethod.Get, relativeUri);
                 request.Headers.Accept.Clear();
-                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
+                request.Headers.Accept.Add(PlainText);
 
-                using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct)
-                                                      .ConfigureAwait(false);
+                using var response = await _httpClient
+                    .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct)
+                    .ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    var msg = $"The openHAB request to uri '{relativeUri}' was unsuccessful (Status Code: {response.StatusCode}).";
-                    throw new HttpRequestException(msg);
+                    _logger.LogWarning(LogEvents.OpenHabNonSuccess,
+                        "openHAB non-success GET state Item {Item} -> {StatusCode}",
+                        itemname, (int)response.StatusCode);
+
+                    try { await _gpio.LedOnAsync(Led.SystemYellow).ConfigureAwait(false); } catch { /* ignore */ }
+                    response.EnsureSuccessStatusCode();
                 }
 
                 var state = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
-                _logger.LogDebug("openHAB state {Item}: {State}", itemname, state);
+                _logger.LogDebug(LogEvents.OpenHabStateRead,
+                    "openHAB state read Item {Item} State {State}", itemname, state);
                 return state;
             }
             catch (OperationCanceledException)
@@ -142,44 +132,45 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred during an openHAB service call: {Url}", relativeUri);
-                await _gpio.LedOnAsync(Led.SystemYellow).ConfigureAwait(false);
-                return default;
+                _logger.LogError(LogEvents.OpenHabError, ex,
+                    "openHAB request failed GET state Item {Item}", itemname);
+                try { await _gpio.LedOnAsync(Led.SystemYellow).ConfigureAwait(false); } catch { /* ignore */ }
+                return null; // handled error per contract
             }
         }
 
-        /// <summary>
-        /// Updates the state of an item (PUT <c>/items/{itemname}/state</c>).
-        /// </summary>
-        /// <param name="itemname">The item name.</param>
-        /// <param name="command">The state to PUT as plain text.</param>
-        /// <param name="ct">Cancellation token.</param>
-        /// <exception cref="HttpRequestException">Thrown on non-success HTTP status codes.</exception>
-        /// <exception cref="OperationCanceledException">Thrown if the operation is canceled.</exception>
+        /// <inheritdoc />
         public async Task UpdateStateAsync(string itemname, OpenHabCommand command, CancellationToken ct = default)
         {
+            itemname = (itemname ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(itemname))
+                throw new ArgumentException("Item name must not be null or whitespace.", nameof(itemname));
+
             var relativeUri = $"items/{itemname}/state";
             using var content = new StringContent(command.ToString(), Encoding.UTF8, "text/plain");
 
             try
             {
-                using var request = new HttpRequestMessage(HttpMethod.Put, relativeUri)
-                {
-                    Content = content
-                };
+                using var request = new HttpRequestMessage(HttpMethod.Put, relativeUri) { Content = content };
                 request.Headers.Accept.Clear();
-                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/plain"));
+                request.Headers.Accept.Add(PlainText);
 
-                using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct)
-                                                      .ConfigureAwait(false);
+                using var response = await _httpClient
+                    .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct)
+                    .ConfigureAwait(false);
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    var msg = $"The openHAB request to uri '{relativeUri}' was unsuccessful (Status Code: {response.StatusCode}).";
-                    throw new HttpRequestException(msg);
+                    _logger.LogWarning(LogEvents.OpenHabNonSuccess,
+                        "openHAB non-success PUT state Item {Item} -> {StatusCode}",
+                        itemname, (int)response.StatusCode);
+
+                    try { await _gpio.LedOnAsync(Led.SystemYellow).ConfigureAwait(false); } catch { /* ignore */ }
+                    response.EnsureSuccessStatusCode();
                 }
 
-                _logger.LogDebug("openHAB state updated {Item}: {Command}", itemname, command);
+                _logger.LogInformation(LogEvents.OpenHabStateUpdated,
+                    "openHAB state updated Item {Item} -> {Command}", itemname, command);
             }
             catch (OperationCanceledException)
             {
@@ -188,12 +179,11 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An error occurred during an openHAB service call: {Url}", relativeUri);
-                await _gpio.LedOnAsync(Led.SystemYellow).ConfigureAwait(false);
+                _logger.LogError(LogEvents.OpenHabError, ex,
+                    "openHAB request failed PUT state Item {Item}", itemname);
+                try { await _gpio.LedOnAsync(Led.SystemYellow).ConfigureAwait(false); } catch { /* ignore */ }
                 throw;
             }
         }
-
-        #endregion
     }
 }
