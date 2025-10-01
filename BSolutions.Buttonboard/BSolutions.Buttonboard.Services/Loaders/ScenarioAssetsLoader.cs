@@ -103,7 +103,7 @@ namespace BSolutions.Buttonboard.Services.Loaders
 
         /// <inheritdoc />
         public bool TryGetSetup(out ScenarioAssetDefinition? setup) =>
-            TryGet(WellKnownKeys.Setup, out setup);
+            TryGet("setup", out setup);
 
         /// <inheritdoc />
         public IEnumerable<string> Keys => _cache.Keys;
@@ -198,7 +198,7 @@ namespace BSolutions.Buttonboard.Services.Loaders
                 .OrderBy(s => s.AtMs)
                 .ToList();
 
-            def.Kind = string.Equals(key, WellKnownKeys.Setup, StringComparison.OrdinalIgnoreCase)
+            def.Kind = string.Equals(key, "setup", StringComparison.OrdinalIgnoreCase)
                 ? ScenarioAssetKind.Setup
                 : ScenarioAssetKind.Scene;
 
