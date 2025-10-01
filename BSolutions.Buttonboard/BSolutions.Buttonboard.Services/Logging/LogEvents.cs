@@ -75,5 +75,10 @@ namespace BSolutions.Buttonboard.Services.Logging
         public static readonly EventId OpenHabStateUpdated = new(8102, nameof(OpenHabStateUpdated));
         public static readonly EventId OpenHabNonSuccess = new(8103, nameof(OpenHabNonSuccess));
         public static readonly EventId OpenHabError = new(8104, nameof(OpenHabError));
+
+        // VLC
+        public static readonly EventId VlcCommandSent = new(8200, nameof(VlcCommandSent));
+        public static readonly EventId VlcNonSuccess = new(8201, nameof(VlcNonSuccess));
+        public static readonly EventId VlcError = new(8202, nameof(VlcError));
     }
 }
