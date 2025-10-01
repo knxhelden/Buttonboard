@@ -2,14 +2,13 @@
 using BSolutions.Buttonboard.Services.Extensions;
 using BSolutions.Buttonboard.Services.Gpio;
 using BSolutions.Buttonboard.Services.Loaders;
+using BSolutions.Buttonboard.Services.Logging;
 using BSolutions.Buttonboard.Services.MqttClients;
 using BSolutions.Buttonboard.Services.RestApiClients;
 using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Linq;
-using System.Runtime;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -18,20 +17,11 @@ namespace BSolutions.Buttonboard.Services.Runtimes
 {
     /// <summary>
     /// Default implementation of <see cref="IActionExecutor"/>.
-    /// <para>
-    /// Dispatches <see cref="ScenarioAssetStep"/> actions to concrete subsystems such as:
-    /// <list type="bullet">
-    ///   <item><b>OpenHAB</b> for audio commands</item>
-    ///   <item><b>VLC</b> for video commands</item>
-    ///   <item><b>GPIO</b> for LED control</item>
-    ///   <item><b>MQTT</b> for message publishing</item>
-    /// </list>
-    /// </para>
+    /// Dispatches <see cref="ScenarioAssetStep"/> actions to concrete subsystems (OpenHAB/VLC/GPIO/MQTT).
+    /// Uses structured logging with stable EventIds and honors cooperative cancellation.
     /// </summary>
     public sealed class ActionExecutor : IActionExecutor
     {
-        #region --- Fields ---
-
         private readonly ILogger _logger;
         private readonly ISettingsProvider _settings;
         private readonly IOpenHabClient _openhab;
@@ -39,159 +29,180 @@ namespace BSolutions.Buttonboard.Services.Runtimes
         private readonly IMqttClient _mqtt;
         private readonly IButtonboardGpioController _gpio;
 
-        #endregion
-
-        #region --- Constructor ---
-
         /// <summary>
         /// Creates a new <see cref="ActionExecutor"/>.
         /// </summary>
-        /// <param name="logger">Logger for diagnostic output and warnings.</param>
-        /// <param name="settingsProvider">Provides access to configured players, pins, and system settings.</param>
-        /// <param name="gpio">GPIO controller for LED operations.</param>
-        /// <param name="openhab">REST client for sending OpenHAB commands.</param>
-        /// <param name="vlc">Client for controlling VLC media players.</param>
-        /// <param name="mqtt">Client for publishing MQTT messages.</param>
-        public ActionExecutor(ILogger<ActionExecutor> logger,
+        public ActionExecutor(
+            ILogger<ActionExecutor> logger,
             ISettingsProvider settingsProvider,
             IButtonboardGpioController gpio,
             IOpenHabClient openhab,
             IVlcPlayerClient vlc,
             IMqttClient mqtt)
         {
-            _logger = logger;
-            _settings = settingsProvider;
-
-            _gpio = gpio;
-            _openhab = openhab;
-            _vlc = vlc;
-            _mqtt = mqtt;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _settings = settingsProvider ?? throw new ArgumentNullException(nameof(settingsProvider));
+            _gpio = gpio ?? throw new ArgumentNullException(nameof(gpio));
+            _openhab = openhab ?? throw new ArgumentNullException(nameof(openhab));
+            _vlc = vlc ?? throw new ArgumentNullException(nameof(vlc));
+            _mqtt = mqtt ?? throw new ArgumentNullException(nameof(mqtt));
         }
 
-        #endregion
-
-        #region --- IActionExecutor ---
-
         /// <inheritdoc />
-        /// <summary>
-        /// Executes the specified <paramref name="step"/> by dispatching it to the appropriate subsystem.
-        /// </summary>
-        /// <param name="step">Scenario asset step to execute (defines <c>Action</c> and <c>Args</c>).</param>
-        /// <param name="ct">Cancellation token to abort long-running operations.</param>
-        /// <remarks>
-        /// Supported <c>Action</c> values:
-        /// <list type="table">
-        ///   <listheader>
-        ///     <term>Action</term>
-        ///     <description>Behavior</description>
-        ///   </listheader>
-        ///   <item>
-        ///     <term><c>audio.play</c></term>
-        ///     <description>Sends a stream URL to an OpenHAB audio player (<c>args: url, player</c>).</description>
-        ///   </item>
-        ///   <item>
-        ///     <term><c>video.next</c></term>
-        ///     <description>Sends "next" to a VLC media player (<c>args: player</c>).</description>
-        ///   </item>
-        ///   <item>
-        ///     <term><c>video.pause</c></term>
-        ///     <description>Sends "pause" to a VLC media player (<c>args: player</c>).</description>
-        ///   </item>
-        ///   <item>
-        ///     <term><c>gpio.on</c></term>
-        ///     <description>Turns on the specified LED (<c>args: pin</c>).</description>
-        ///   </item>
-        ///   <item>
-        ///     <term><c>gpio.off</c></term>
-        ///     <description>Turns off the specified LED (<c>args: pin</c>).</description>
-        ///   </item>
-        ///   <item>
-        ///     <term><c>gpio.blink</c></term>
-        ///     <description>Blinks all LEDs (<c>args: count, intervalMs</c>).</description>
-        ///   </item>
-        ///   <item>
-        ///     <term><c>mqtt.pub</c></term>
-        ///     <description>Publishes a message to an MQTT topic (<c>args: topic, payload</c>).</description>
-        ///   </item>
-        /// </list>
-        /// Unknown actions are logged as warnings and ignored.
-        /// </remarks>
         public async Task ExecuteAsync(ScenarioAssetStep step, CancellationToken ct)
         {
-            var a = step.Action?.ToLowerInvariant() ?? string.Empty;
+            if (step is null) throw new ArgumentNullException(nameof(step));
+
+            // Normalize action string once
+            var action = step.Action?.Trim();
+            var a = action?.ToLowerInvariant() ?? string.Empty;
             var args = step.Args;
 
             switch (a)
             {
                 case "audio.play":
                     {
-                        var url = args.GetString("url")
-                            ?? throw new ArgumentException("audio.play requires 'url'");
-                        var playerName = args.GetString("player", "Player1");
+                        var url = args.GetString("url");
+                        if (string.IsNullOrWhiteSpace(url))
+                        {
+                            _logger.LogWarning(LogEvents.ExecArgMissing,
+                                "audio.play requires argument {Arg}", "url");
+                            throw new ArgumentException("audio.play requires 'url'");
+                        }
 
-                        // Beispiel: URL starten
-                        await _openhab.SendCommandAsync(_settings.OpenHAB.Audio.Players.Single(p => p.Name == playerName).StreamItem, url, ct);
-                        break;
+                        var playerName = args.GetString("player", "Player1");
+                        var player = _settings.OpenHAB.Audio.Players.FirstOrDefault(p => p.Name == playerName);
+                        if (player is null)
+                        {
+                            _logger.LogWarning(LogEvents.ExecResourceMissing,
+                                "audio.play: OpenHAB player not found {Player}", playerName);
+                            throw new ArgumentException($"Unknown OpenHAB audio player '{playerName}'");
+                        }
+
+                        _logger.LogInformation(LogEvents.ExecAudioPlay,
+                            "audio.play: sending URL to player {Player} (Item {StreamItem})",
+                            player.Name, player.StreamItem);
+
+                        await _openhab.SendCommandAsync(player.StreamItem, url, ct).ConfigureAwait(false);
+                        return;
                     }
 
                 case "video.next":
                     {
                         var playerName = args.GetString("player", "Mediaplayer1");
-                        await _vlc.SendCommandAsync(VlcPlayerCommand.NEXT, _settings.VLC.Players.First(p => p.Name == playerName), ct);
-                        break;
+                        var player = _settings.VLC.Players.FirstOrDefault(p => p.Name == playerName);
+                        if (player is null)
+                        {
+                            _logger.LogWarning(LogEvents.ExecResourceMissing,
+                                "video.next: VLC player not found {Player}", playerName);
+                            throw new ArgumentException($"Unknown VLC player '{playerName}'");
+                        }
+
+                        _logger.LogInformation(LogEvents.ExecVideoNext,
+                            "video.next: issuing NEXT to {Player}", player.Name);
+
+                        await _vlc.SendCommandAsync(VlcPlayerCommand.NEXT, player, ct).ConfigureAwait(false);
+                        return;
                     }
 
                 case "video.pause":
                     {
                         var playerName = args.GetString("player", "Mediaplayer1");
-                        await _vlc.SendCommandAsync(VlcPlayerCommand.PAUSE, _settings.VLC.Players.First(p => p.Name == playerName), ct);
-                        break;
+                        var player = _settings.VLC.Players.FirstOrDefault(p => p.Name == playerName);
+                        if (player is null)
+                        {
+                            _logger.LogWarning(LogEvents.ExecResourceMissing,
+                                "video.pause: VLC player not found {Player}", playerName);
+                            throw new ArgumentException($"Unknown VLC player '{playerName}'");
+                        }
+
+                        _logger.LogInformation(LogEvents.ExecVideoPause,
+                            "video.pause: issuing PAUSE to {Player}", player.Name);
+
+                        await _vlc.SendCommandAsync(VlcPlayerCommand.PAUSE, player, ct).ConfigureAwait(false);
+                        return;
                     }
 
                 case "gpio.on":
                     {
-                        var pin = args.GetString("pin")
-                            ?? throw new ArgumentException("gpio.on requires 'pin'");
-                        await _gpio.LedOnAsync(ParseLed(pin), ct);
-                        break;
+                        var pinStr = args.GetString("pin");
+                        if (string.IsNullOrWhiteSpace(pinStr))
+                        {
+                            _logger.LogWarning(LogEvents.ExecArgMissing,
+                                "gpio.on requires argument {Arg}", "pin");
+                            throw new ArgumentException("gpio.on requires 'pin'");
+                        }
+
+                        var pin = ParseLed(pinStr);
+                        _logger.LogInformation(LogEvents.ExecGpioOn,
+                            "gpio.on: setting LED {Pin} ON", pin);
+
+                        await _gpio.LedOnAsync(pin, ct).ConfigureAwait(false);
+                        return;
                     }
 
                 case "gpio.off":
                     {
-                        var pin = args.GetString("pin")
-                            ?? throw new ArgumentException("gpio.off requires 'pin'");
-                        await _gpio.LedOffAsync(ParseLed(pin), ct);
-                        break;
+                        var pinStr = args.GetString("pin");
+                        if (string.IsNullOrWhiteSpace(pinStr))
+                        {
+                            _logger.LogWarning(LogEvents.ExecArgMissing,
+                                "gpio.off requires argument {Arg}", "pin");
+                            throw new ArgumentException("gpio.off requires 'pin'");
+                        }
+
+                        var pin = ParseLed(pinStr);
+                        _logger.LogInformation(LogEvents.ExecGpioOff,
+                            "gpio.off: setting LED {Pin} OFF", pin);
+
+                        await _gpio.LedOffAsync(pin, ct).ConfigureAwait(false);
+                        return;
                     }
 
                 case "gpio.blink":
                     {
                         var count = args.GetInt("count", 3);
                         var interval = args.GetInt("intervalMs", 100);
-                        await _gpio.LedsBlinkingAsync(count, interval, ct);
-                        break;
+
+                        _logger.LogInformation(LogEvents.ExecGpioBlink,
+                            "gpio.blink: blinking LEDs Count {Count} IntervalMs {IntervalMs}",
+                            count, interval);
+
+                        await _gpio.LedsBlinkingAsync(count, interval, ct).ConfigureAwait(false);
+                        return;
                     }
 
                 case "mqtt.pub":
                     {
-                        var topic = args.GetString("topic")
-                            ?? throw new ArgumentException("mqtt.pub requires 'topic'");
+                        var topic = args.GetString("topic");
+                        if (string.IsNullOrWhiteSpace(topic))
+                        {
+                            _logger.LogWarning(LogEvents.ExecArgMissing,
+                                "mqtt.pub requires argument {Arg}", "topic");
+                            throw new ArgumentException("mqtt.pub requires 'topic'");
+                        }
 
-                        // payload kann String ODER Objekt/Array sein:
+                        // Payload can be string OR JSON node
                         var payloadNode = args.GetNode("payload");
-                        var payload = payloadNode is JsonElement el ? el.GetRawText() : args.GetString("payload", "ON");
+                        var payload = payloadNode is JsonElement el
+                            ? el.GetRawText()
+                            : args.GetString("payload", "ON");
 
-                        await _mqtt.PublishAsync(topic, payload);
-                        break;
+                        _logger.LogInformation(LogEvents.ExecMqttPublish,
+                            "mqtt.pub: publishing to {Topic} (PayloadLength {Length})",
+                            topic, payload?.Length ?? 0);
+
+                        await _mqtt.PublishAsync(topic, payload).ConfigureAwait(false);
+                        return;
                     }
 
                 default:
-                    _logger.LogWarning($"Unknown action '{a}'");
-                    break;
+                    _logger.LogWarning(LogEvents.ExecUnknownAction,
+                        "Unknown action {Action}", action ?? "(null)");
+                    // Decide: either ignore silently or throw. Keeping warning+return keeps runtime lenient.
+                    return;
             }
         }
-
-        #endregion
 
         /// <summary>
         /// Parses a string into a <see cref="Led"/> enumeration value.
@@ -199,8 +210,10 @@ namespace BSolutions.Buttonboard.Services.Runtimes
         /// </summary>
         private static Led ParseLed(string s)
         {
-            if (Enum.TryParse<Led>(s, ignoreCase: true, out var led)) return led;
-            throw new ArgumentException($"Unknown Led '{s}'");
+            if (Enum.TryParse<Led>(s, ignoreCase: true, out var led))
+                return led;
+
+            throw new ArgumentException($"Unknown Led '{s}'", nameof(s));
         }
     }
 }
