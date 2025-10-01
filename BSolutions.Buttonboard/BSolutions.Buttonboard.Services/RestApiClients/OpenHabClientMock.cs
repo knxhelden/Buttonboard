@@ -43,7 +43,7 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
             await Task.Delay(25, ct).ConfigureAwait(false);
 
             var body = requestBody ?? string.Empty;
-            _states.AddOrUpdate(itemname, body, static (_, __) => body);
+            _states.AddOrUpdate(itemname, body, (_, __) => body);
 
             _logger.LogInformation(LogEvents.OpenHabCommandSent,
                 "openHAB mock command Item {Item} BodyLength {Length}",
@@ -80,7 +80,7 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
             await Task.Delay(25, ct).ConfigureAwait(false);
 
             var newState = command.ToString();
-            _states.AddOrUpdate(itemname, newState, static (_, __) => newState);
+            _states.AddOrUpdate(itemname, newState, (_, __) => newState);
 
             _logger.LogInformation(LogEvents.OpenHabStateUpdated,
                 "openHAB mock state updated Item {Item} -> {Command}",

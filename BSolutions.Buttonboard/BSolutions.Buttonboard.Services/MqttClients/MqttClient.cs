@@ -88,10 +88,9 @@ namespace BSolutions.Buttonboard.Services.MqttClients
 
             _client.DisconnectedAsync += e =>
             {
-                // MQTTnet v4 sets Reason on server disconnects; fall back to exception message
-                var reason = e.Reason?.ToString() ?? e.Exception?.Message ?? "unknown";
+                var reasonText = e.Exception?.Message ?? e.Reason.ToString();
                 _logger.LogWarning(LogEvents.MqttDisconnected,
-                    "MQTT disconnected: Reason {Reason}", reason);
+                    "MQTT disconnected: Reason {Reason}", reasonText);
                 return Task.CompletedTask;
             };
 
