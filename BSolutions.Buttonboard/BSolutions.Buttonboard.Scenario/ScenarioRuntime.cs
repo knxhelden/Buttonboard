@@ -183,9 +183,7 @@ namespace BSolutions.Buttonboard.Scenario
                             await _gpio.LedOnAsync(Led.SystemGreen);
 
                             // Run through the scenario setup again
-                            _logger.LogInformation("Reset: running setup…");
                             await SetupAsync(ct);
-                            _logger.LogInformation("Reset: setup finished.");
 
                             while (_gpio.IsButtonPressed(Button.BottomLeft) || _gpio.IsButtonPressed(Button.BottomRight))
                                 await Task.Delay(20, ct);
