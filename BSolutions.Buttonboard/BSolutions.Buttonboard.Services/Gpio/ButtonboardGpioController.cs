@@ -1,5 +1,7 @@
 ﻿using BSolutions.Buttonboard.Services.Extensions;
+using BSolutions.Buttonboard.Services.Logging;
 using BSolutions.Buttonboard.Services.Settings;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Device.Gpio;
 using System.Threading;
@@ -8,101 +10,159 @@ using System.Threading.Tasks;
 namespace BSolutions.Buttonboard.Services.Gpio
 {
     /// <summary>
-    /// Default implementation of <see cref="IButtonboardGpioController"/> using
-    /// <see cref="System.Device.Gpio.GpioController"/> to access the Raspberry Pi GPIO pins.
+    /// Default implementation of <see cref="IButtonboardGpioController"/> based on
+    /// <see cref="System.Device.Gpio.GpioController"/> for Raspberry Pi GPIO access.
+    /// Initializes pins, provides async LED operations, and synchronous button reads.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Responsibilities:
-    /// <list type="bullet">
-    ///   <item><description>Initializes button pins as <c>Input</c> and LED pins as <c>Output</c>.</description></item>
-    ///   <item><description>Provides asynchronous methods to set/reset LED states.</description></item>
-    ///   <item><description>Exposes synchronous checks for button states.</description></item>
-    ///   <item><description>Ensures safe cleanup of pins during disposal.</description></item>
-    /// </list>
-    /// </para>
-    /// </remarks>
-    public class ButtonboardGpioController : IButtonboardGpioController, IDisposable
+    public sealed class ButtonboardGpioController : IButtonboardGpioController, IDisposable
     {
-        private readonly System.Device.Gpio.GpioController _gpio;
-
-        #region --- Constructor ---
+        private readonly ILogger<ButtonboardGpioController> _logger;
+        private readonly GpioController _gpio;
 
         /// <summary>
         /// Creates a new <see cref="ButtonboardGpioController"/>.
         /// </summary>
-        /// <param name="settingsProvider">Provides GPIO mapping configuration (not directly used here, reserved for future extensions).</param>
-        /// <param name="gpioController">The underlying GPIO controller.</param>
-        public ButtonboardGpioController(ISettingsProvider settingsProvider,
-                              System.Device.Gpio.GpioController gpioController)
+        /// <param name="settingsProvider">Provides GPIO mapping configuration (reserved for future use).</param>
+        /// <param name="gpioController">Underlying GPIO controller.</param>
+        /// <param name="logger">Logger for diagnostics.</param>
+        public ButtonboardGpioController(
+            ISettingsProvider settingsProvider,
+            GpioController gpioController,
+            ILogger<ButtonboardGpioController> logger)
         {
-            _gpio = gpioController;
+            _gpio = gpioController ?? throw new ArgumentNullException(nameof(gpioController));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-
-        #endregion
-
-        #region --- IGpioController ---
 
         /// <inheritdoc />
         public void Initialize()
         {
-            // Buttons
-            foreach (Button button in Enum.GetValues<Button>())
+            try
             {
-                var pin = button.GetGpio();
-                if (!_gpio.IsPinOpen(pin))
-                    _gpio.OpenPin(pin, PinMode.Input);
-            }
+                // Buttons → Input
+                foreach (Button button in Enum.GetValues<Button>())
+                {
+                    var pin = button.GetGpio();
+                    if (!_gpio.IsPinOpen(pin))
+                        _gpio.OpenPin(pin, PinMode.Input);
+                }
 
-            // LEDs
-            foreach (Led led in Enum.GetValues<Led>())
+                // LEDs → Output (default Low/off)
+                foreach (Led led in Enum.GetValues<Led>())
+                {
+                    var pin = led.GetGpio();
+                    if (!_gpio.IsPinOpen(pin))
+                        _gpio.OpenPin(pin, PinMode.Output);
+
+                    _gpio.Write(pin, PinValue.Low);
+                }
+
+                _logger.LogInformation(LogEvents.GpioInitialized,
+                    "GPIO initialized: {Buttons} buttons, {Leds} LEDs",
+                    Enum.GetValues<Button>().Length, Enum.GetValues<Led>().Length);
+            }
+            catch (Exception ex)
             {
-                var pin = led.GetGpio();
-                if (!_gpio.IsPinOpen(pin))
-                    _gpio.OpenPin(pin, PinMode.Output);
-                // Default: off
-                _gpio.Write(pin, PinValue.Low);
+                _logger.LogError(LogEvents.GpioOperationErr, ex, "GPIO initialization failed");
+                throw;
             }
         }
 
         /// <inheritdoc />
         public Task ResetAsync(CancellationToken ct = default)
         {
-            // reine IO-Operation → synchron, aber ct respektieren, falls aufgerufen wird, während cancel requested ist
-            ct.ThrowIfCancellationRequested();
-            foreach (Led led in Enum.GetValues<Led>())
+            try
             {
-                _gpio.Write(led.GetGpio(), PinValue.Low);
+                ct.ThrowIfCancellationRequested();
+
+                foreach (Led led in Enum.GetValues<Led>())
+                {
+                    _gpio.Write(led.GetGpio(), PinValue.Low);
+                }
+
+                _logger.LogInformation(LogEvents.GpioReset, "All LEDs set to OFF");
+                return Task.CompletedTask;
             }
-            return Task.CompletedTask;
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("GPIO reset canceled");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(LogEvents.GpioOperationErr, ex, "GPIO reset failed");
+                throw;
+            }
         }
 
         /// <inheritdoc />
         public Task LedOnAsync(Led led, CancellationToken ct = default)
         {
-            ct.ThrowIfCancellationRequested();
-            _gpio.Write(led.GetGpio(), PinValue.High);
-            return Task.CompletedTask;
+            try
+            {
+                ct.ThrowIfCancellationRequested();
+                _gpio.Write(led.GetGpio(), PinValue.High);
+
+                _logger.LogInformation(LogEvents.GpioLedOn, "LED set ON {Led}", led);
+                return Task.CompletedTask;
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("LED ON canceled {Led}", led);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(LogEvents.GpioOperationErr, ex, "LED ON failed {Led}", led);
+                throw;
+            }
         }
 
         /// <inheritdoc />
         public Task LedOffAsync(Led led, CancellationToken ct = default)
         {
-            ct.ThrowIfCancellationRequested();
-            _gpio.Write(led.GetGpio(), PinValue.Low);
-            return Task.CompletedTask;
+            try
+            {
+                ct.ThrowIfCancellationRequested();
+                _gpio.Write(led.GetGpio(), PinValue.Low);
+
+                _logger.LogInformation(LogEvents.GpioLedOff, "LED set OFF {Led}", led);
+                return Task.CompletedTask;
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("LED OFF canceled {Led}", led);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(LogEvents.GpioOperationErr, ex, "LED OFF failed {Led}", led);
+                throw;
+            }
         }
 
         /// <inheritdoc />
         public bool IsButtonPressed(Button button)
         {
-            return _gpio.Read(button.GetGpio()) == PinValue.High;
+            try
+            {
+                var pressed = _gpio.Read(button.GetGpio()) == PinValue.High;
+                _logger.LogDebug(LogEvents.GpioButtonRead,
+                    "Button read {Button}: {Pressed}", button, pressed);
+                return pressed;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(LogEvents.GpioOperationErr, ex,
+                    "Button read failed {Button}", button);
+                throw;
+            }
         }
 
         /// <inheritdoc />
         public async Task LedsBlinkingAsync(int repetitions, int intervalMs = 500, CancellationToken ct = default)
         {
-            // Einfache Blink-Show für die neun Prozess-LEDs (deine Auswahl beibehalten)
+            // Use a fixed set of "process" LEDs – adapt if needed.
             Led[] leds =
             {
                 Led.ProcessRed1, Led.ProcessRed2, Led.ProcessRed3,
@@ -110,45 +170,54 @@ namespace BSolutions.Buttonboard.Services.Gpio
                 Led.ProcessGreen1, Led.ProcessGreen2, Led.ProcessGreen3
             };
 
-            for (int i = 0; i < repetitions; i++)
+            try
             {
-                ct.ThrowIfCancellationRequested();
+                _logger.LogInformation(LogEvents.GpioBlinkStart,
+                    "Blinking LEDs Repetitions {Repetitions} IntervalMs {IntervalMs}",
+                    repetitions, intervalMs);
 
-                // an
-                foreach (var led in leds)
-                    _gpio.Write(led.GetGpio(), PinValue.High);
+                for (int i = 0; i < repetitions; i++)
+                {
+                    ct.ThrowIfCancellationRequested();
 
-                await Task.Delay(intervalMs, ct).ConfigureAwait(false);
+                    // ON phase
+                    foreach (var led in leds)
+                        _gpio.Write(led.GetGpio(), PinValue.High);
 
-                // aus
-                foreach (var led in leds)
-                    _gpio.Write(led.GetGpio(), PinValue.Low);
+                    await Task.Delay(intervalMs, ct).ConfigureAwait(false);
 
-                await Task.Delay(intervalMs, ct).ConfigureAwait(false);
+                    // OFF phase
+                    foreach (var led in leds)
+                        _gpio.Write(led.GetGpio(), PinValue.Low);
+
+                    await Task.Delay(intervalMs, ct).ConfigureAwait(false);
+                }
+
+                _logger.LogInformation(LogEvents.GpioBlinkEnd,
+                    "Blinking completed Repetitions {Repetitions}", repetitions);
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation("Blinking canceled");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(LogEvents.GpioOperationErr, ex,
+                    "Blinking failed Repetitions {Repetitions} IntervalMs {IntervalMs}",
+                    repetitions, intervalMs);
+                throw;
             }
         }
 
-        #endregion
-
         /// <summary>
-        /// Disposes the GPIO controller by closing all pins and releasing resources.
+        /// Closes all pins and disposes the underlying controller.
         /// </summary>
-        /// <remarks>
-        /// <para>
-        /// During disposal:
-        /// <list type="bullet">
-        ///   <item><description>All LED pins are set to <c>Low</c> and closed.</description></item>
-        ///   <item><description>All button pins are closed.</description></item>
-        ///   <item><description>Underlying <see cref="GpioController"/> is disposed.</description></item>
-        /// </list>
-        /// Any exceptions during cleanup are intentionally swallowed to avoid crashes during application shutdown.
-        /// </para>
-        /// </remarks>
         public void Dispose()
         {
             try
             {
-                // Alle Pins sicher aus und schließen
+                // LEDs OFF + close
                 foreach (Led led in Enum.GetValues<Led>())
                 {
                     var pin = led.GetGpio();
@@ -158,6 +227,8 @@ namespace BSolutions.Buttonboard.Services.Gpio
                         _gpio.ClosePin(pin);
                     }
                 }
+
+                // Buttons close
                 foreach (Button button in Enum.GetValues<Button>())
                 {
                     var pin = button.GetGpio();
@@ -165,13 +236,14 @@ namespace BSolutions.Buttonboard.Services.Gpio
                         _gpio.ClosePin(pin);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                // Absichtlich schlucken – Dispose darf App nicht crashen
+                // Never crash on shutdown; still log for diagnostics.
+                _logger.LogWarning(LogEvents.GpioOperationErr, ex, "GPIO dispose encountered errors");
             }
             finally
             {
-                _gpio?.Dispose();
+                _gpio.Dispose();
             }
         }
     }

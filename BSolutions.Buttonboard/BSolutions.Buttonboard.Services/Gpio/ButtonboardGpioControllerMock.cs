@@ -3,42 +3,32 @@ using System;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Threading.Tasks;
+using BSolutions.Buttonboard.Services.Logging;
 
 namespace BSolutions.Buttonboard.Services.Gpio
 {
     /// <summary>
     /// In-memory mock of <see cref="IButtonboardGpioController"/> for tests and offline development.
+    /// Simulates LED and button states without touching real GPIO. Adds tiny delays to mimic async behavior.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// This mock does not access real GPIO pins. LED and button states are held in memory.
-    /// It simulates a tiny latency to better reflect asynchronous behavior.
-    /// </para>
-    /// <para>
-    /// Test helpers are provided to control button states and inspect LED states:
-    /// <see cref="SetButtonPressed(Button, bool)"/> and <see cref="GetLedState(Led)"/>.
-    /// </para>
-    /// </remarks>
     public sealed class ButtonboardGpioControllerMock : IButtonboardGpioController, IDisposable
     {
         private readonly ILogger<ButtonboardGpioControllerMock>? _logger;
         private readonly ConcurrentDictionary<Led, bool> _ledState = new();
         private readonly ConcurrentDictionary<Button, bool> _buttonState = new();
-        private bool _initialized;
-        private bool _disposed;
+        private volatile bool _initialized;
+        private volatile bool _disposed;
 
         /// <summary>
         /// Creates a new <see cref="ButtonboardGpioControllerMock"/>.
         /// </summary>
-        /// <param name="logger">Optional logger for simulation traces.</param>
+        /// <param name="logger">Optional logger for simulated traces.</param>
         public ButtonboardGpioControllerMock(ILogger<ButtonboardGpioControllerMock>? logger = null)
         {
             _logger = logger;
         }
 
-        /// <summary>
-        /// Initializes internal state for all LEDs (off) and buttons (not pressed).
-        /// </summary>
+        /// <inheritdoc />
         public void Initialize()
         {
             ThrowIfDisposed();
@@ -50,12 +40,12 @@ namespace BSolutions.Buttonboard.Services.Gpio
                 _buttonState[btn] = false;
 
             _initialized = true;
-            _logger?.LogInformation("[SIM/GPIO] Initialized mock GPIO controller.");
+            _logger?.LogInformation(LogEvents.GpioInitialized,
+                "GPIO mock initialized: {Buttons} buttons, {Leds} LEDs",
+                Enum.GetValues<Button>().Length, Enum.GetValues<Led>().Length);
         }
 
-        /// <summary>
-        /// Sets all LEDs to off.
-        /// </summary>
+        /// <inheritdoc />
         public Task ResetAsync(CancellationToken ct = default)
         {
             ThrowIfDisposed();
@@ -65,13 +55,11 @@ namespace BSolutions.Buttonboard.Services.Gpio
             foreach (var key in _ledState.Keys)
                 _ledState[key] = false;
 
-            _logger?.LogDebug("[SIM/GPIO] Reset all LEDs (off).");
+            _logger?.LogInformation(LogEvents.GpioReset, "All LEDs set to OFF (mock)");
             return Task.CompletedTask;
         }
 
-        /// <summary>
-        /// Turns a given LED on.
-        /// </summary>
+        /// <inheritdoc />
         public async Task LedOnAsync(Led led, CancellationToken ct = default)
         {
             ThrowIfDisposed();
@@ -80,12 +68,11 @@ namespace BSolutions.Buttonboard.Services.Gpio
 
             await Task.Delay(5, ct).ConfigureAwait(false); // simulate tiny latency
             _ledState[led] = true;
-            _logger?.LogDebug("[SIM/GPIO] LED ON: {Led}", led);
+
+            _logger?.LogInformation(LogEvents.GpioLedOn, "LED set ON {Led}", led);
         }
 
-        /// <summary>
-        /// Turns a given LED off.
-        /// </summary>
+        /// <inheritdoc />
         public async Task LedOffAsync(Led led, CancellationToken ct = default)
         {
             ThrowIfDisposed();
@@ -94,22 +81,22 @@ namespace BSolutions.Buttonboard.Services.Gpio
 
             await Task.Delay(5, ct).ConfigureAwait(false);
             _ledState[led] = false;
-            _logger?.LogDebug("[SIM/GPIO] LED OFF: {Led}", led);
+
+            _logger?.LogInformation(LogEvents.GpioLedOff, "LED set OFF {Led}", led);
         }
 
-        /// <summary>
-        /// Returns whether a given button is pressed.
-        /// </summary>
+        /// <inheritdoc />
         public bool IsButtonPressed(Button button)
         {
             ThrowIfDisposed();
             EnsureInitialized();
-            return _buttonState.TryGetValue(button, out var pressed) && pressed;
+
+            var pressed = _buttonState.TryGetValue(button, out var p) && p;
+            _logger?.LogDebug(LogEvents.GpioButtonRead, "Button read {Button}: {Pressed}", button, pressed);
+            return pressed;
         }
 
-        /// <summary>
-        /// Blinks a predefined set of process LEDs, similar to the real controller.
-        /// </summary>
+        /// <inheritdoc />
         public async Task LedsBlinkingAsync(int repetitions, int intervalMs = 500, CancellationToken ct = default)
         {
             ThrowIfDisposed();
@@ -122,42 +109,45 @@ namespace BSolutions.Buttonboard.Services.Gpio
                 Led.ProcessGreen1, Led.ProcessGreen2, Led.ProcessGreen3
             };
 
+            _logger?.LogInformation(LogEvents.GpioBlinkStart,
+                "Blinking LEDs (mock) Repetitions {Repetitions} IntervalMs {IntervalMs}",
+                repetitions, intervalMs);
+
             for (int i = 0; i < repetitions; i++)
             {
                 ct.ThrowIfCancellationRequested();
 
                 foreach (var led in leds) _ledState[led] = true;
-                _logger?.LogTrace("[SIM/GPIO] Blink cycle {Cycle}: ON", i + 1);
                 await Task.Delay(intervalMs, ct).ConfigureAwait(false);
 
                 foreach (var led in leds) _ledState[led] = false;
-                _logger?.LogTrace("[SIM/GPIO] Blink cycle {Cycle}: OFF", i + 1);
                 await Task.Delay(intervalMs, ct).ConfigureAwait(false);
             }
+
+            _logger?.LogInformation(LogEvents.GpioBlinkEnd,
+                "Blinking completed (mock) Repetitions {Repetitions}", repetitions);
         }
 
         /// <summary>
-        /// Sets the pressed-state of a button (test helper).
+        /// Test helper: sets the pressed-state of a button.
         /// </summary>
-        /// <param name="button">The button to modify.</param>
-        /// <param name="pressed">Whether the button is pressed.</param>
         public void SetButtonPressed(Button button, bool pressed)
         {
             ThrowIfDisposed();
             EnsureInitialized();
+
             _buttonState[button] = pressed;
-            _logger?.LogDebug("[SIM/GPIO] Button {Button} -> {State}", button, pressed ? "PRESSED" : "RELEASED");
+            _logger?.LogDebug("Button state changed {Button} -> {State}", button, pressed ? "PRESSED" : "RELEASED");
         }
 
         /// <summary>
-        /// Returns the current logical state of a given LED (test helper).
+        /// Test helper: gets the current logical state of a given LED.
         /// </summary>
-        /// <param name="led">The LED to read.</param>
-        /// <returns><c>true</c> if on; otherwise <c>false</c>.</returns>
         public bool GetLedState(Led led)
         {
             ThrowIfDisposed();
             EnsureInitialized();
+
             return _ledState.TryGetValue(led, out var on) && on;
         }
 
@@ -171,7 +161,7 @@ namespace BSolutions.Buttonboard.Services.Gpio
 
             _ledState.Clear();
             _buttonState.Clear();
-            _logger?.LogDebug("[SIM/GPIO] Mock disposed.");
+            _logger?.LogDebug("GPIO mock disposed");
         }
 
         private void ThrowIfDisposed()

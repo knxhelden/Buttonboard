@@ -40,5 +40,15 @@ namespace BSolutions.Buttonboard.Services.Logging
         public static readonly EventId ExecGpioBlink = new(5302, nameof(ExecGpioBlink));
 
         public static readonly EventId ExecMqttPublish = new(5400, nameof(ExecMqttPublish));
+
+        // --- GPIO ---
+        public static readonly EventId GpioInitialized = new(6000, nameof(GpioInitialized));
+        public static readonly EventId GpioReset = new(6001, nameof(GpioReset));
+        public static readonly EventId GpioLedOn = new(6010, nameof(GpioLedOn));
+        public static readonly EventId GpioLedOff = new(6011, nameof(GpioLedOff));
+        public static readonly EventId GpioBlinkStart = new(6020, nameof(GpioBlinkStart));
+        public static readonly EventId GpioBlinkEnd = new(6021, nameof(GpioBlinkEnd));
+        public static readonly EventId GpioButtonRead = new(6030, nameof(GpioButtonRead));
+        public static readonly EventId GpioOperationErr = new(6099, nameof(GpioOperationErr));
     }
 }
