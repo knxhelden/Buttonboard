@@ -2,7 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace BSolutions.Buttonboard.Services.Runtimes
+namespace BSolutions.Buttonboard.Services.Loaders
 {
     /// <summary>
     /// Represents a single step in a <see cref="ScenarioAssetDefinition"/>.

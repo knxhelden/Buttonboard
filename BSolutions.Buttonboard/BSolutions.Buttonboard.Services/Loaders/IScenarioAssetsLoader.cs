@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BSolutions.Buttonboard.Services.Runtimes
+namespace BSolutions.Buttonboard.Services.Loaders
 {
     /// <summary>
     /// Provides access to all <b>scenario assets</b> (scenes and setup) stored as JSON files.

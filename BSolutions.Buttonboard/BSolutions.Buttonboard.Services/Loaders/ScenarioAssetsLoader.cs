@@ -10,7 +10,7 @@ using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BSolutions.Buttonboard.Services.Runtimes
+namespace BSolutions.Buttonboard.Services.Loaders
 {
     /// <summary>
     /// Loads scenario assets (scenes and setup) from JSON files into a thread-safe cache

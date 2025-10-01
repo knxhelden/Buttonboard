@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace BSolutions.Buttonboard.Services.Runtimes
+namespace BSolutions.Buttonboard.Services.Loaders
 {
     /// <summary>
     /// Represents a <b>scenario asset</b> loaded from a JSON file.
