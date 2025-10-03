@@ -14,6 +14,13 @@ SAMBA_READONLY="no"                  # "yes" for read-only
 # Webmin (default port 10000)
 WEBMIN_INFO_PORT="10000"
 
+# Frontail
+FRONTAIL_PORT="9001"
+FRONTAIL_THEME="dark"                # "dark" or "light"
+FRONTAIL_LINES="500"                 # number of lines to show initially
+LIVE_LOG_PATH="${APP_DIR}/logs/live.log"
+FRONTAIL_SERVICE="/etc/systemd/system/frontail.service"
+
 ### ─────────────────────────── Logging ────────────────────────────────
 log()  { echo -e "\033[1;32m[+] $*\033[0m"; }
 warn() { echo -e "\033[1;33m[!] $*\033[0m"; }
@@ -25,8 +32,11 @@ PI_IP="$(hostname -I | awk '{print $1}')"
 
 ### ─────────────────────────── Helpers ────────────────────────────────
 require_root() { [[ "${EUID}" -eq 0 ]] || { err "Please run this script with sudo/root."; exit 1; }; }
+
 apt_install() { DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "$@"; }
+
 file_has_block() { local f="$1" h="$2"; [[ -f "$f" ]] && grep -qF "$h" "$f"; }
+
 append_block_if_missing() {
   local f="$1" h="$2" b="$3"
   if file_has_block "$f" "$h"; then
@@ -46,6 +56,12 @@ prepare_fs() {
   mkdir -p "${APP_DIR}"
   chown -R "${SAMBA_USER}:${SAMBA_USER}" "${APP_DIR}"
   log "App directory ready: ${APP_DIR}"
+
+  # Ensure logs dir + live.log exist for frontail
+  mkdir -p "${APP_DIR}/logs"
+  touch "${LIVE_LOG_PATH}"
+  chown -R "${SAMBA_USER}:${SAMBA_USER}" "${APP_DIR}/logs"
+  log "Prepared logs directory and live log: ${LIVE_LOG_PATH}"
 }
 
 ### ─────────────────────────── Samba setup ────────────────────────────
@@ -112,6 +128,59 @@ install_webmin() {
   log "Webmin running at: https://${PI_IP}:${WEBMIN_INFO_PORT}/"
 }
 
+### ────────────────────────── Frontail setup ──────────────────────────
+setup_frontail() {
+  log "Installing Node.js + npm (for frontail)…"
+  # Use distro nodejs/npm; sufficient for frontail
+  if ! command -v node >/dev/null 2>&1; then
+    apt_install nodejs npm
+  else
+    log "Node.js already present: $(node -v)"
+  fi
+
+  log "Installing frontail globally via npm…"
+  # Ensure npm can write globally; on Debian/Ubuntu it installs to /usr/local/bin
+  npm install -g frontail >/dev/null 2>&1 || npm install -g frontail
+  local FRONTAIL_BIN
+  FRONTAIL_BIN="$(command -v frontail || true)"
+  if [[ -z "${FRONTAIL_BIN}" ]]; then
+    err "frontail binary not found after installation."
+    exit 1
+  fi
+  log "frontail installed at: ${FRONTAIL_BIN}"
+
+  # Ensure log file exists and is accessible
+  mkdir -p "$(dirname "${LIVE_LOG_PATH}")"
+  touch "${LIVE_LOG_PATH}"
+  chown -R "${SAMBA_USER}:${SAMBA_USER}" "$(dirname "${LIVE_LOG_PATH}")"
+
+  log "Creating/Updating systemd service for frontail…"
+  cat > "${FRONTAIL_SERVICE}" <<EOF
+[Unit]
+Description=Frontail live log viewer for ${APP_NAME}
+After=network.target
+
+[Service]
+ExecStart=${FRONTAIL_BIN} --theme ${FRONTAIL_THEME} -p ${FRONTAIL_PORT} -h 0.0.0.0 -n ${FRONTAIL_LINES} ${LIVE_LOG_PATH}
+Restart=always
+User=${SAMBA_USER}
+WorkingDirectory=${APP_DIR}
+Environment=NODE_OPTIONS=--no-deprecation
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  systemctl daemon-reload
+  systemctl enable --now frontail
+  systemctl restart frontail || true
+
+  log "Frontail running at: http://${PI_IP}:${FRONTAIL_PORT}/"
+  echo "  • Tailing file:   ${LIVE_LOG_PATH}"
+  echo "  • Theme:          ${FRONTAIL_THEME}"
+  echo "  • Lines shown:    ${FRONTAIL_LINES}"
+}
+
 ### ───────────────────────────── Main ─────────────────────────────────
 main() {
   require_root
@@ -119,6 +188,7 @@ main() {
   prepare_fs
   setup_samba
   install_webmin
+  setup_frontail
 
   cat <<SUMMARY
 
@@ -128,10 +198,11 @@ main() {
     ${APP_DIR}
   (make sure the binary is executable, e.g.: chmod +x ${APP_DIR}/BSolutions.Buttonboard.App)
 
-• Webmin:            https://${PI_IP}:${WEBMIN_INFO_PORT}/
-  (accept self-signed certificate warning)
+• Webmin:            https://${PI_IP}:${WEBMIN_INFO_PORT}/  (self-signed)
+• Frontail:          http://${PI_IP}:${FRONTAIL_PORT}/
+  → Live view of:    ${LIVE_LOG_PATH}
 
-• App Start: Start your app manually after deployment, e.g.:
+• App Start:         Start your app manually after deployment, e.g.:
   ${APP_DIR}/./BSolutions.Buttonboard.App
 ────────────────────────────────────────────────────────────────────
 SUMMARY
