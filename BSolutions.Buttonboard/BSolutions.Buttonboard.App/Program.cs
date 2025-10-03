@@ -10,6 +10,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Core;
+using Serilog.Events;
 using System;
 using System.Device.Gpio;
 using System.IO;
@@ -21,53 +24,66 @@ namespace BSolutions.Buttonboard.App
     {
         private static async Task Main(string[] args)
         {
-            await Host.CreateDefaultBuilder(args)
-                .UseContentRoot(AppContext.BaseDirectory)
-                .ConfigureAppConfiguration((context, configuration) =>
-                {
-                    configuration.SetBasePath(context.HostingEnvironment.ContentRootPath);
-                    configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-                })
-                .ConfigureLogging((context, logging) =>
-                {
-                    logging.AddConfiguration(context.Configuration.GetSection("Logging"));
-                    logging.ClearProviders();
-                    logging.AddConsole();
-                })
-                .ConfigureServices((context, services) =>
-                {
-                    services.AddButtonboardOptions(context.Configuration);
-                    services.AddHostedService<ConsoleHostedService>()
-                    .AddSingleton<IScenarioAssetsLoader>(sp =>
+            try
+            {
+                Log.Information("Bootstrapping host…");
+
+                await Host.CreateDefaultBuilder(args)
+                    .UseContentRoot(AppContext.BaseDirectory)
+                    .UseSerilog((ctx, svcs, cfg) =>
                     {
-                        var logger = sp.GetRequiredService<ILogger<ScenarioAssetsLoader>>();
-                        var settings = sp.GetRequiredService<ISettingsProvider>();
-                        var path = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, settings.Application.ScenarioAssetsFolder));
-                        Directory.CreateDirectory(path);
-                        return new ScenarioAssetsLoader(logger, path);
+                        cfg.ReadFrom.Configuration(ctx.Configuration)
+                           .ReadFrom.Services(svcs);
                     })
-                    .AddSingleton<GpioController>()
-                    .AddSingleton<IButtonboardGpioController, ButtonboardGpioController>()
-                    .AddByMode<IOpenHabClient, OpenHabClient, OpenHabClientMock>(sp =>
+                    .ConfigureAppConfiguration((context, configuration) =>
                     {
-                        var app = sp.GetRequiredService<ISettingsProvider>().Application;
-                        return app.OperationMode == OperationMode.Simulated;
+                        configuration.SetBasePath(context.HostingEnvironment.ContentRootPath);
+                        configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
                     })
-                    .AddByMode<IMqttClient, MqttClient, MqttClientMock>(sp =>
+                    .ConfigureServices((context, services) =>
                     {
-                        var app = sp.GetRequiredService<ISettingsProvider>().Application;
-                        return app.OperationMode == OperationMode.Simulated;
+                        services.AddButtonboardOptions(context.Configuration);
+
+                        services.AddHostedService<ConsoleHostedService>()
+                        .AddSingleton<IScenarioAssetsLoader>(sp =>
+                        {
+                            var logger = sp.GetRequiredService<ILogger<ScenarioAssetsLoader>>();
+                            var settings = sp.GetRequiredService<ISettingsProvider>();
+                            var path = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, settings.Application.ScenarioAssetsFolder));
+                            Directory.CreateDirectory(path);
+                            return new ScenarioAssetsLoader(logger, path);
+                        })
+                        .AddSingleton<GpioController>()
+                        .AddSingleton<IButtonboardGpioController, ButtonboardGpioController>()
+                        .AddByMode<IOpenHabClient, OpenHabClient, OpenHabClientMock>(sp =>
+                        {
+                            var app = sp.GetRequiredService<ISettingsProvider>().Application;
+                            return app.OperationMode == OperationMode.Simulated;
+                        })
+                        .AddByMode<IMqttClient, MqttClient, MqttClientMock>(sp =>
+                        {
+                            var app = sp.GetRequiredService<ISettingsProvider>().Application;
+                            return app.OperationMode == OperationMode.Simulated;
+                        })
+                        .AddByMode<IVlcPlayerClient, VlcPlayerClient, VlcPlayerClientMock>(sp =>
+                        {
+                            var app = sp.GetRequiredService<ISettingsProvider>().Application;
+                            return app.OperationMode == OperationMode.Simulated;
+                        })
+                        .AddSingleton<IScenario, ScenarioRuntime>()
+                        .AddSingleton<IScenarioAssetRuntime, ScenarioAssetRuntime>()
+                        .AddSingleton<IActionExecutor, ActionExecutor>();
                     })
-                    .AddByMode<IVlcPlayerClient, VlcPlayerClient, VlcPlayerClientMock>(sp =>
-                    {
-                        var app = sp.GetRequiredService<ISettingsProvider>().Application;
-                        return app.OperationMode == OperationMode.Simulated;
-                    })
-                    .AddSingleton<IScenario, ScenarioRuntime>()
-                    .AddSingleton<IScenarioAssetRuntime, ScenarioAssetRuntime>()
-                    .AddSingleton<IActionExecutor, ActionExecutor>();
-                })
-                .RunConsoleAsync();
+                    .RunConsoleAsync();
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Host terminated unexpectedly.");
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
         }
     }
 }
