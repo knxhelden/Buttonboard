@@ -97,9 +97,9 @@ sudo bash install.sh
 The script will:
 
 - Install all required dependencies
-- Set up Webmin system administration tool: **https://[RASPBERRY-PI-IP]:10000**
+- Set up Webmin system administration tool: ***https://[RASPBERRY-PI-IP]:10000***
+- Set up frontail for log monitoring:  ***http://[RASPBERRY-PI-IP]:9001***
 - Configure Samba shared folder for buttonboard app deployment
-- Set up frontail for log monitoring:  **http://[RASPBERRY-PI-IP]:9001**
   
 *(By default the app path is `/opt/buttonboard` on the Raspberry Pi and exposes it as a network share `\\buttonboard\deploy`)*
 
