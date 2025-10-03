@@ -36,8 +36,8 @@ namespace BSolutions.Buttonboard.App
                 })
                 .ConfigureServices((context, services) =>
                 {
+                    services.AddButtonboardOptions(context.Configuration);
                     services.AddHostedService<ConsoleHostedService>()
-                    .AddSingleton<ISettingsProvider, SettingsProvider>()
                     .AddSingleton<IScenarioAssetsLoader>(sp =>
                     {
                         var logger = sp.GetRequiredService<ILogger<ScenarioAssetsLoader>>();

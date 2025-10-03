@@ -3,7 +3,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using BSolutions.Buttonboard.Services.Enumerations;
 using BSolutions.Buttonboard.Services.Logging;
-using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Logging;
 
 namespace BSolutions.Buttonboard.Services.RestApiClients
@@ -26,17 +25,19 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
         }
 
         /// <inheritdoc />
-        public async Task SendCommandAsync(VlcPlayerCommand command, VLCPlayer player, CancellationToken ct = default)
+        public async Task SendCommandAsync(VlcPlayerCommand command, string playerName, CancellationToken ct = default)
         {
-            if (player is null) throw new ArgumentNullException(nameof(player));
+            if (string.IsNullOrWhiteSpace(playerName))
+                throw new ArgumentException("Player name must be provided.", nameof(playerName));
+
             ct.ThrowIfCancellationRequested();
 
             // Simulate tiny I/O latency
             await Task.Delay(15, ct).ConfigureAwait(false);
 
             _logger.LogInformation(LogEvents.VlcCommandSent,
-                "VLC mock command Player {Player} Command {Command} BaseUri {BaseUri}",
-                player.Name ?? "(unnamed)", command, player.BaseUri?.ToString() ?? "<null>");
+                "[SIM/VLC] Command {Command} -> Player {Player}",
+                command, playerName);
         }
     }
 }

@@ -65,14 +65,14 @@ namespace BSolutions.Buttonboard.Services.Runtimes
                         var url = args.GetString("url");
                         if (string.IsNullOrWhiteSpace(url))
                         {
-                            _logger.LogWarning(LogEvents.ExecArgMissing,
-                                "audio.play requires argument {Arg}", "url");
+                            _logger.LogWarning(LogEvents.ExecArgMissing, "audio.play requires argument {Arg}", "url");
                             throw new ArgumentException("audio.play requires 'url'");
                         }
 
                         var playerName = args.GetString("player", "Player1");
-                        var player = _settings.OpenHAB.Audio.Players.FirstOrDefault(p => p.Name == playerName);
-                        if (player is null)
+
+                        // NEU: Dictionary-Lookup statt .Players.FirstOrDefault(...)
+                        if (!_settings.OpenHAB.Audio.TryGetValue(playerName, out var player))
                         {
                             _logger.LogWarning(LogEvents.ExecResourceMissing,
                                 "audio.play: OpenHAB player not found {Player}", playerName);
@@ -81,7 +81,7 @@ namespace BSolutions.Buttonboard.Services.Runtimes
 
                         _logger.LogInformation(LogEvents.ExecAudioPlay,
                             "audio.play: sending URL to player {Player} (Item {StreamItem})",
-                            player.Name, player.StreamItem);
+                            playerName, player.StreamItem);
 
                         await _openhab.SendCommandAsync(player.StreamItem, url, ct).ConfigureAwait(false);
                         return;
@@ -90,8 +90,9 @@ namespace BSolutions.Buttonboard.Services.Runtimes
                 case "video.next":
                     {
                         var playerName = args.GetString("player", "Mediaplayer1");
-                        var player = _settings.VLC.Players.FirstOrDefault(p => p.Name == playerName);
-                        if (player is null)
+
+                        // NEU: Dictionary-Lookup
+                        if (!_settings.VLC.Players.TryGetValue(playerName, out var _))
                         {
                             _logger.LogWarning(LogEvents.ExecResourceMissing,
                                 "video.next: VLC player not found {Player}", playerName);
@@ -99,17 +100,18 @@ namespace BSolutions.Buttonboard.Services.Runtimes
                         }
 
                         _logger.LogInformation(LogEvents.ExecVideoNext,
-                            "video.next: issuing NEXT to {Player}", player.Name);
+                            "video.next: issuing NEXT to {Player}", playerName);
 
-                        await _vlc.SendCommandAsync(VlcPlayerCommand.NEXT, player, ct).ConfigureAwait(false);
+                        // NEU: API erwartet string statt Objekt
+                        await _vlc.SendCommandAsync(VlcPlayerCommand.NEXT, playerName, ct).ConfigureAwait(false);
                         return;
                     }
 
                 case "video.pause":
                     {
                         var playerName = args.GetString("player", "Mediaplayer1");
-                        var player = _settings.VLC.Players.FirstOrDefault(p => p.Name == playerName);
-                        if (player is null)
+
+                        if (!_settings.VLC.Players.TryGetValue(playerName, out var _))
                         {
                             _logger.LogWarning(LogEvents.ExecResourceMissing,
                                 "video.pause: VLC player not found {Player}", playerName);
@@ -117,9 +119,9 @@ namespace BSolutions.Buttonboard.Services.Runtimes
                         }
 
                         _logger.LogInformation(LogEvents.ExecVideoPause,
-                            "video.pause: issuing PAUSE to {Player}", player.Name);
+                            "video.pause: issuing PAUSE to {Player}", playerName);
 
-                        await _vlc.SendCommandAsync(VlcPlayerCommand.PAUSE, player, ct).ConfigureAwait(false);
+                        await _vlc.SendCommandAsync(VlcPlayerCommand.PAUSE, playerName, ct).ConfigureAwait(false);
                         return;
                     }
 
@@ -182,19 +184,31 @@ namespace BSolutions.Buttonboard.Services.Runtimes
                             throw new ArgumentException("mqtt.pub requires 'topic'");
                         }
 
-                        // Payload can be string OR JSON node
+                        // Payload can be string OR JSON
                         var payloadNode = args.GetNode("payload");
-                        var payload = payloadNode is JsonElement el
-                            ? el.GetRawText()
-                            : args.GetString("payload", "ON");
+
+                        string payload;
+                        if (payloadNode is JsonElement el)
+                        {
+                            // Strings as plain text, otherwise raw JSON
+                            payload = el.ValueKind == JsonValueKind.String
+                                ? (el.GetString() ?? string.Empty)
+                                : el.GetRawText();
+                        }
+                        else
+                        {
+                            // Fallback to simple string
+                            payload = args.GetString("payload", "ON") ?? string.Empty;
+                        }
 
                         _logger.LogInformation(LogEvents.ExecMqttPublish,
                             "mqtt.pub: publishing to {Topic} (PayloadLength {Length})",
-                            topic, payload?.Length ?? 0);
+                            topic, payload.Length);
 
-                        await _mqtt.PublishAsync(topic, payload).ConfigureAwait(false);
+                        await _mqtt.PublishAsync(topic, payload, ct).ConfigureAwait(false);
                         return;
                     }
+
 
                 default:
                     _logger.LogWarning(LogEvents.ExecUnknownAction,

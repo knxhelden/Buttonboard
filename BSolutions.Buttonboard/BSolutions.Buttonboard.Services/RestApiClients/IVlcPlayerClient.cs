@@ -1,5 +1,4 @@
 ﻿using BSolutions.Buttonboard.Services.Enumerations;
-using BSolutions.Buttonboard.Services.Settings;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -28,20 +27,12 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
     public interface IVlcPlayerClient
     {
         /// <summary>
-        /// Sends a VLC control <paramref name="command"/> to the specified <paramref name="player"/>.
+        /// Sends a VLC control <paramref name="command"/> to the specified <paramref name="playerName"/>.
         /// </summary>
-        /// <param name="command">
-        /// The high-level VLC command to execute (e.g., play, pause, stop).
-        /// </param>
-        /// <param name="player">
-        /// The VLC player configuration, including its network endpoint and authentication details.
-        /// </param>
-        /// <param name="ct">
-        /// A cancellation token to observe while waiting for the task to complete.
-        /// </param>
-        /// <returns>
-        /// A task that represents the asynchronous send operation.
-        /// </returns>
-        Task SendCommandAsync(VlcPlayerCommand command, VLCPlayer player, CancellationToken ct = default);
+        /// <param name="command">The high-level VLC command to execute (e.g., play, pause, stop).</param>
+        /// <param name="playerName">The configured VLC player name (key in settings).</param>
+        /// <param name="ct">Cancellation token.</param>
+        Task SendCommandAsync(VlcPlayerCommand command, string playerName, CancellationToken ct = default);
+
     }
 }
