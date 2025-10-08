@@ -18,7 +18,6 @@ namespace BSolutions.Buttonboard.Scenario
     /// Features:
     /// - Rising-edge detection with debouncing
     /// - Stage-based progression of scenes (1→2→3→4, cyclic)
-    /// - Termination combo to cancel the current scene
     /// - TestOperation mode (from <see cref="Application.TestOperation"/>):
     ///   ignores stage progression and allows any button to trigger its scene at any time
     /// </summary>
@@ -53,9 +52,6 @@ namespace BSolutions.Buttonboard.Scenario
         /// In normal mode this enforces sequential playback.
         /// </summary>
         private int _stage = 0;
-
-        private bool _lastResetComboPressed = false;
-        private bool _resetInProgress = false;
 
         /// <summary>
         /// Last observed pressed-state per button (for rising-edge detection).
@@ -161,62 +157,14 @@ namespace BSolutions.Buttonboard.Scenario
             {
                 while (!ct.IsCancellationRequested)
                 {
-                    var comboPressedNow = _gpio.IsButtonPressed(Button.BottomLeft) && _gpio.IsButtonPressed(Button.BottomRight);
-                    var resetEdge = comboPressedNow && !_lastResetComboPressed;
-                    _lastResetComboPressed = comboPressedNow;
-
-                    // Termination combination → When the buttons are pressed, the scenario is restarted
-                    if (resetEdge && !_resetInProgress)
+                    foreach (var s in _scenes)
                     {
-                        _resetInProgress = true;
-
-                        try
-                        {
-                            _logger.LogInformation("Termination combo detected → restart scenario.");
-
-                            // Is a scene running? Stop it first.
-                            await _sceneRuntime.CancelAsync();
-
-                            // Reset GPIO & internal state
-                            await _gpio.ResetAsync();
-                            _stage = 0;
-                            ResetEdgeTracking();
-
-
-                            await _gpio.LedOnAsync(Led.SystemGreen);
-
-                            // Run through the scenario setup again
-                            await SetupAsync(ct);
-
-                            while (_gpio.IsButtonPressed(Button.BottomLeft) || _gpio.IsButtonPressed(Button.BottomRight))
-                                await Task.Delay(20, ct);
-
-                            _lastResetComboPressed = false;
-                            await Task.Delay(PollDelayMs, ct);
-                            continue;
-                        }
-                        finally
-                        {
-                            _resetInProgress = false;
-                        }
+                        HandleButtonRisingEdge(sw, s.TriggerButton, () => TryTriggerSceneAsync(s, ct));
                     }
-                    else
-                    {
-                        if (_resetInProgress || comboPressedNow)
-                        {
-                            await Task.Delay(PollDelayMs, ct);
-                        }
-                        else
-                        {
-                            foreach (var s in _scenes)
-                            {
-                                HandleButtonRisingEdge(sw, s.TriggerButton, () => TryTriggerSceneAsync(s, ct));
-                            }
 
-                            await Task.Delay(PollDelayMs, ct);
-                        }
-                    }
+                    await Task.Delay(PollDelayMs, ct);
                 }
+
             }
             catch (OperationCanceledException)
             {
@@ -333,16 +281,6 @@ namespace BSolutions.Buttonboard.Scenario
             }
 
             _stage = (scene.RequiredStage + 1) % _scenes.Count;
-        }
-
-        private void ResetEdgeTracking()
-        {
-            foreach (var b in Enum.GetValues<Button>())
-            {
-                // Set "lastState" to the current hardware state so that no fake rising edge is detected if it is still held.
-                _lastState[b] = _gpio.IsButtonPressed(b);
-                _lastFireMs[b] = -1;
-            }
         }
 
         #endregion
