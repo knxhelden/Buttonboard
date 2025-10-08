@@ -1,6 +1,8 @@
 ﻿using BSolutions.Buttonboard.Services.Enumerations;
 using BSolutions.Buttonboard.Services.Logging;
+using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -20,13 +22,22 @@ namespace BSolutions.Buttonboard.Services.Loaders
     /// </summary>
     public sealed class ScenarioAssetsLoader : IScenarioAssetsLoader, IDisposable
     {
+        #region --- Constants / Static ---
+
+        private const string JsonSearchPattern = "*.json";
+        private static readonly StringComparer KeyComparer = StringComparer.OrdinalIgnoreCase;
+
+        #endregion
+
         #region --- Fields ---
 
         private readonly ILogger<ScenarioAssetsLoader> _logger;
         private readonly string _assetsDirectory;
+        private readonly string _setupKey;
         private readonly FileSystemWatcher _watcher;
+
         private readonly ConcurrentDictionary<string, ScenarioAssetDefinition> _cache =
-            new(StringComparer.OrdinalIgnoreCase);
+            new(KeyComparer);
 
         private readonly JsonSerializerOptions _jsonOptions = new()
         {
@@ -45,17 +56,24 @@ namespace BSolutions.Buttonboard.Services.Loaders
         /// </summary>
         /// <param name="logger">Logger instance for this loader.</param>
         /// <param name="assetsDirectory">Directory that contains the scenario JSON files.</param>
+        /// <param name="scenarioOptions">Options to resolve the setup key.</param>
         /// <exception cref="ArgumentNullException">Thrown when <paramref name="assetsDirectory"/> is null.</exception>
-        public ScenarioAssetsLoader(ILogger<ScenarioAssetsLoader> logger, string assetsDirectory)
+        public ScenarioAssetsLoader(
+            ILogger<ScenarioAssetsLoader> logger,
+            string assetsDirectory,
+            IOptions<ScenarioOptions> scenarioOptions)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _assetsDirectory = assetsDirectory ?? throw new ArgumentNullException(nameof(assetsDirectory));
+
+            var opts = scenarioOptions?.Value ?? throw new ArgumentNullException(nameof(scenarioOptions));
+            _setupKey = string.IsNullOrWhiteSpace(opts.Setup?.Key) ? "setup" : opts.Setup.Key;
 
             // Ensure directory exists (no-op if already present).
             Directory.CreateDirectory(_assetsDirectory);
 
             // Configure file watcher (no events until StartAsync enables it).
-            _watcher = new FileSystemWatcher(_assetsDirectory, "*.json")
+            _watcher = new FileSystemWatcher(_assetsDirectory, JsonSearchPattern)
             {
                 IncludeSubdirectories = false,
                 EnableRaisingEvents = false,
@@ -76,7 +94,7 @@ namespace BSolutions.Buttonboard.Services.Loaders
         /// <inheritdoc />
         public async Task StartAsync(CancellationToken ct = default)
         {
-            foreach (var file in Directory.EnumerateFiles(_assetsDirectory, "*.json"))
+            foreach (var file in Directory.EnumerateFiles(_assetsDirectory, JsonSearchPattern))
             {
                 ct.ThrowIfCancellationRequested();
                 await LoadAssetToCacheAsync(file).ConfigureAwait(false);
@@ -103,10 +121,10 @@ namespace BSolutions.Buttonboard.Services.Loaders
 
         /// <inheritdoc />
         public bool TryGetSetup(out ScenarioAssetDefinition? setup) =>
-            TryGet("setup", out setup);
+            TryGet(_setupKey, out setup);
 
         /// <inheritdoc />
-        public IEnumerable<string> Keys => _cache.Keys;
+        public IEnumerable<string> Keys => _cache.Keys.ToArray(); // snapshot to avoid enumeration issues
 
         #endregion
 
@@ -149,7 +167,7 @@ namespace BSolutions.Buttonboard.Services.Loaders
                 if (def is null)
                     return;
 
-                def = Normalize(def, key);
+                def = Normalize(def, key, _setupKey);
                 _cache[key] = def;
 
                 _logger.LogInformation(LogEvents.AssetLoaded,
@@ -190,7 +208,7 @@ namespace BSolutions.Buttonboard.Services.Loaders
         /// <summary>
         /// Ensures a consistent shape: filters invalid steps, sorts by time and sets the asset kind.
         /// </summary>
-        private static ScenarioAssetDefinition Normalize(ScenarioAssetDefinition def, string key)
+        private static ScenarioAssetDefinition Normalize(ScenarioAssetDefinition def, string key, string setupKey)
         {
             def.Steps ??= new();
             def.Steps = def.Steps
@@ -198,7 +216,7 @@ namespace BSolutions.Buttonboard.Services.Loaders
                 .OrderBy(s => s.AtMs)
                 .ToList();
 
-            def.Kind = string.Equals(key, "setup", StringComparison.OrdinalIgnoreCase)
+            def.Kind = string.Equals(key, setupKey, StringComparison.OrdinalIgnoreCase)
                 ? ScenarioAssetKind.Setup
                 : ScenarioAssetKind.Scene;
 

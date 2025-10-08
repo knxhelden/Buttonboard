@@ -10,6 +10,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Core;
 using Serilog.Events;
@@ -49,9 +50,13 @@ namespace BSolutions.Buttonboard.App
                         {
                             var logger = sp.GetRequiredService<ILogger<ScenarioAssetsLoader>>();
                             var settings = sp.GetRequiredService<ISettingsProvider>();
-                            var path = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, settings.Application.ScenarioAssetsFolder));
+                            var scenarioOptions = sp.GetRequiredService<IOptions<ScenarioOptions>>();
+
+                            var path = Path.GetFullPath(
+                                Path.Combine(AppContext.BaseDirectory, settings.Application.ScenarioAssetsFolder));
                             Directory.CreateDirectory(path);
-                            return new ScenarioAssetsLoader(logger, path);
+
+                            return new ScenarioAssetsLoader(logger, path, scenarioOptions);
                         })
                         .AddSingleton<GpioController>()
                         .AddSingleton<IButtonboardGpioController, ButtonboardGpioController>()

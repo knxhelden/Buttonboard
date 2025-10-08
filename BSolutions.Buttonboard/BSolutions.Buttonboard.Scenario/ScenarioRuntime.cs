@@ -2,9 +2,11 @@
 using BSolutions.Buttonboard.Services.Runtimes;
 using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -70,6 +72,8 @@ namespace BSolutions.Buttonboard.Scenario
         /// </summary>
         private readonly List<SceneDef> _scenes;
 
+        private readonly string _setupKey;
+
         #endregion
 
         #region --- Scene Model ---
@@ -110,7 +114,8 @@ namespace BSolutions.Buttonboard.Scenario
             ILogger<ScenarioRuntime> logger,
             ISettingsProvider settings,
             IScenarioAssetRuntime sceneRuntime,
-            IButtonboardGpioController gpio)
+            IButtonboardGpioController gpio,
+            IOptions<ScenarioOptions> scenarioOptions)
         {
             _logger = logger;
             _settings = settings;
@@ -120,14 +125,12 @@ namespace BSolutions.Buttonboard.Scenario
             // Cache flag once at startup (hot-reload not required here).
             _disableSceneOrder = _settings.Application.DisableSceneOrder;
 
-            // Define available scenes (button ↔ key mapping).
-            _scenes = new()
-            {
-                new SceneDef("scene1", Button.TopCenter,    0),
-                new SceneDef("scene2", Button.BottomLeft,   1),
-                new SceneDef("scene3", Button.BottomCenter, 2),
-                new SceneDef("scene4", Button.BottomRight,  3),
-            };
+            // Load setup and scene config from options.
+            var opts = scenarioOptions.Value;
+            _setupKey = string.IsNullOrWhiteSpace(opts.Setup.Key) ? "setup" : opts.Setup.Key;
+            _scenes = opts.Scenes
+                .Select(s => new SceneDef(s.Key, s.TriggerButton, s.RequiredStage))
+                .ToList();
 
             // Initialize edge/debounce tracking.
             foreach (var b in Enum.GetValues<Button>())
@@ -235,7 +238,7 @@ namespace BSolutions.Buttonboard.Scenario
         {
             _logger.LogInformation("Scenario is being set up…");
 
-            var started = await _sceneRuntime.StartAsync("setup", ct);
+            var started = await _sceneRuntime.StartAsync(_setupKey, ct);
             if (!started)
             {
                 _logger.LogWarning("Setup scene not started (missing, busy, or error).");
