@@ -6,7 +6,7 @@
       "name": "Led Oben Mitte: AN",
       "atMs": 0,
       "action": "gpio.on",
-      "args": { "pin": "ButtonTopCenter" }
+      "args": { "led": "ButtonTopCenter" }
     }
   ]
 }

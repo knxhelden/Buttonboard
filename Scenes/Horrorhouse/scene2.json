@@ -1,0 +1,57 @@
+{
+  "name": "Szene 2: Geisterm�dchen erschreckt die Besucher",
+  "version": 1,
+  "steps": [
+    {
+      "name": "Audiosprur abspielen",
+      "atMs": 0,
+      "action": "audio.play",
+      "args": {
+        "url": "http://192.168.20.28:9000/music/35403/download/Szene2.MP3",
+        "player": "Player1"
+      }
+    },
+    {
+      "name": "Mediaplayer 5: PLAY",
+      "atMs": 0,
+      "action": "video.next",
+      "args": { "player": "Mediaplayer5" }
+    },
+    {
+      "name": "Mediaplayer 5: PAUSE",
+      "atMs": 65000,
+      "action": "video.pause",
+      "args": { "player": "Mediaplayer5" }
+    },
+    {
+      "name": "Strobo 3 u. 4: AN",
+      "atMs": 65000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/strobo3/POWER",
+        "payload": "ON"
+      }
+    },
+    {
+      "name": "Strobo 3 u. 4: AUS",
+      "atMs": 69000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/strobo3/POWER",
+        "payload": "OFF"
+      }
+    },
+    {
+      "name": "Led Unten Links: AUS",
+      "atMs": 60000,
+      "action": "gpio.off",
+      "args": { "led": "ButtonBottomLeft" }
+    },
+    {
+      "name": "Led Unten Links: AN",
+      "atMs": 60000,
+      "action": "gpio.on",
+      "args": { "led": "ButtonBottomCenter" }
+    }
+  ]
+}

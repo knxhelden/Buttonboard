@@ -27,13 +27,13 @@
       "name": "Led Oben Zentral: AUS",
       "atMs": 60000,
       "action": "gpio.off",
-      "args": { "pin": "ButtonTopCenter" }
+      "args": { "led": "ButtonTopCenter" }
     },
     {
       "name": "Led Unten Links: AN",
       "atMs": 60000,
       "action": "gpio.on",
-      "args": { "pin": "ButtonBottomLeft" }
+      "args": { "led": "ButtonBottomLeft" }
     }
   ]
 }

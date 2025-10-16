@@ -6,13 +6,13 @@
       "name": "LED oben Mitte: AUS",
       "atMs": 0,
       "action": "gpio.off",
-      "args": { "pin": "ButtonTopCenter" }
+      "args": { "led": "ButtonTopCenter" }
     },
     {
       "name": "LED unten Links: AN",
       "atMs": 1000,
       "action": "gpio.on",
-      "args": { "pin": "ButtonBottomLeft" }
+      "args": { "led": "ButtonBottomLeft" }
     }
   ]
 }

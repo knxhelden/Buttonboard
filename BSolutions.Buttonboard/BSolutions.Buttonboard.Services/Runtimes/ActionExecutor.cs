@@ -127,37 +127,37 @@ namespace BSolutions.Buttonboard.Services.Runtimes
 
                 case "gpio.on":
                     {
-                        var pinStr = args.GetString("pin");
-                        if (string.IsNullOrWhiteSpace(pinStr))
+                        var ledStr = args.GetString("led");
+                        if (string.IsNullOrWhiteSpace(ledStr))
                         {
                             _logger.LogWarning(LogEvents.ExecArgMissing,
-                                "gpio.on requires argument {Arg}", "pin");
-                            throw new ArgumentException("gpio.on requires 'pin'");
+                                "gpio.on requires argument {Arg}", "led");
+                            throw new ArgumentException("gpio.on requires 'led'");
                         }
 
-                        var pin = ParseLed(pinStr);
+                        var led = ParseLed(ledStr);
                         _logger.LogInformation(LogEvents.ExecGpioOn,
-                            "gpio.on: setting LED {Pin} ON", pin);
+                            "gpio.on: setting LED {Pin} ON", led);
 
-                        await _gpio.LedOnAsync(pin, ct).ConfigureAwait(false);
+                        await _gpio.LedOnAsync(led, ct).ConfigureAwait(false);
                         return;
                     }
 
                 case "gpio.off":
                     {
-                        var pinStr = args.GetString("pin");
-                        if (string.IsNullOrWhiteSpace(pinStr))
+                        var ledStr = args.GetString("led");
+                        if (string.IsNullOrWhiteSpace(ledStr))
                         {
                             _logger.LogWarning(LogEvents.ExecArgMissing,
-                                "gpio.off requires argument {Arg}", "pin");
-                            throw new ArgumentException("gpio.off requires 'pin'");
+                                "gpio.off requires argument {Arg}", "led");
+                            throw new ArgumentException("gpio.off requires 'led'");
                         }
 
-                        var pin = ParseLed(pinStr);
+                        var led = ParseLed(ledStr);
                         _logger.LogInformation(LogEvents.ExecGpioOff,
-                            "gpio.off: setting LED {Pin} OFF", pin);
+                            "gpio.off: setting LED {Pin} OFF", led);
 
-                        await _gpio.LedOffAsync(pin, ct).ConfigureAwait(false);
+                        await _gpio.LedOffAsync(led, ct).ConfigureAwait(false);
                         return;
                     }
 
