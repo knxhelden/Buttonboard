@@ -12,13 +12,13 @@
       }
     },
     {
-      "name": "Video abspielen",
+      "name": "Mediaplayer 5: PLAY",
       "atMs": 0,
       "action": "video.next",
       "args": { "player": "Mediaplayer5" }
     },
     {
-      "name": "Video stoppen",
+      "name": "Mediaplayer 5: PAUSE",
       "atMs": 60000,
       "action": "video.pause",
       "args": { "player": "Mediaplayer5" }
