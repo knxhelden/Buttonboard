@@ -5,17 +5,19 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using BSolutions.Buttonboard.Services.Logging;
+using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Logging;
 
 namespace BSolutions.Buttonboard.Services.MqttClients
 {
     /// <summary>
     /// In-memory mock of <see cref="IMqttClient"/> for tests and local development.
-    /// Simulates connect/publish/stop without a real broker and stores messages per topic.
+    /// Simulates connect/publish/reset/stop without a real broker and stores messages per topic.
     /// </summary>
     public sealed class MqttClientMock : IMqttClient, IDisposable
     {
         private readonly ILogger<MqttClientMock> _logger;
+        private readonly MqttOptions _mqttOptions;
 
         // Per-topic queues to be thread-safe under concurrent publishes.
         private readonly ConcurrentDictionary<string, ConcurrentQueue<string>> _messages =
@@ -27,9 +29,11 @@ namespace BSolutions.Buttonboard.Services.MqttClients
         /// <summary>
         /// Creates a new <see cref="MqttClientMock"/>.
         /// </summary>
-        public MqttClientMock(ILogger<MqttClientMock> logger)
+        public MqttClientMock(ISettingsProvider settings, ILogger<MqttClientMock> logger)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            if (settings is null) throw new ArgumentNullException(nameof(settings));
+            _mqttOptions = settings.Mqtt ?? throw new ArgumentNullException(nameof(settings.Mqtt));
         }
 
         /// <inheritdoc />
@@ -74,6 +78,76 @@ namespace BSolutions.Buttonboard.Services.MqttClients
             _logger.LogInformation(LogEvents.MqttPublishEnqueued,
                 "MQTT mock publish enqueued Topic {Topic} PayloadLength {Length} Pending {Pending}",
                 topic, (payload?.Length ?? 0), pending);
+        }
+
+        /// <inheritdoc />
+        public async Task ResetAsync(CancellationToken ct = default)
+        {
+            ThrowIfDisposed();
+
+            try
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var devices = _mqttOptions.Devices ?? Array.Empty<MqttDeviceOption>();
+                if (devices.Count == 0)
+                {
+                    _logger.LogInformation(LogEvents.MqttResetNoDevices,
+                        "MQTT reset: no devices configured in appsettings (Mqtt:Devices).");
+                    return;
+                }
+
+                _logger.LogInformation(LogEvents.MqttResetStart,
+                    "MQTT reset: resetting {Count} device(s)…", devices.Count);
+
+                foreach (var d in devices)
+                {
+                    ct.ThrowIfCancellationRequested();
+
+                    if (string.IsNullOrWhiteSpace(d.Topic))
+                    {
+                        _logger.LogWarning(LogEvents.MqttResetSkippedEmptyTopic,
+                            "MQTT reset skipped for {Name}: empty Topic", d.Name ?? "(unnamed)");
+                        continue;
+                    }
+                    if (string.IsNullOrWhiteSpace(d.Reset))
+                    {
+                        _logger.LogWarning(LogEvents.MqttResetSkippedEmptyPayload,
+                            "MQTT reset skipped for {Name} ({Topic}): Reset payload is null or empty",
+                            d.Name ?? "(unnamed)", d.Topic);
+                        continue;
+                    }
+
+                    // Simulate enqueue like PublishAsync does.
+                    await Task.Delay(5, ct).ConfigureAwait(false);
+
+                    if (!_connected)
+                    {
+                        _logger.LogWarning(LogEvents.MqttResetEnqueueFailed,
+                            "MQTT reset enqueue while disconnected for {Topic}", d.Topic);
+                        continue;
+                    }
+
+                    var q = _messages.GetOrAdd(d.Topic, _ => new ConcurrentQueue<string>());
+                    q.Enqueue(d.Reset);
+
+                    _logger.LogInformation(LogEvents.MqttResetEnqueued,
+                        "MQTT reset enqueued → {Name} ({Topic}) ⇐ {Payload}",
+                        d.Name ?? "(unnamed)", d.Topic, d.Reset);
+                }
+
+                _logger.LogInformation(LogEvents.MqttResetCompleted, "MQTT reset completed.");
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation(LogEvents.MqttResetCanceled, "MQTT reset canceled");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(LogEvents.MqttError, ex, "MQTT reset failed");
+                throw;
+            }
         }
 
         /// <inheritdoc />

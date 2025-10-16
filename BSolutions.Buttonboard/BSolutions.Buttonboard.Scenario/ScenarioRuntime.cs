@@ -1,4 +1,5 @@
 ﻿using BSolutions.Buttonboard.Services.Gpio;
+using BSolutions.Buttonboard.Services.MqttClients;
 using BSolutions.Buttonboard.Services.Runtimes;
 using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Logging;
@@ -29,6 +30,7 @@ namespace BSolutions.Buttonboard.Scenario
         private readonly ISettingsProvider _settings;
         private readonly IScenarioAssetRuntime _sceneRuntime;
         private readonly IButtonboardGpioController _gpio;
+        private readonly IMqttClient _mqtt;
 
         /// <summary>
         /// Cached flag from settings: if true, stage order is ignored and any button may trigger its scene.
@@ -205,6 +207,7 @@ namespace BSolutions.Buttonboard.Scenario
 
             await _sceneRuntime.CancelAsync();
             await _gpio.ResetAsync();
+            await _mqtt.ResetAsync(ct);
 
             _stage = 0;
         }

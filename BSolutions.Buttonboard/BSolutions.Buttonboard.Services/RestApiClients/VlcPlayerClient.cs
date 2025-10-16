@@ -35,28 +35,28 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
             if (string.IsNullOrWhiteSpace(playerName))
                 throw new ArgumentException("Player name must be provided.", nameof(playerName));
 
-            var players = _settings.VLC?.Players
+            var players = _settings.VLC?.Entries
                 ?? throw new InvalidOperationException("No VLC players configured.");
 
-            if (!players.TryGetValue(playerName, out var player))
+            if (!players.TryGetValue(playerName, out var player) || player is null)
                 throw new KeyNotFoundException($"VLC player '{playerName}' not configured.");
 
-            if (string.IsNullOrWhiteSpace(player.BaseUri))
-                throw new InvalidOperationException($"VLC player '{playerName}' has no BaseUri configured.");
+            var baseUri = player.BaseUri
+                ?? throw new InvalidOperationException($"VLC player '{playerName}' has no BaseUri configured.");
 
-            if (!Uri.TryCreate(player.BaseUri.EndsWith("/") ? player.BaseUri : player.BaseUri + "/",
-                               UriKind.Absolute, out var baseUri))
-                throw new InvalidOperationException($"VLC player '{playerName}' BaseUri is invalid: '{player.BaseUri}'.");
+            if (!baseUri.IsAbsoluteUri)
+                throw new InvalidOperationException($"VLC player '{playerName}' BaseUri must be absolute: '{baseUri}'.");
 
+            // Build endpoint and final command URL (xml endpoint is fine for commands)
             var endpoint = new Uri(baseUri, "requests/status.xml");
             var cmdText = command.GetCommand();
             var finalUri = new Uri($"{endpoint}?command={Uri.EscapeDataString(cmdText)}");
 
-            // Basic-Auth
+            // Basic-Auth (VLC expects empty username and password in HTTP Basic)
             var password = player.Password ?? string.Empty;
             var basicToken = $":{password}".Base64Encode();
 
-            // Per-Request Timeout
+            // Per-request timeout (bounded)
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
 

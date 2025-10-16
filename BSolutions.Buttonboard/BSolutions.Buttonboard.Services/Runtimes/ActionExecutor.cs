@@ -91,8 +91,7 @@ namespace BSolutions.Buttonboard.Services.Runtimes
                     {
                         var playerName = args.GetString("player", "Mediaplayer1");
 
-                        // NEU: Dictionary-Lookup
-                        if (!_settings.VLC.Players.TryGetValue(playerName, out var _))
+                        if (!_settings.VLC.Entries.TryGetValue(playerName, out var _))
                         {
                             _logger.LogWarning(LogEvents.ExecResourceMissing,
                                 "video.next: VLC player not found {Player}", playerName);
@@ -111,7 +110,7 @@ namespace BSolutions.Buttonboard.Services.Runtimes
                     {
                         var playerName = args.GetString("player", "Mediaplayer1");
 
-                        if (!_settings.VLC.Players.TryGetValue(playerName, out var _))
+                        if (!_settings.VLC.Entries.TryGetValue(playerName, out var _))
                         {
                             _logger.LogWarning(LogEvents.ExecResourceMissing,
                                 "video.pause: VLC player not found {Player}", playerName);

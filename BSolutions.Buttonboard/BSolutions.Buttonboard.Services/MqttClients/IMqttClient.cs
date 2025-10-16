@@ -46,6 +46,15 @@ namespace BSolutions.Buttonboard.Services.MqttClients
         Task PublishAsync(string topic, string payload, CancellationToken ct = default);
 
         /// <summary>
+        /// Publishes predefined reset commands to all MQTT devices configured in the client settings.
+        /// </summary>
+        /// <param name="ct">Cancellation token for aborting the reset operation.</param>
+        /// <returns>A task that completes when all reset messages have been enqueued.</returns>
+        /// <exception cref="System.ObjectDisposedException">Thrown if the client was disposed.</exception>
+        /// <exception cref="System.OperationCanceledException">Thrown if the operation is canceled.</exception>
+        Task ResetAsync(CancellationToken ct = default);
+
+        /// <summary>
         /// Stops the client and releases underlying resources gracefully.
         /// Implementations SHOULD attempt to flush any pending messages before disconnecting,
         /// honoring <paramref name="ct"/> to bound the shutdown time.

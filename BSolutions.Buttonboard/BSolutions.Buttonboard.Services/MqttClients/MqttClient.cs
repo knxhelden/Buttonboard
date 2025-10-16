@@ -7,6 +7,7 @@ using MQTTnet;
 using MQTTnet.Client;
 using MQTTnet.Extensions.ManagedClient;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace BSolutions.Buttonboard.Services.MqttClients
 {
@@ -21,6 +22,7 @@ namespace BSolutions.Buttonboard.Services.MqttClients
         private readonly ManagedMqttClientOptions _managedOptions;
         private readonly string _onlineTopic;
         private readonly string _willTopic;
+        private readonly MqttOptions _mqttOptions;
         private volatile bool _disposed;
 
         /// <summary>
@@ -31,6 +33,8 @@ namespace BSolutions.Buttonboard.Services.MqttClients
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             if (settings is null) throw new ArgumentNullException(nameof(settings));
+
+            _mqttOptions = settings.Mqtt ?? throw new ArgumentNullException(nameof(settings.Mqtt));
 
             var factory = new MqttFactory();
             _client = factory.CreateManagedMqttClient();
@@ -157,6 +161,86 @@ namespace BSolutions.Buttonboard.Services.MqttClients
                     topic, (payload?.Length ?? 0));
             }
         }
+
+        /// <inheritdoc />
+        public async Task ResetAsync(CancellationToken ct = default)
+        {
+            if (_disposed) throw new ObjectDisposedException(nameof(MqttClient));
+
+            try
+            {
+                ct.ThrowIfCancellationRequested();
+
+                var devices = _mqttOptions.Devices ?? Array.Empty<BSolutions.Buttonboard.Services.Settings.MqttDeviceOption>();
+                if (devices.Count == 0)
+                {
+                    _logger.LogInformation(LogEvents.MqttResetNoDevices,
+                        "MQTT reset: no devices configured in appsettings (Mqtt:Devices).");
+                    return;
+                }
+
+                _logger.LogInformation(LogEvents.MqttResetStart,
+                    "MQTT reset: resetting {Count} device(s)…", devices.Count);
+
+                foreach (var d in devices)
+                {
+                    ct.ThrowIfCancellationRequested();
+
+                    if (string.IsNullOrWhiteSpace(d.Topic))
+                    {
+                        _logger.LogWarning(LogEvents.MqttResetSkippedEmptyTopic,
+                            "MQTT reset skipped for {Name}: empty Topic", d.Name ?? "(unnamed)");
+                        continue;
+                    }
+                    if (string.IsNullOrWhiteSpace(d.Reset))
+                    {
+                        _logger.LogWarning(LogEvents.MqttResetSkippedEmptyPayload,
+                            "MQTT reset skipped for {Name} ({Topic}): Reset payload is null or empty",
+                            d.Name ?? "(unnamed)", d.Topic);
+                        continue;
+                    }
+
+                    var msg = new MqttApplicationMessageBuilder()
+                        .WithTopic(d.Topic)
+                        .WithPayload(d.Reset)
+                        .WithQualityOfServiceLevel(MQTTnet.Protocol.MqttQualityOfServiceLevel.AtLeastOnce)
+                        .WithRetainFlag(false)
+                        .Build();
+
+                    try
+                    {
+                        await _client.EnqueueAsync(msg).ConfigureAwait(false);
+                        _logger.LogInformation(LogEvents.MqttResetEnqueued,
+                            "MQTT reset enqueued → {Name} ({Topic}) ⇐ {Payload}",
+                            d.Name ?? "(unnamed)", d.Topic, d.Reset);
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        _logger.LogInformation(LogEvents.MqttResetCanceled,
+                            "MQTT reset canceled while enqueuing {Topic}", d.Topic);
+                        throw;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(LogEvents.MqttResetEnqueueFailed, ex,
+                            "MQTT reset enqueue failed for {Topic}", d.Topic);
+                    }
+                }
+
+                _logger.LogInformation(LogEvents.MqttResetCompleted, "MQTT reset completed.");
+            }
+            catch (OperationCanceledException)
+            {
+                _logger.LogInformation(LogEvents.MqttResetCanceled, "MQTT reset canceled");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(LogEvents.MqttError, ex, "MQTT reset failed");
+                throw;
+            }
+        }
+
 
         /// <inheritdoc />
         public async Task StopAsync(CancellationToken ct = default)

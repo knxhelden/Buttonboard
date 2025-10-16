@@ -1,15 +1,16 @@
 ﻿// Services/Settings/Options.cs
 using BSolutions.Buttonboard.Services.Gpio;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
 namespace BSolutions.Buttonboard.Services.Settings
 {
-
     public sealed class ButtonboardOptions
     {
         [Required] public required ApplicationOptions Application { get; init; }
+        [Required] public required ScenarioOptions Scenario { get; init; }
         [Required] public required OpenHabOptions OpenHAB { get; init; }
         [Required] public required VlcOptions VLC { get; init; }
         [Required] public required MqttOptions Mqtt { get; init; }
@@ -24,11 +25,38 @@ namespace BSolutions.Buttonboard.Services.Settings
         public required string ScenarioAssetsFolder { get; init; }
     }
 
+    public sealed class ScenarioOptions
+    {
+        [Required] public required SetupOptions Setup { get; init; }
+        [Required, MinLength(1)] public required List<SceneMap> Scenes { get; init; }
+    }
+
+    public sealed class SetupOptions
+    {
+        // Default "setup" ist ok; Required stellt sicher, dass Key gesetzt/bindbar ist
+        [Required, MinLength(1)]
+        public string Key { get; init; } = "setup";
+    }
+
+    public sealed class SceneMap
+    {
+        [Required, MinLength(1)]
+        public string Key { get; init; } = "";
+
+        [Required]
+        public Button TriggerButton { get; init; }
+
+        [Range(0, int.MaxValue)]
+        public int RequiredStage { get; init; }
+    }
+
     public sealed class OpenHabOptions
     {
         [Required] public required Uri BaseUri { get; init; }
 
-        // Key = PlayerName ("Player1", "Player2", …)
+        /// <summary>
+        /// Key = Player name, e.g. "Player1", "Player2"
+        /// </summary>
         [Required, MinLength(1)]
         public required Dictionary<string, AudioPlayerOptions> Audio { get; init; }
     }
@@ -36,21 +64,26 @@ namespace BSolutions.Buttonboard.Services.Settings
     public sealed class AudioPlayerOptions
     {
         [Range(0, 100)] public int Volume { get; init; } = 0;
+
         [Required] public required string ControlItem { get; init; }
         [Required] public required string StreamItem { get; init; }
         [Required] public required string VolumeItem { get; init; }
     }
 
+    /// <summary>
+    /// Dein JSON listet Player direkt unter "VLC": { "Buttonboard": {…}, "Mediaplayer1": {…}, … }
+    /// Mit ConfigurationKeyName("") binden wir die direkten Unterknoten in <see cref="Entries"/>.
+    /// </summary>
     public sealed class VlcOptions
     {
-        // Key = PlayerName ("Mediaplayer1", …)
+        [ConfigurationKeyName("")] // bindet alle direkten Kinder von "VLC" in dieses Dictionary
         [Required, MinLength(1)]
-        public required Dictionary<string, VlcPlayerOptions> Players { get; init; }
+        public required Dictionary<string, VlcPlayerOptions> Entries { get; init; }
     }
 
     public sealed class VlcPlayerOptions
     {
-        [Required] public required string BaseUri { get; init; }
+        [Required] public required Uri BaseUri { get; init; }  // einheitlich wie OpenHAB
         [Required] public required string Password { get; init; }
     }
 
@@ -60,32 +93,18 @@ namespace BSolutions.Buttonboard.Services.Settings
         [Range(1, 65535)] public int Port { get; init; } = 1883;
         [Required] public required string Username { get; init; }
         [Required] public required string Password { get; init; }
+
+        // Wenn du im Code Default-Fallbacks hast, kannst du Required entfernen und Defaults hier setzen.
         [Required] public required string WillTopic { get; init; }
         [Required] public required string OnlineTopic { get; init; }
+
+        public IReadOnlyList<MqttDeviceOption>? Devices { get; init; }
     }
 
-
-    public sealed class ScenarioOptions
+    public sealed class MqttDeviceOption
     {
-        [Required] public required SetupOptions Setup { get; init; } = new();
-        [Required, MinLength(1)] public required List<SceneMap> Scenes { get; init; } = new();
-    }
-
-    public sealed class SetupOptions
-    {
-        [Required, MinLength(1)]
-        public string Key { get; init; } = "setup";
-    }
-
-    public sealed class SceneMap
-    {
-        [Required, MinLength(1)]
-        public string Key { get; set; } = "";
-
-        [Required]
-        public Button TriggerButton { get; set; }
-
-        [Range(0, int.MaxValue)]
-        public int RequiredStage { get; set; }
+        public string? Name { get; init; }
+        public string? Topic { get; init; }
+        public string? Reset { get; init; }
     }
 }

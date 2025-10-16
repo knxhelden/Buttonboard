@@ -4,19 +4,19 @@ namespace BSolutions.Buttonboard.Services.Logging
 {
     public static class LogEvents
     {
-        // App/Service lifecycle
+        // ───────────────────────────── App / Service lifecycle (1000–1999)
         public static readonly EventId LoaderStarted = new(1000, nameof(LoaderStarted));
         public static readonly EventId LoaderStopped = new(1001, nameof(LoaderStopped));
 
-        // Assets
+        // ───────────────────────────── Assets (2000–2999)
         public static readonly EventId AssetLoaded = new(2000, nameof(AssetLoaded));
         public static readonly EventId AssetRemoved = new(2001, nameof(AssetRemoved));
         public static readonly EventId AssetJsonInvalid = new(2002, nameof(AssetJsonInvalid));
 
-        // Asset load errors
+        // ───────────────────────────── Asset load errors (3000–3999)
         public static readonly EventId AssetLoadError = new(3000, nameof(AssetLoadError));
 
-        // Runtime
+        // ───────────────────────────── Runtime (4000–4999)
         public static readonly EventId RuntimeStartIgnored = new(4000, nameof(RuntimeStartIgnored));
         public static readonly EventId RuntimeSceneMissing = new(4001, nameof(RuntimeSceneMissing));
         public static readonly EventId RuntimeStarted = new(4010, nameof(RuntimeStarted));
@@ -26,7 +26,7 @@ namespace BSolutions.Buttonboard.Services.Logging
         public static readonly EventId StepExecuted = new(4021, nameof(StepExecuted));
         public static readonly EventId StepFailed = new(4022, nameof(StepFailed));
 
-        // Executor
+        // ───────────────────────────── Executor (5000–5999)
         public static readonly EventId ExecUnknownAction = new(5000, nameof(ExecUnknownAction));
         public static readonly EventId ExecArgMissing = new(5001, nameof(ExecArgMissing));
         public static readonly EventId ExecResourceMissing = new(5002, nameof(ExecResourceMissing));
@@ -41,7 +41,7 @@ namespace BSolutions.Buttonboard.Services.Logging
 
         public static readonly EventId ExecMqttPublish = new(5400, nameof(ExecMqttPublish));
 
-        // GPIO
+        // ───────────────────────────── GPIO (6000–6999)
         public static readonly EventId GpioInitialized = new(6000, nameof(GpioInitialized));
         public static readonly EventId GpioReset = new(6001, nameof(GpioReset));
         public static readonly EventId GpioLedOn = new(6010, nameof(GpioLedOn));
@@ -51,7 +51,7 @@ namespace BSolutions.Buttonboard.Services.Logging
         public static readonly EventId GpioButtonRead = new(6030, nameof(GpioButtonRead));
         public static readonly EventId GpioOperationErr = new(6099, nameof(GpioOperationErr));
 
-        // MQTT
+        // ───────────────────────────── MQTT (7000–7999)
         public static readonly EventId MqttConnecting = new(7000, nameof(MqttConnecting));
         public static readonly EventId MqttConnected = new(7001, nameof(MqttConnected));
         public static readonly EventId MqttDisconnected = new(7002, nameof(MqttDisconnected));
@@ -67,16 +67,26 @@ namespace BSolutions.Buttonboard.Services.Logging
         public static readonly EventId MqttStopped = new(7031, nameof(MqttStopped));
         public static readonly EventId MqttPendingDrained = new(7032, nameof(MqttPendingDrained));
 
+        // 🔧 MQTT Reset (7100–7107)
+        public static readonly EventId MqttResetStart = new(7100, nameof(MqttResetStart));
+        public static readonly EventId MqttResetNoDevices = new(7101, nameof(MqttResetNoDevices));
+        public static readonly EventId MqttResetSkippedEmptyTopic = new(7102, nameof(MqttResetSkippedEmptyTopic));
+        public static readonly EventId MqttResetSkippedEmptyPayload = new(7103, nameof(MqttResetSkippedEmptyPayload));
+        public static readonly EventId MqttResetEnqueued = new(7104, nameof(MqttResetEnqueued));
+        public static readonly EventId MqttResetCompleted = new(7105, nameof(MqttResetCompleted));
+        public static readonly EventId MqttResetCanceled = new(7106, nameof(MqttResetCanceled));
+        public static readonly EventId MqttResetEnqueueFailed = new(7107, nameof(MqttResetEnqueueFailed));
+
         public static readonly EventId MqttError = new(7099, nameof(MqttError));
 
-        // OpenHAB
+        // ───────────────────────────── OpenHAB (8100–8199)
         public static readonly EventId OpenHabCommandSent = new(8100, nameof(OpenHabCommandSent));
         public static readonly EventId OpenHabStateRead = new(8101, nameof(OpenHabStateRead));
         public static readonly EventId OpenHabStateUpdated = new(8102, nameof(OpenHabStateUpdated));
         public static readonly EventId OpenHabNonSuccess = new(8103, nameof(OpenHabNonSuccess));
         public static readonly EventId OpenHabError = new(8104, nameof(OpenHabError));
 
-        // VLC
+        // ───────────────────────────── VLC (8200–8299)
         public static readonly EventId VlcCommandSent = new(8200, nameof(VlcCommandSent));
         public static readonly EventId VlcNonSuccess = new(8201, nameof(VlcNonSuccess));
         public static readonly EventId VlcError = new(8202, nameof(VlcError));
