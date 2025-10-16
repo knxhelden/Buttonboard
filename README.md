@@ -86,7 +86,7 @@ sudo apt update && sudo apt full-upgrade -y
 
 ### 🌐 Install Buttonboard Runtime Environment
 
-1. Copy the provided **Install.sh** script to your Raspberry Pi (e.g., via **SFTP**).
+1. Copy all files from the **Installation** folder to your Raspberry Pi (e.g., via **SFTP**).
 
 2. Run the installation script with root permissions:
 
@@ -99,6 +99,7 @@ The script will:
 - Install all required dependencies
 - Set up Webmin system administration tool (`https://[RASPBERRY-PI-IP]:10000`)
 - Set up frontail for log monitoring: (`http://[RASPBERRY-PI-IP]:9001`)
+- Set up VLC player for media playback: (`http://[RASPBERRY-PI-IP]:8080`)
 - Configure Samba shared folder for buttonboard app deployment
   
 *(By default the app path is `/opt/buttonboard` on the Raspberry Pi and exposes it as a network share `\\buttonboard\deploy`)*

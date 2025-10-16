@@ -21,14 +21,23 @@ FRONTAIL_LINES="500"                 # number of lines to show initially
 LIVE_LOG_PATH="${APP_DIR}/logs/live.log"
 FRONTAIL_SERVICE="/etc/systemd/system/frontail.service"
 
+# VLC player
+VLC_USER="${SUDO_USER:-${USER}}"   # Default: current user
+VLC_HOME="$(getent passwd "${VLC_USER}" | cut -d: -f6)"
+VLC_CFG_DIR="${VLC_HOME}/.config/vlc"
+VLC_CFG_DST="${VLC_CFG_DIR}/vlcrc"
+
+
 ### ─────────────────────────── Logging ────────────────────────────────
 log()  { echo -e "\033[1;32m[+] $*\033[0m"; }
 warn() { echo -e "\033[1;33m[!] $*\033[0m"; }
 err()  { echo -e "\033[1;31m[✗] $*\033[0m" >&2; }
 
+
 ### ─────────────────────────── Host IP ────────────────────────────────
 # Same approach as in your other script: first IPv4 from hostname -I
 PI_IP="$(hostname -I | awk '{print $1}')"
+
 
 ### ─────────────────────────── Helpers ────────────────────────────────
 require_root() { [[ "${EUID}" -eq 0 ]] || { err "Please run this script with sudo/root."; exit 1; }; }
@@ -47,6 +56,7 @@ append_block_if_missing() {
   fi
 }
 
+
 ### ─────────────────────── Prepare filesystem ─────────────────────────
 prepare_fs() {
   log "Updating package index…"
@@ -63,6 +73,7 @@ prepare_fs() {
   chown -R "${SAMBA_USER}:${SAMBA_USER}" "${APP_DIR}/logs"
   log "Prepared logs directory and live log: ${LIVE_LOG_PATH}"
 }
+
 
 ### ─────────────────────────── Samba setup ────────────────────────────
 setup_samba() {
@@ -113,6 +124,7 @@ fi
   echo "  • Samba Password: ${SAMBA_PASSWORD}"
 }
 
+
 ### ─────────────────────────── Webmin setup ───────────────────────────
 install_webmin() {
   log "Installing Webmin (official repo)…"
@@ -127,6 +139,7 @@ install_webmin() {
   systemctl enable --now webmin
   log "Webmin running at: https://${PI_IP}:${WEBMIN_INFO_PORT}/"
 }
+
 
 ### ────────────────────────── Frontail setup ──────────────────────────
 setup_frontail() {
@@ -181,6 +194,53 @@ EOF
   echo "  • Lines shown:    ${FRONTAIL_LINES}"
 }
 
+
+### ────────────────────────── VLC player setup ──────────────────────────
+setup_vlc() {
+  log "Installing VLC…"
+  apt_install vlc
+
+  if [[ ! -f "${VLC_CFG_SRC}" ]]; then
+    err "No vlcrc file found in script directory: ${VLC_CFG_SRC}"
+    err "Place your config file 'vlcrc' next to this script and start again."
+    return 1
+  fi
+
+  # Create target directory & set owner
+  mkdir -p "${VLC_CFG_DIR}"
+  chown -R "${VLC_USER}:${VLC_USER}" "${VLC_HOME}/.config"
+
+  # Backup of the current configuration (only if available and content differs)
+  if [[ -f "${VLC_CFG_DST}" ]] && ! cmp -s "${VLC_CFG_SRC}" "${VLC_CFG_DST}"; then
+    ts="$(date +%Y%m%d-%H%M%S)"
+    cp -a "${VLC_CFG_DST}" "${VLC_CFG_DST}.bak.${ts}"
+    log "Backup created: ${VLC_CFG_DST}.bak.${ts}"
+  fi
+
+  # Copy the new configuration (idempotent if identical)
+  install -m 0644 -o "${VLC_USER}" -g "${VLC_USER}" "${VLC_CFG_SRC}" "${VLC_CFG_DST}"
+  log "VLC config deployed: ${VLC_CFG_DST}"
+
+  # Read http port & password from the config (for hint)
+  local http_port http_pwd
+  http_port="$(awk -F= '/^[[:space:]]*http-port[[:space:]]*=/{print $2}' "${VLC_CFG_DST}" | tail -n1 | tr -d '[:space:]')"
+  http_pwd="$(awk -F= '/^[[:space:]]*http-password[[:space:]]*=/{print $2}' "${VLC_CFG_DST}" | tail -n1 | sed 's/[[:space:]]*$//')"
+
+  # Defaults if not set
+  [[ -z "${http_port}" ]] && http_port="8080"
+
+  # Check if http interface has been activated
+  if grep -Eq '^[[:space:]]*extraintf[[:space:]]*=[[:space:]]*http[[:space:]]*$' "${VLC_CFG_DST}"; then
+    log "VLC Web-Interface konfiguriert."
+    echo "  • URL:         http://${PI_IP}:${http_port}/"
+    [[ -n "${http_pwd}" ]] && echo "  • Passwort:    ${http_pwd} (Benutzername leer lassen)"
+  else
+    warn "In the vlcrc, 'extraintf=http' is not set. Otherwise, the web interface would be accessible at 'http://${PI_IP}:${http_port}'."
+  fi
+}
+
+
+
 ### ───────────────────────────── Main ─────────────────────────────────
 main() {
   require_root
@@ -189,6 +249,7 @@ main() {
   setup_samba
   install_webmin
   setup_frontail
+  setup_vlc
 
   cat <<SUMMARY
 
@@ -201,6 +262,7 @@ main() {
 • Webmin:            https://${PI_IP}:${WEBMIN_INFO_PORT}/  (self-signed)
 • Frontail:          http://${PI_IP}:${FRONTAIL_PORT}/
   → Live view of:    ${LIVE_LOG_PATH}
+• VLC Player:        http://${PI_IP}:8080/
 
 • App Start:         Start your app manually after deployment, e.g.:
   ${APP_DIR}/./BSolutions.Buttonboard.App
