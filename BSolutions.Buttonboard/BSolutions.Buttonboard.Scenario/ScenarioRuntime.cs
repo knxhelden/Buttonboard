@@ -113,12 +113,14 @@ namespace BSolutions.Buttonboard.Scenario
             ISettingsProvider settings,
             IScenarioAssetRuntime sceneRuntime,
             IButtonboardGpioController gpio,
+            IMqttClient mqtt,
             IOptions<ScenarioOptions> scenarioOptions)
         {
             _logger = logger;
             _settings = settings;
             _sceneRuntime = sceneRuntime;
             _gpio = gpio;
+            _mqtt = mqtt;
 
             // Cache flag once at startup (hot-reload not required here).
             _disableSceneOrder = _settings.Application.DisableSceneOrder;

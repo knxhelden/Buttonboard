@@ -211,7 +211,7 @@ namespace BSolutions.Buttonboard.Services.MqttClients
                     {
                         await _client.EnqueueAsync(msg).ConfigureAwait(false);
                         _logger.LogInformation(LogEvents.MqttResetEnqueued,
-                            "MQTT reset enqueued → {Name} ({Topic}) ⇐ {Payload}",
+                            "MQTT reset enqueued → {Name} ({Topic}) ← {Payload}",
                             d.Name ?? "(unnamed)", d.Topic, d.Reset);
                     }
                     catch (OperationCanceledException)

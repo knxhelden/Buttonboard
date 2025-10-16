@@ -132,7 +132,7 @@ namespace BSolutions.Buttonboard.Services.MqttClients
                     q.Enqueue(d.Reset);
 
                     _logger.LogInformation(LogEvents.MqttResetEnqueued,
-                        "MQTT reset enqueued → {Name} ({Topic}) ⇐ {Payload}",
+                        "MQTT reset enqueued → {Name} ({Topic}) ← {Payload}",
                         d.Name ?? "(unnamed)", d.Topic, d.Reset);
                 }
 
