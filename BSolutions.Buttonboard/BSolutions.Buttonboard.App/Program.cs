@@ -13,8 +13,6 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
-using Serilog.Core;
-using Serilog.Events;
 using System;
 using System.Device.Gpio;
 using System.IO;
@@ -78,15 +76,11 @@ namespace BSolutions.Buttonboard.App
                         })
                         .AddSingleton<IScenario, ScenarioRuntime>()
                         .AddSingleton<IScenarioAssetRuntime, ScenarioAssetRuntime>()
-                        .AddSingleton<IActionHandler, AudioPlayHandler>()
-                        .AddSingleton<IActionHandler, AudioVolumeHandler>()
-                        .AddSingleton<IActionHandler, VideoNextHandler>()
-                        .AddSingleton<IActionHandler, VideoPauseHandler>()
-                        .AddSingleton<IActionHandler, GpioOnHandler>()
-                        .AddSingleton<IActionHandler, GpioOffHandler>()
-                        .AddSingleton<IActionHandler, GpioBlinkHandler>()
-                        .AddSingleton<IActionHandler, MqttPublishHandler>()
-                        .AddSingleton<IActionHandlerRegistry, ActionHandlerRegistry>()
+                        .AddSingleton<IActionRouter, AudioActionRouter>()
+                        .AddSingleton<IActionRouter, VideoActionRouter>()
+                        .AddSingleton<IActionRouter, GpioActionRouter>()
+                        .AddSingleton<IActionRouter, MqttActionRouter>()
+                        .AddSingleton<IActionRouterRegistry, ActionRouterRegistry>()
                         .AddSingleton<IActionExecutor, ActionExecutor>();
                     })
                     .RunConsoleAsync();

@@ -11,21 +11,44 @@ using System.Threading.Tasks;
 
 namespace BSolutions.Buttonboard.Services.Runtime.Actions
 {
-    public sealed class MqttPublishHandler : IActionHandler
+    public sealed class MqttActionRouter : IActionRouter
     {
         private readonly ILogger _logger;
         private readonly IMqttClient _mqtt;
 
-        public string Key => "mqtt.pub";
+        public string Domain => "mqtt";
 
-        public MqttPublishHandler(ILogger<MqttPublishHandler> logger,
-                                  IMqttClient mqtt)
+        public MqttActionRouter(ILogger<MqttActionRouter> logger,
+                                IMqttClient mqtt)
         {
             _logger = logger;
             _mqtt = mqtt;
         }
 
+        public bool CanHandle(string actionKey)
+        {
+            var (domain, _) = ActionKeyHelper.Split(actionKey);
+            return domain == Domain;
+        }
+
         public async Task ExecuteAsync(ScenarioAssetStep step, CancellationToken ct)
+        {
+            var key = step.Action?.Trim().ToLowerInvariant() ?? string.Empty;
+            var (_, op) = ActionKeyHelper.Split(key);
+
+            switch (op)
+            {
+                case "pub":
+                    await HandlePublishAsync(step, ct).ConfigureAwait(false);
+                    break;
+
+                default:
+                    _logger.LogWarning(LogEvents.ExecUnknownAction, "Unknown action {Action}", key);
+                    break;
+            }
+        }
+
+        private async Task HandlePublishAsync(ScenarioAssetStep step, CancellationToken ct)
         {
             var args = step.Args;
 
@@ -37,10 +60,10 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
                 throw new ArgumentException("mqtt.pub requires 'topic'");
             }
 
-            // payload: string OR JSON node
+            // payload: string ODER JSON node
             var payloadNode = args.GetNode("payload");
-
             string payload;
+
             if (payloadNode is JsonElement el)
             {
                 payload = el.ValueKind == JsonValueKind.String

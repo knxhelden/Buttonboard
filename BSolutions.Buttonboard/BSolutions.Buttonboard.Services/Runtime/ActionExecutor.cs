@@ -9,40 +9,38 @@ using System.Threading.Tasks;
 namespace BSolutions.Buttonboard.Services.Runtime
 {
     /// <summary>
-    /// Thin dispatcher that resolves concrete IActionHandler implementations by action key.
-    /// Keeps the executor minimal and extensible.
+    /// Thin dispatcher, der einen Domain-Router anhand des Action-Präfixes aufruft.
     /// </summary>
     public sealed class ActionExecutor : IActionExecutor
     {
         private readonly ILogger _logger;
-        private readonly IActionHandlerRegistry _registry;
+        private readonly IActionRouterRegistry _registry;
 
         public ActionExecutor(ILogger<ActionExecutor> logger,
-                              IActionHandlerRegistry registry)
+                              IActionRouterRegistry registry)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         }
 
-        /// <inheritdoc />
         public async Task ExecuteAsync(ScenarioAssetStep step, CancellationToken ct)
         {
             if (step is null) throw new ArgumentNullException(nameof(step));
 
-            var key = step.Action?.Trim().ToLowerInvariant() ?? string.Empty;
-            if (string.IsNullOrEmpty(key))
+            var key = step.Action?.Trim().ToLowerInvariant();
+            if (string.IsNullOrWhiteSpace(key))
             {
                 _logger.LogWarning(LogEvents.ExecUnknownAction, "Unknown action {Action}", "(null/empty)");
-                return; // tolerant
+                return;
             }
 
-            if (!_registry.TryResolve(key, out var handler) || handler is null)
+            if (!_registry.TryResolve(key, out var router))
             {
-                _logger.LogWarning(LogEvents.ExecUnknownAction, "Unknown action {Action}", step.Action);
-                return; // tolerant
+                _logger.LogWarning(LogEvents.ExecUnknownAction, "Unknown action {Action}", key);
+                return;
             }
 
-            await handler.ExecuteAsync(step, ct).ConfigureAwait(false);
+            await router.ExecuteAsync(step, ct).ConfigureAwait(false);
         }
     }
 }

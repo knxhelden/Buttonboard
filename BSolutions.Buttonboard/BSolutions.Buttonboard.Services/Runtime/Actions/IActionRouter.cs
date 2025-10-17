@@ -4,9 +4,11 @@ using System.Threading.Tasks;
 
 namespace BSolutions.Buttonboard.Services.Runtime.Actions
 {
-    public interface IActionHandler
+    public interface IActionRouter
     {
-        string Key { get; }
+        string Domain { get; }
+
+        bool CanHandle(string actionKey);
 
         Task ExecuteAsync(ScenarioAssetStep step, CancellationToken ct);
     }
