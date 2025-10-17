@@ -61,7 +61,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
             var args = step.Args;
             var playerName = args.GetString("player", "Mediaplayer1");
 
-            if (!_settings.VLC.Entries.TryGetValue(playerName, out var _))
+            if (!_settings.VLC.Devices.TryGetValue(playerName, out var _))
             {
                 _logger.LogWarning(LogEvents.ExecResourceMissing,
                     "video.next: VLC player not found {Player}", playerName);
@@ -79,7 +79,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
             var args = step.Args;
             var playerName = args.GetString("player", "Mediaplayer1");
 
-            if (!_settings.VLC.Entries.TryGetValue(playerName, out var _))
+            if (!_settings.VLC.Devices.TryGetValue(playerName, out var _))
             {
                 _logger.LogWarning(LogEvents.ExecResourceMissing,
                     "video.pause: VLC player not found {Player}", playerName);

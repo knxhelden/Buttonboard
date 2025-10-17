@@ -78,7 +78,7 @@ namespace BSolutions.Buttonboard.Services.Settings
     {
         [ConfigurationKeyName("")] // bindet alle direkten Kinder von "VLC" in dieses Dictionary
         [Required, MinLength(1)]
-        public required Dictionary<string, VlcPlayerOptions> Entries { get; init; }
+        public required Dictionary<string, VlcPlayerOptions> Devices { get; init; }
     }
 
     public sealed class VlcPlayerOptions

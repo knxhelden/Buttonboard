@@ -35,7 +35,7 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
             if (string.IsNullOrWhiteSpace(playerName))
                 throw new ArgumentException("Player name must be provided.", nameof(playerName));
 
-            var players = _settings.VLC?.Entries
+            var players = _settings.VLC?.Devices
                 ?? throw new InvalidOperationException("No VLC players configured.");
 
             if (!players.TryGetValue(playerName, out var player) || player is null)

@@ -7,7 +7,7 @@
       "atMs": 0,
       "action": "audio.play",
       "args": {
-        "url": "http://192.168.20.28:9000/music/halloween/01_Szene_Horrorhouse.MP3",
+        "url": "file:///home/tc/halloween/01_Szene_Horrorhouse.MP3",
         "player": "Player1"
       }
     },
