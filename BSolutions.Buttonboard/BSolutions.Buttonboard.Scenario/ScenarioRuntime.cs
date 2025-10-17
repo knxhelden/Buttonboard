@@ -1,6 +1,6 @@
 ﻿using BSolutions.Buttonboard.Services.Gpio;
 using BSolutions.Buttonboard.Services.MqttClients;
-using BSolutions.Buttonboard.Services.Runtimes;
+using BSolutions.Buttonboard.Services.Runtime;
 using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;

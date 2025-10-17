@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 
-namespace BSolutions.Buttonboard.Services.Runtimes
+namespace BSolutions.Buttonboard.Services.Runtime
 {
     /// <summary>
     /// Runtime abstraction for executing a single <b>scenario asset</b> 

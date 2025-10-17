@@ -1,0 +1,333 @@
+{
+  "name": "Szene 3: Feuer im Haus",
+  "version": 1,
+  "steps": [
+
+    // Audio Player 1: PLAY
+    {
+      "name": "Audio Player 1: PLAY",
+      "atMs": 0,
+      "action": "audio.play",
+      "args": {
+        "url": "http://192.168.20.28:9000/music/35405/download/Szene3.MP3",
+        "player": "Player1"
+      }
+    },
+
+    // Mediaplayer 1-5: PLAY
+    {
+      "name": "Mediaplayer 1: PLAY",
+      "atMs": 0,
+      "action": "video.next",
+      "args": { "player": "Mediaplayer1" }
+    },
+    {
+      "name": "Mediaplayer 2: PLAY",
+      "atMs": 0,
+      "action": "video.next",
+      "args": { "player": "Mediaplayer2" }
+    },
+    {
+      "name": "Mediaplayer 3: PLAY",
+      "atMs": 0,
+      "action": "video.next",
+      "args": { "player": "Mediaplayer3" }
+    },
+    {
+      "name": "Mediaplayer 4: PLAY",
+      "atMs": 0,
+      "action": "video.next",
+      "args": { "player": "Mediaplayer4" }
+    },
+    {
+      "name": "Mediaplayer 5: PLAY",
+      "atMs": 0,
+      "action": "video.next",
+      "args": { "player": "Mediaplayer5" }
+    },
+    {
+      "name": "Mediaplayer 5: PAUSE",
+      "atMs": 60000,
+      "action": "video.pause",
+      "args": { "player": "Mediaplayer5" }
+    },
+
+    // Nebelmaschine 2-4: AN
+    {
+      "name": "Nebelmaschine 2: AN",
+      "atMs": 30000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/fogmachine2/POWER",
+        "payload": "ON"
+      }
+    },
+    {
+      "name": "Nebelmaschine 3: AN",
+      "atMs": 30000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/fogmachine3/POWER",
+        "payload": "ON"
+      }
+    },
+    {
+      "name": "Nebelmaschine 4: AN",
+      "atMs": 30000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/fogmachine4/POWER",
+        "payload": "ON"
+      }
+    },
+
+    // RGB Strahler 1-3 (rot): AN
+    {
+      "name": "RGB Strahler 1 (rot): AN",
+      "atMs": 35000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/rgblight1/POWER",
+        "payload": "ON"
+      }
+    },
+    {
+      "name": "RGB Strahler 2 (rot): AN",
+      "atMs": 40000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/rgblight2/POWER",
+        "payload": "ON"
+      }
+    },
+    {
+      "name": "RGB Strahler 3 (rot): AN",
+      "atMs": 40000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/rgblight3/POWER",
+        "payload": "ON"
+      }
+    },
+
+    // Beacon Controller: AN
+    {
+      "name": "Rundumleuchte 1: AN",
+      "atMs": 56000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/beaconcontroller1/POWER1",
+        "payload": "ON"
+      }
+    },
+    {
+      "name": "Rundumleuchte 2: AN",
+      "atMs": 56000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/beaconcontroller1/POWER2",
+        "payload": "ON"
+      }
+    },
+    {
+      "name": "Rundumleuchte 3: AN",
+      "atMs": 56000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/beaconcontroller1/POWER3",
+        "payload": "ON"
+      }
+    },
+    {
+      "name": "Rundumleuchte 4: AN",
+      "atMs": 56000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/beaconcontroller1/POWER4",
+        "payload": "ON"
+      }
+    },
+
+    // Nebelmaschine 2-4: AUS
+    {
+      "name": "Nebelmaschine 2: AUS",
+      "atMs": 82000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/fogmachine2/POWER",
+        "payload": "OFF"
+      }
+    },
+    {
+      "name": "Nebelmaschine 3: AUS",
+      "atMs": 82000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/fogmachine3/POWER",
+        "payload": "OFF"
+      }
+    },
+    {
+      "name": "Nebelmaschine 4: AUS",
+      "atMs": 82000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/fogmachine4/POWER",
+        "payload": "OFF"
+      }
+    },
+
+    // RGB Strahler 4-5 (blau): AN
+    {
+      "name": "RGB Strahler 4 (blau): AN",
+      "atMs": 82000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/rgblight4/POWER",
+        "payload": "ON"
+      }
+    },
+    {
+      "name": "RGB Strahler 5 (blau): AN",
+      "atMs": 82000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/rgblight5/POWER",
+        "payload": "ON"
+      }
+    },
+
+    // RGB Strahler 1-3 (rot): AUS
+    {
+      "name": "RGB Strahler 1 (rot): AUS",
+      "atMs": 87000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/rgblight1/POWER",
+        "payload": "OFF"
+      }
+    },
+    {
+      "name": "RGB Strahler 2 (rot): AUS",
+      "atMs": 87000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/rgblight2/POWER",
+        "payload": "OFF"
+      }
+    },
+    {
+      "name": "RGB Strahler 3 (rot): AUS",
+      "atMs": 87000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/rgblight3/POWER",
+        "payload": "OFF"
+      }
+    },
+
+    // Beacon Controller: AUS
+    {
+      "name": "Rundumleuchte 1: AUS",
+      "atMs": 90000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/beaconcontroller1/POWER1",
+        "payload": "OFF"
+      }
+    },
+    {
+      "name": "Rundumleuchte 2: AUS",
+      "atMs": 90000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/beaconcontroller1/POWER2",
+        "payload": "OFF"
+      }
+    },
+    {
+      "name": "Rundumleuchte 3: AUS",
+      "atMs": 90000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/beaconcontroller1/POWER3",
+        "payload": "OFF"
+      }
+    },
+    {
+      "name": "Rundumleuchte 4: AUS",
+      "atMs": 90000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/beaconcontroller1/POWER4",
+        "payload": "OFF"
+      }
+    },
+
+    // RGB Strahler 4-5 (blau): AUS
+    {
+      "name": "RGB Strahler 4 (blau): AUS",
+      "atMs": 100000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/rgblight4/POWER",
+        "payload": "OFF"
+      }
+    },
+    {
+      "name": "RGB Strahler 5 (blau): AUS",
+      "atMs": 100000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/rgblight5/POWER",
+        "payload": "OFF"
+      }
+    },
+
+    // Mediaplayer 1-5: PAUSE
+    {
+      "name": "Mediaplayer 1: PAUSE",
+      "atMs": 110000,
+      "action": "video.pause",
+      "args": { "player": "Mediaplayer1" }
+    },
+    {
+      "name": "Mediaplayer 2: PAUSE",
+      "atMs": 110000,
+      "action": "video.pause",
+      "args": { "player": "Mediaplayer2" }
+    },
+    {
+      "name": "Mediaplayer 3: PAUSE",
+      "atMs": 110000,
+      "action": "video.pause",
+      "args": { "player": "Mediaplayer3" }
+    },
+    {
+      "name": "Mediaplayer 4: PAUSE",
+      "atMs": 110000,
+      "action": "video.pause",
+      "args": { "player": "Mediaplayer4" }
+    },
+    {
+      "name": "Mediaplayer 5: PAUSE",
+      "atMs": 110000,
+      "action": "video.pause",
+      "args": { "player": "Mediaplayer5" }
+    },
+
+    // Button LEDs
+    {
+      "name": "LED Unten Zentral: AUS",
+      "atMs": 120000,
+      "action": "gpio.off",
+      "args": { "led": "ButtonBottomCenter" }
+    },
+    {
+      "name": "LED Unten Rechts: AN",
+      "atMs": 120000,
+      "action": "gpio.on",
+      "args": { "led": "ButtonBottomRight" }
+    }
+  ]
+}

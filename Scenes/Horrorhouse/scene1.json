@@ -3,11 +3,11 @@
   "version": 1,
   "steps": [
     {
-      "name": "Audiosprur abspielen",
+      "name": "Audio Player 1: PLAY",
       "atMs": 0,
       "action": "audio.play",
       "args": {
-        "url": "http://192.168.20.28:9000/music/35402/download/Szene1.MP3",
+        "url": "http://192.168.20.28:9000/music/halloween/01_Szene_Horrorhouse.MP3",
         "player": "Player1"
       }
     },
@@ -24,14 +24,14 @@
       "args": { "player": "Mediaplayer5" }
     },
     {
-      "name": "Led Oben Zentral: AUS",
-      "atMs": 60000,
+      "name": "LED Oben Zentral: AUS",
+      "atMs": 61000,
       "action": "gpio.off",
       "args": { "led": "ButtonTopCenter" }
     },
     {
-      "name": "Led Unten Links: AN",
-      "atMs": 60000,
+      "name": "LED Unten Links: AN",
+      "atMs": 61000,
       "action": "gpio.on",
       "args": { "led": "ButtonBottomLeft" }
     }

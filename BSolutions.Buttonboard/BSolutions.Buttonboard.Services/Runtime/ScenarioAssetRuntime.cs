@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BSolutions.Buttonboard.Services.Runtimes
+namespace BSolutions.Buttonboard.Services.Runtime
 {
     /// <summary>
     /// Default runtime implementation for executing a single <see cref="ScenarioAssetDefinition"/>.

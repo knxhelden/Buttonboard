@@ -3,7 +3,7 @@
   "version": 1,
   "steps": [
     {
-      "name": "Audiosprur abspielen",
+      "name": "Audio Player 1: PLAY",
       "atMs": 0,
       "action": "audio.play",
       "args": {
@@ -43,13 +43,13 @@
     },
     {
       "name": "Led Unten Links: AUS",
-      "atMs": 60000,
+      "atMs": 70000,
       "action": "gpio.off",
       "args": { "led": "ButtonBottomLeft" }
     },
     {
       "name": "Led Unten Links: AN",
-      "atMs": 60000,
+      "atMs": 70000,
       "action": "gpio.on",
       "args": { "led": "ButtonBottomCenter" }
     }

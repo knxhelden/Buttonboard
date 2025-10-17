@@ -4,7 +4,8 @@ using BSolutions.Buttonboard.Services.Gpio;
 using BSolutions.Buttonboard.Services.Loaders;
 using BSolutions.Buttonboard.Services.MqttClients;
 using BSolutions.Buttonboard.Services.RestApiClients;
-using BSolutions.Buttonboard.Services.Runtimes;
+using BSolutions.Buttonboard.Services.Runtime;
+using BSolutions.Buttonboard.Services.Runtime.Actions;
 using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -77,6 +78,15 @@ namespace BSolutions.Buttonboard.App
                         })
                         .AddSingleton<IScenario, ScenarioRuntime>()
                         .AddSingleton<IScenarioAssetRuntime, ScenarioAssetRuntime>()
+                        .AddSingleton<IActionHandler, AudioPlayHandler>()
+                        .AddSingleton<IActionHandler, AudioVolumeHandler>()
+                        .AddSingleton<IActionHandler, VideoNextHandler>()
+                        .AddSingleton<IActionHandler, VideoPauseHandler>()
+                        .AddSingleton<IActionHandler, GpioOnHandler>()
+                        .AddSingleton<IActionHandler, GpioOffHandler>()
+                        .AddSingleton<IActionHandler, GpioBlinkHandler>()
+                        .AddSingleton<IActionHandler, MqttPublishHandler>()
+                        .AddSingleton<IActionHandlerRegistry, ActionHandlerRegistry>()
                         .AddSingleton<IActionExecutor, ActionExecutor>();
                     })
                     .RunConsoleAsync();

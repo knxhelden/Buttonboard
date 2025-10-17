@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BSolutions.Buttonboard.Services.Runtimes
+namespace BSolutions.Buttonboard.Services.Runtime
 {
     /// <summary>
     /// Executes a single <see cref="ScenarioAssetStep"/> within a scenario asset.

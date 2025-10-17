@@ -3,6 +3,15 @@
   "version": 1,
   "steps": [
     {
+      "name": "Audio Player 1: VOLUME",
+      "atMs": 0,
+      "action": "audio.volume",
+      "args": {
+        "volume": 30,
+        "player": "Player1"
+      }
+    },
+    {
       "name": "Led Oben Mitte: AN",
       "atMs": 0,
       "action": "gpio.on",
