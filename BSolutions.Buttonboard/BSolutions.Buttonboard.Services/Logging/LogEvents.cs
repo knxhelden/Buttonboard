@@ -29,9 +29,12 @@ namespace BSolutions.Buttonboard.Services.Logging
         // ───────────────────────────── Executor (5000–5999)
         public static readonly EventId ExecUnknownAction = new(5000, nameof(ExecUnknownAction));
         public static readonly EventId ExecArgMissing = new(5001, nameof(ExecArgMissing));
+        public static readonly EventId ExecArgInvalid = new(5002, nameof(ExecArgInvalid));
         public static readonly EventId ExecResourceMissing = new(5002, nameof(ExecResourceMissing));
 
         public static readonly EventId ExecAudioPlay = new(5100, nameof(ExecAudioPlay));
+        public static readonly EventId ExecAudioVolume = new(5101, nameof(ExecAudioVolume));
+
         public static readonly EventId ExecVideoNext = new(5200, nameof(ExecVideoNext));
         public static readonly EventId ExecVideoPause = new(5201, nameof(ExecVideoPause));
 

@@ -71,7 +71,6 @@ namespace BSolutions.Buttonboard.Services.Runtimes
 
                         var playerName = args.GetString("player", "Player1");
 
-                        // NEU: Dictionary-Lookup statt .Players.FirstOrDefault(...)
                         if (!_settings.OpenHAB.Audio.TryGetValue(playerName, out var player))
                         {
                             _logger.LogWarning(LogEvents.ExecResourceMissing,
@@ -86,6 +85,35 @@ namespace BSolutions.Buttonboard.Services.Runtimes
                         await _openhab.SendCommandAsync(player.StreamItem, url, ct).ConfigureAwait(false);
                         return;
                     }
+
+                case "audio.volume":
+                    {
+                        var volume = args.GetInt("volume", -1);
+                        if (volume < 0 || volume > 100)
+                        {
+                            _logger.LogWarning(LogEvents.ExecArgInvalid,
+                                "audio.volume requires valid argument {Arg} (0–100)", "volume");
+                            throw new ArgumentException("audio.volume requires 'volume' between 0 and 100");
+                        }
+
+                        var playerName = args.GetString("player", "Player1");
+
+                        if (!_settings.OpenHAB.Audio.TryGetValue(playerName, out var player))
+                        {
+                            _logger.LogWarning(LogEvents.ExecResourceMissing,
+                                "audio.volume: OpenHAB player not found {Player}", playerName);
+                            throw new ArgumentException($"Unknown OpenHAB audio player '{playerName}'");
+                        }
+
+                        _logger.LogInformation(LogEvents.ExecAudioVolume,
+                            "audio.volume: setting volume of {Player} (Item {VolumeItem}) to {Volume}%",
+                            playerName, player.VolumeItem, volume);
+
+                        // Assuming OpenHAB exposes a Number item (e.g. 'Player1_Volume')
+                        await _openhab.SendCommandAsync(player.VolumeItem, volume.ToString(), ct).ConfigureAwait(false);
+                        return;
+                    }
+
 
                 case "video.next":
                     {
