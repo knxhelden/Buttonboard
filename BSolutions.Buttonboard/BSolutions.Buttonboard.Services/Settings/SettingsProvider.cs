@@ -26,6 +26,7 @@ namespace BSolutions.Buttonboard.Services.Settings
             var o = options.Value;
             Application = o.Application;
             OpenHAB = o.OpenHAB;
+            Lyrion = o.Lyrion;
             VLC = o.VLC;
             Mqtt = o.Mqtt;
         }
@@ -35,6 +36,9 @@ namespace BSolutions.Buttonboard.Services.Settings
 
         /// <inheritdoc />
         public OpenHabOptions OpenHAB { get; }
+
+        /// <inheritdoc />
+        public LyrionOptions Lyrion { get; }
 
         /// <inheritdoc />
         public VlcOptions VLC { get; }

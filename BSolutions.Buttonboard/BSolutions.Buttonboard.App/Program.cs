@@ -2,6 +2,7 @@
 using BSolutions.Buttonboard.Scenario;
 using BSolutions.Buttonboard.Services.Gpio;
 using BSolutions.Buttonboard.Services.Loaders;
+using BSolutions.Buttonboard.Services.LyrionService;
 using BSolutions.Buttonboard.Services.MqttClients;
 using BSolutions.Buttonboard.Services.RestApiClients;
 using BSolutions.Buttonboard.Services.Runtime;
@@ -69,6 +70,7 @@ namespace BSolutions.Buttonboard.App
                             var app = sp.GetRequiredService<ISettingsProvider>().Application;
                             return app.OperationMode == OperationMode.Simulated;
                         })
+                        .AddSingleton<ILyrionClient, LyrionClient>()
                         .AddByMode<IVlcPlayerClient, VlcPlayerClient, VlcPlayerClientMock>(sp =>
                         {
                             var app = sp.GetRequiredService<ISettingsProvider>().Application;

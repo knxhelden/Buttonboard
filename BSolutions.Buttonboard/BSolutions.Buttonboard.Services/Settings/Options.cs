@@ -1,5 +1,4 @@
-﻿// Services/Settings/Options.cs
-using BSolutions.Buttonboard.Services.Gpio;
+﻿using BSolutions.Buttonboard.Services.Gpio;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -12,6 +11,7 @@ namespace BSolutions.Buttonboard.Services.Settings
         [Required] public required ApplicationOptions Application { get; init; }
         [Required] public required ScenarioOptions Scenario { get; init; }
         [Required] public required OpenHabOptions OpenHAB { get; init; }
+        [Required] public required LyrionOptions Lyrion { get; init; }
         [Required] public required VlcOptions VLC { get; init; }
         [Required] public required MqttOptions Mqtt { get; init; }
     }
@@ -33,7 +33,6 @@ namespace BSolutions.Buttonboard.Services.Settings
 
     public sealed class SetupOptions
     {
-        // Default "setup" ist ok; Required stellt sicher, dass Key gesetzt/bindbar ist
         [Required, MinLength(1)]
         public string Key { get; init; } = "setup";
     }
@@ -54,9 +53,6 @@ namespace BSolutions.Buttonboard.Services.Settings
     {
         [Required] public required Uri BaseUri { get; init; }
 
-        /// <summary>
-        /// Key = Player name, e.g. "Player1", "Player2"
-        /// </summary>
         [Required, MinLength(1)]
         public required Dictionary<string, AudioPlayerOptions> Audio { get; init; }
     }
@@ -70,20 +66,25 @@ namespace BSolutions.Buttonboard.Services.Settings
         [Required] public required string VolumeItem { get; init; }
     }
 
-    /// <summary>
-    /// Dein JSON listet Player direkt unter "VLC": { "Buttonboard": {…}, "Mediaplayer1": {…}, … }
-    /// Mit ConfigurationKeyName("") binden wir die direkten Unterknoten in <see cref="Entries"/>.
-    /// </summary>
+    public sealed class LyrionOptions
+    {
+        public Uri BaseUri { get; set; } = new Uri("tcp://127.0.0.1:9090");
+        public string? Username { get; set; }
+        public string? Password { get; set; }
+
+        public Dictionary<string, string> Players { get; set; } = new();
+    }
+
     public sealed class VlcOptions
     {
-        [ConfigurationKeyName("")] // bindet alle direkten Kinder von "VLC" in dieses Dictionary
+        [ConfigurationKeyName("")]
         [Required, MinLength(1)]
         public required Dictionary<string, VlcPlayerOptions> Devices { get; init; }
     }
 
     public sealed class VlcPlayerOptions
     {
-        [Required] public required Uri BaseUri { get; init; }  // einheitlich wie OpenHAB
+        [Required] public required Uri BaseUri { get; init; }
         [Required] public required string Password { get; init; }
     }
 
@@ -94,7 +95,6 @@ namespace BSolutions.Buttonboard.Services.Settings
         [Required] public required string Username { get; init; }
         [Required] public required string Password { get; init; }
 
-        // Wenn du im Code Default-Fallbacks hast, kannst du Required entfernen und Defaults hier setzen.
         [Required] public required string WillTopic { get; init; }
         [Required] public required string OnlineTopic { get; init; }
 

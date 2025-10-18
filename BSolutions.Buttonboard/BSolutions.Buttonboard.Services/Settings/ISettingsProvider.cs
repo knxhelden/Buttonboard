@@ -29,6 +29,11 @@
         OpenHabOptions OpenHAB { get; }
 
         /// <summary>
+        /// Gets the configuration for Lyrion audio players and their connection endpoints.
+        /// </summary>
+        LyrionOptions Lyrion { get; }
+
+        /// <summary>
         /// Gets the configuration for VLC media players and their connection endpoints.
         /// </summary>
         VlcOptions VLC { get; }
