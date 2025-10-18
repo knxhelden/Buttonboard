@@ -5,38 +5,39 @@ using System.Threading.Tasks;
 namespace BSolutions.Buttonboard.Services.Runtime
 {
     /// <summary>
-    /// Executes a single <see cref="ScenarioAssetStep"/> within a scenario asset.
-    /// <para>
-    /// Implementations interpret the <see cref="ScenarioAssetStep.Action"/> and its
-    /// <see cref="ScenarioAssetStep.Args"/> to perform the corresponding side effect,
-    /// such as controlling GPIO, sending MQTT messages, or triggering audio/video playback.
-    /// </para>
+    /// Defines a contract for executing a single <see cref="ScenarioAssetStep"/> within a scenario.
     /// </summary>
+    /// <remarks>
+    /// Implementations interpret the <see cref="ScenarioAssetStep.Action"/> and its
+    /// associated <see cref="ScenarioAssetStep.Args"/> to perform the corresponding effect —
+    /// such as controlling GPIOs, publishing MQTT messages, or triggering audio/video playback.
+    ///
+    /// The <see cref="IActionExecutor"/> serves as the central dispatch component that
+    /// delegates execution to the appropriate <c>IActionRouter</c> based on the action domain.
+    ///
+    /// Implementations are expected to:
+    /// <list type="bullet">
+    ///   <item><description>Validate whether the action is supported and well-formed.</description></item>
+    ///   <item><description>Throw descriptive exceptions when execution fails (caller interprets <c>OnError</c> policy).</description></item>
+    ///   <item><description>Log structured diagnostic information for observability.</description></item>
+    /// </list>
+    /// </remarks>
     public interface IActionExecutor
     {
         /// <summary>
-        /// Executes the given step.
+        /// Executes the given scenario step asynchronously.
         /// </summary>
         /// <param name="step">
         /// The <see cref="ScenarioAssetStep"/> to execute.
-        /// Contains the action identifier, optional arguments, and error-handling policy.
+        /// Contains the action identifier, arguments, and error-handling policy.
         /// </param>
         /// <param name="ct">
-        /// Cancellation token that should be honored by long-running actions
-        /// (e.g. network operations or blocking I/O). If cancellation is requested,
-        /// the action should stop gracefully as soon as possible.
+        /// A <see cref="CancellationToken"/> for cooperative cancellation.
+        /// Long-running actions (e.g., network or I/O operations) should terminate gracefully when cancelled.
         /// </param>
         /// <returns>
-        /// A task that completes once the step has been processed.
+        /// A <see cref="Task"/> that completes once the step has been executed.
         /// </returns>
-        /// <remarks>
-        /// Implementations are expected to:
-        /// <list type="bullet">
-        ///   <item>Validate that <paramref name="step"/> is supported.</item>
-        ///   <item>Throw an exception if execution fails (caller will interpret <c>OnError</c>).</item>
-        ///   <item>Log relevant information for observability.</item>
-        /// </list>
-        /// </remarks>
         Task ExecuteAsync(ScenarioAssetStep step, CancellationToken ct);
     }
 }

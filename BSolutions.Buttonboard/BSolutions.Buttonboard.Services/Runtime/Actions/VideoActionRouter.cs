@@ -12,29 +12,52 @@ using System.Threading.Tasks;
 
 namespace BSolutions.Buttonboard.Services.Runtime.Actions
 {
+    /// <summary>
+    /// Routes and executes video-related actions such as <c>video.next</c> and <c>video.pause</c>.
+    /// </summary>
+    /// <remarks>
+    /// This router controls remote VLC media players through the legacy HTTP interface
+    /// via the <see cref="IVlcPlayerClient"/> abstraction.  
+    /// 
+    /// Supported operations:
+    /// <list type="bullet">
+    /// <item><description><c>video.next</c> – Skips to the next item in the current VLC playlist.</description></item>
+    /// <item><description><c>video.pause</c> – Pauses or resumes video playback.</description></item>
+    /// </list>
+    /// </remarks>
     public sealed class VideoActionRouter : IActionRouter
     {
         private readonly ILogger _logger;
         private readonly ISettingsProvider _settings;
         private readonly IVlcPlayerClient _vlc;
 
+        /// <inheritdoc />
         public string Domain => "video";
 
-        public VideoActionRouter(ILogger<VideoActionRouter> logger,
-                                 ISettingsProvider settings,
-                                 IVlcPlayerClient vlc)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="VideoActionRouter"/> class.
+        /// </summary>
+        /// <param name="logger">The logger used for structured runtime diagnostics.</param>
+        /// <param name="settings">The settings provider giving access to VLC device configuration.</param>
+        /// <param name="vlc">The VLC client responsible for sending playback commands.</param>
+        public VideoActionRouter(
+            ILogger<VideoActionRouter> logger,
+            ISettingsProvider settings,
+            IVlcPlayerClient vlc)
         {
-            _logger = logger;
-            _settings = settings;
-            _vlc = vlc;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _vlc = vlc ?? throw new ArgumentNullException(nameof(vlc));
         }
 
+        /// <inheritdoc />
         public bool CanHandle(string actionKey)
         {
             var (domain, _) = ActionKeyHelper.Split(actionKey);
             return domain == Domain;
         }
 
+        /// <inheritdoc />
         public async Task ExecuteAsync(ScenarioAssetStep step, CancellationToken ct)
         {
             var key = step.Action?.Trim().ToLowerInvariant() ?? string.Empty;
@@ -51,17 +74,25 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
                     break;
 
                 default:
-                    _logger.LogWarning(LogEvents.ExecUnknownAction, "Unknown action {Action}", key);
+                    _logger.LogWarning(LogEvents.ExecUnknownAction,
+                        "Unknown video action {Action}", key);
                     break;
             }
         }
 
+        /// <summary>
+        /// Handles the <c>video.next</c> operation.
+        /// Sends a "next" command to the specified VLC player, skipping to the next playlist entry.
+        /// </summary>
+        /// <param name="step">The scenario step containing the optional <c>player</c> argument.</param>
+        /// <param name="ct">A <see cref="CancellationToken"/> for cooperative cancellation.</param>
+        /// <exception cref="ArgumentException">Thrown when the specified VLC player is not found.</exception>
         private async Task HandleNextAsync(ScenarioAssetStep step, CancellationToken ct)
         {
             var args = step.Args;
             var playerName = args.GetString("player", "Mediaplayer1");
 
-            if (!_settings.VLC.Devices.TryGetValue(playerName, out var _))
+            if (!_settings.VLC.Devices.TryGetValue(playerName, out _))
             {
                 _logger.LogWarning(LogEvents.ExecResourceMissing,
                     "video.next: VLC player not found {Player}", playerName);
@@ -74,12 +105,19 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
             await _vlc.SendCommandAsync(VlcPlayerCommand.NEXT, playerName, ct).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Handles the <c>video.pause</c> operation.
+        /// Sends a "pause" command to the specified VLC player, toggling playback state.
+        /// </summary>
+        /// <param name="step">The scenario step containing the optional <c>player</c> argument.</param>
+        /// <param name="ct">A <see cref="CancellationToken"/> for cooperative cancellation.</param>
+        /// <exception cref="ArgumentException">Thrown when the specified VLC player is not found.</exception>
         private async Task HandlePauseAsync(ScenarioAssetStep step, CancellationToken ct)
         {
             var args = step.Args;
             var playerName = args.GetString("player", "Mediaplayer1");
 
-            if (!_settings.VLC.Devices.TryGetValue(playerName, out var _))
+            if (!_settings.VLC.Devices.TryGetValue(playerName, out _))
             {
                 _logger.LogWarning(LogEvents.ExecResourceMissing,
                     "video.pause: VLC player not found {Player}", playerName);

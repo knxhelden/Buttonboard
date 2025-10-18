@@ -11,26 +11,48 @@ using System.Threading.Tasks;
 
 namespace BSolutions.Buttonboard.Services.Runtime.Actions
 {
+    /// <summary>
+    /// Routes and executes MQTT-related actions such as <c>mqtt.pub</c>.
+    /// </summary>
+    /// <remarks>
+    /// This router provides a unified interface for publishing messages to MQTT topics.
+    /// It uses the injected <see cref="IMqttClient"/> abstraction to send payloads 
+    /// to the broker defined in the runtime configuration.
+    ///
+    /// Supported operations:
+    /// <list type="bullet">
+    /// <item><description><c>mqtt.pub</c> – Publishes a message to the specified MQTT topic.</description></item>
+    /// </list>
+    /// </remarks>
     public sealed class MqttActionRouter : IActionRouter
     {
         private readonly ILogger _logger;
         private readonly IMqttClient _mqtt;
 
+        /// <inheritdoc />
         public string Domain => "mqtt";
 
-        public MqttActionRouter(ILogger<MqttActionRouter> logger,
-                                IMqttClient mqtt)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="MqttActionRouter"/> class.
+        /// </summary>
+        /// <param name="logger">The logger used for structured runtime diagnostics.</param>
+        /// <param name="mqtt">The MQTT client used to send publish commands.</param>
+        public MqttActionRouter(
+            ILogger<MqttActionRouter> logger,
+            IMqttClient mqtt)
         {
-            _logger = logger;
-            _mqtt = mqtt;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _mqtt = mqtt ?? throw new ArgumentNullException(nameof(mqtt));
         }
 
+        /// <inheritdoc />
         public bool CanHandle(string actionKey)
         {
             var (domain, _) = ActionKeyHelper.Split(actionKey);
             return domain == Domain;
         }
 
+        /// <inheritdoc />
         public async Task ExecuteAsync(ScenarioAssetStep step, CancellationToken ct)
         {
             var key = step.Action?.Trim().ToLowerInvariant() ?? string.Empty;
@@ -43,11 +65,25 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
                     break;
 
                 default:
-                    _logger.LogWarning(LogEvents.ExecUnknownAction, "Unknown action {Action}", key);
+                    _logger.LogWarning(LogEvents.ExecUnknownAction,
+                        "Unknown MQTT action {Action}", key);
                     break;
             }
         }
 
+        /// <summary>
+        /// Handles the <c>mqtt.pub</c> operation.
+        /// Publishes a message to a given MQTT topic with an optional payload.
+        /// </summary>
+        /// <param name="step">
+        /// The scenario step containing:
+        /// <list type="bullet">
+        /// <item><term><c>topic</c></term><description>The MQTT topic to publish to (required).</description></item>
+        /// <item><term><c>payload</c></term><description>The message payload (optional; string or JSON node).</description></item>
+        /// </list>
+        /// </param>
+        /// <param name="ct">A <see cref="CancellationToken"/> for cooperative cancellation.</param>
+        /// <exception cref="ArgumentException">Thrown when <c>topic</c> is missing or invalid.</exception>
         private async Task HandlePublishAsync(ScenarioAssetStep step, CancellationToken ct)
         {
             var args = step.Args;
@@ -60,7 +96,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
                 throw new ArgumentException("mqtt.pub requires 'topic'");
             }
 
-            // payload: string ODER JSON node
+            // Payload can be a string or a JSON node
             var payloadNode = args.GetNode("payload");
             string payload;
 

@@ -11,29 +11,52 @@ using System.Threading.Tasks;
 
 namespace BSolutions.Buttonboard.Services.Runtime.Actions
 {
+    /// <summary>
+    /// Routes and executes audio-related actions such as <c>audio.play</c> and <c>audio.volume</c>.
+    /// </summary>
+    /// <remarks>
+    /// This router dispatches audio commands to OpenHAB-controlled Squeezebox players.
+    /// Supported operations:
+    /// <list type="bullet">
+    /// <item><description><c>audio.play</c> – Plays an audio file from a given URL on the specified player.</description></item>
+    /// <item><description><c>audio.volume</c> – Adjusts the playback volume of a given player.</description></item>
+    /// </list>
+    /// The router resolves OpenHAB player configuration from <see cref="ISettingsProvider"/>
+    /// and uses <see cref="IOpenHabClient"/> to send commands asynchronously.
+    /// </remarks>
     public sealed class AudioActionRouter : IActionRouter
     {
         private readonly ILogger _logger;
         private readonly ISettingsProvider _settings;
         private readonly IOpenHabClient _openhab;
 
+        /// <inheritdoc />
         public string Domain => "audio";
 
-        public AudioActionRouter(ILogger<AudioActionRouter> logger,
-                                 ISettingsProvider settings,
-                                 IOpenHabClient openhab)
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AudioActionRouter"/> class.
+        /// </summary>
+        /// <param name="logger">The logger used for structured runtime diagnostics.</param>
+        /// <param name="settings">The settings provider giving access to OpenHAB player configuration.</param>
+        /// <param name="openhab">The OpenHAB client used to send item commands.</param>
+        public AudioActionRouter(
+            ILogger<AudioActionRouter> logger,
+            ISettingsProvider settings,
+            IOpenHabClient openhab)
         {
-            _logger = logger;
-            _settings = settings;
-            _openhab = openhab;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _openhab = openhab ?? throw new ArgumentNullException(nameof(openhab));
         }
 
+        /// <inheritdoc />
         public bool CanHandle(string actionKey)
         {
             var (domain, _) = ActionKeyHelper.Split(actionKey);
             return domain == Domain;
         }
 
+        /// <inheritdoc />
         public async Task ExecuteAsync(ScenarioAssetStep step, CancellationToken ct)
         {
             var key = step.Action?.Trim().ToLowerInvariant() ?? string.Empty;
@@ -50,11 +73,18 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
                     break;
 
                 default:
-                    _logger.LogWarning(LogEvents.ExecUnknownAction, "Unknown action {Action}", key);
+                    _logger.LogWarning(LogEvents.ExecUnknownAction,
+                        "Unknown audio action {Action}", key);
                     break;
             }
         }
 
+        /// <summary>
+        /// Handles the <c>audio.play</c> operation.
+        /// Sends the provided media URL to the selected OpenHAB audio player.
+        /// </summary>
+        /// <param name="step">The scenario step containing the <c>url</c> and optional <c>player</c> arguments.</param>
+        /// <param name="ct">A <see cref="CancellationToken"/> for cooperative cancellation.</param>
         private async Task HandlePlayAsync(ScenarioAssetStep step, CancellationToken ct)
         {
             var args = step.Args;
@@ -81,10 +111,15 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
             await _openhab.SendCommandAsync(player.StreamItem, url, ct).ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Handles the <c>audio.volume</c> operation.
+        /// Sets the playback volume (0–100%) for the specified OpenHAB player.
+        /// </summary>
+        /// <param name="step">The scenario step containing the <c>volume</c> and optional <c>player</c> arguments.</param>
+        /// <param name="ct">A <see cref="CancellationToken"/> for cooperative cancellation.</param>
         private async Task HandleVolumeAsync(ScenarioAssetStep step, CancellationToken ct)
         {
             var args = step.Args;
-
             var volume = args.GetInt("volume", -1);
             if (volume < 0 || volume > 100)
             {
