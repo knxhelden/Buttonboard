@@ -17,7 +17,7 @@ namespace BSolutions.Buttonboard.App
         private readonly IMqttClient _mqtt;
         private readonly IButtonboardGpioController _gpio;
         private readonly IScenarioAssetsLoader _sceneLoader;
-        private readonly IScenario _scenario;
+        private readonly IScenarioRuntime _scenario;
         private CancellationTokenSource? _cts;
         private Task? _runTask;
 
@@ -26,7 +26,7 @@ namespace BSolutions.Buttonboard.App
             IMqttClient mqtt,
             IButtonboardGpioController gpio,
             IScenarioAssetsLoader sceneLoader,
-            IScenario scenario)
+            IScenarioRuntime scenario)
         {
             _logger = logger;
             _mqtt = mqtt;

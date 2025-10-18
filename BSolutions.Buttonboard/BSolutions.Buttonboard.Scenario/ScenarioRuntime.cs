@@ -14,15 +14,27 @@ using System.Threading.Tasks;
 namespace BSolutions.Buttonboard.Scenario
 {
     /// <summary>
-    /// Orchestrates the execution of JSON-based scenes triggered by hardware buttons.
-    /// 
-    /// Features:
-    /// - Rising-edge detection with debouncing
-    /// - Stage-based progression of scenes (1→2→3→4, cyclic)
-    /// - TestOperation mode (from <see cref="Application.TestOperation"/>):
-    ///   ignores stage progression and allows any button to trigger its scene at any time
+    /// Orchestrates the end-to-end execution of JSON-based scenes triggered by physical button inputs.
     /// </summary>
-    public sealed class ScenarioRuntime : IScenario
+    /// <remarks>
+    /// The <see cref="ScenarioRuntime"/> represents the central runtime loop of Buttonboard.  
+    /// It continuously polls GPIO inputs, detects rising edges, and executes the corresponding
+    /// <c>ScenarioAssetStep</c> sequences via <see cref="IScenarioAssetRuntime"/>.
+    ///
+    /// <para><b>Features:</b></para>
+    /// <list type="bullet">
+    /// <item><description>Rising-edge detection with mechanical debouncing.</description></item>
+    /// <item><description>Stage-based progression of scenes (1→2→3→4, cyclic).</description></item>
+    /// <item><description><c>TestOperation</c> mode (from <see cref="ApplicationOptions.DisableSceneOrder"/>):
+    /// ignores stage order and allows free scene triggering.</description></item>
+    /// </list>
+    ///
+    /// <para>
+    /// The runtime manages LEDs and MQTT devices for feedback, ensuring all hardware components
+    /// remain in sync with the current scenario state.
+    /// </para>
+    /// </remarks>
+    public sealed class ScenarioRuntime : IScenarioRuntime
     {
         #region --- Fields ---
 
@@ -32,44 +44,14 @@ namespace BSolutions.Buttonboard.Scenario
         private readonly IButtonboardGpioController _gpio;
         private readonly IMqttClient _mqtt;
 
-        /// <summary>
-        /// Cached flag from settings: if true, stage order is ignored and any button may trigger its scene.
-        /// </summary>
         private readonly bool _disableSceneOrder;
-
-        /// <summary>
-        /// Debounce window in milliseconds to suppress multiple triggers caused by mechanical button bounce.
-        /// </summary>
         private const int DebounceMs = 150;
-
-        /// <summary>
-        /// Poll delay for the main loop in milliseconds.
-        /// Lower values = more responsive (but more CPU).
-        /// Higher values = less CPU (but less responsive).
-        /// </summary>
         private const int PollDelayMs = 20;
 
-        /// <summary>
-        /// Current progression stage (0..=_scenes.Count - 1).
-        /// In normal mode this enforces sequential playback.
-        /// </summary>
         private int _stage = 0;
-
-        /// <summary>
-        /// Last observed pressed-state per button (for rising-edge detection).
-        /// </summary>
         private readonly Dictionary<Button, bool> _lastState = new();
-
-        /// <summary>
-        /// Timestamp (ms since scenario start) of the last accepted press per button (for debouncing).
-        /// </summary>
         private readonly Dictionary<Button, long> _lastFireMs = new();
-
-        /// <summary>
-        /// Data-driven list of scenes (order defines progression in normal mode).
-        /// </summary>
         private readonly List<SceneDef> _scenes;
-
         private readonly string _setupKey;
 
         #endregion
@@ -77,7 +59,7 @@ namespace BSolutions.Buttonboard.Scenario
         #region --- Scene Model ---
 
         /// <summary>
-        /// Compact record type describing a scene definition.
+        /// Represents a compact, immutable scene definition loaded from configuration.
         /// </summary>
         private readonly record struct SceneDef(string Key, Button TriggerButton, int RequiredStage);
 
@@ -102,12 +84,14 @@ namespace BSolutions.Buttonboard.Scenario
         #region --- Constructor ---
 
         /// <summary>
-        /// Creates a new <see cref="ScenarioRuntime"/>.
+        /// Initializes a new instance of the <see cref="ScenarioRuntime"/> class.
         /// </summary>
-        /// <param name="logger">Logger for runtime diagnostics.</param>
-        /// <param name="settings">Provides access to application settings.</param>
-        /// <param name="sceneRuntime">Service to start/cancel scenes.</param>
-        /// <param name="gpio">GPIO controller to read buttons and control LEDs.</param>
+        /// <param name="logger">Logger for structured runtime diagnostics.</param>
+        /// <param name="settings">Provides access to global application settings.</param>
+        /// <param name="sceneRuntime">Service responsible for executing individual scenes.</param>
+        /// <param name="gpio">GPIO controller for reading button input and controlling LEDs.</param>
+        /// <param name="mqtt">MQTT client used for state synchronization and device feedback.</param>
+        /// <param name="scenarioOptions">Bound configuration containing setup and scene definitions.</param>
         public ScenarioRuntime(
             ILogger<ScenarioRuntime> logger,
             ISettingsProvider settings,
@@ -116,23 +100,20 @@ namespace BSolutions.Buttonboard.Scenario
             IMqttClient mqtt,
             IOptions<ScenarioOptions> scenarioOptions)
         {
-            _logger = logger;
-            _settings = settings;
-            _sceneRuntime = sceneRuntime;
-            _gpio = gpio;
-            _mqtt = mqtt;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _settings = settings ?? throw new ArgumentNullException(nameof(settings));
+            _sceneRuntime = sceneRuntime ?? throw new ArgumentNullException(nameof(sceneRuntime));
+            _gpio = gpio ?? throw new ArgumentNullException(nameof(gpio));
+            _mqtt = mqtt ?? throw new ArgumentNullException(nameof(mqtt));
 
-            // Cache flag once at startup (hot-reload not required here).
             _disableSceneOrder = _settings.Application.DisableSceneOrder;
 
-            // Load setup and scene config from options.
             var opts = scenarioOptions.Value;
             _setupKey = string.IsNullOrWhiteSpace(opts.Setup.Key) ? "setup" : opts.Setup.Key;
             _scenes = opts.Scenes
                 .Select(s => new SceneDef(s.Key, s.TriggerButton, s.RequiredStage))
                 .ToList();
 
-            // Initialize edge/debounce tracking.
             foreach (var b in Enum.GetValues<Button>())
             {
                 _lastState[b] = false;
@@ -142,14 +123,9 @@ namespace BSolutions.Buttonboard.Scenario
 
         #endregion
 
-        #region --- IScenario ---
+        #region --- IScenarioRuntime Implementation ---
 
-        /// <summary>
-        /// Runs the scenario loop until cancelled:
-        /// - Polls buttons in a tight loop
-        /// - Detects termination combo (BottomLeft+BottomRight)
-        /// - Invokes scenes on valid button presses
-        /// </summary>
+        /// <inheritdoc />
         public async Task RunAsync(CancellationToken ct = default)
         {
             _logger.LogInformation("Scenario is running… (TestOperation={Test})", _disableSceneOrder);
@@ -168,7 +144,6 @@ namespace BSolutions.Buttonboard.Scenario
 
                     await Task.Delay(PollDelayMs, ct);
                 }
-
             }
             catch (OperationCanceledException)
             {
@@ -182,10 +157,7 @@ namespace BSolutions.Buttonboard.Scenario
             _logger.LogInformation("Scenario has ended.");
         }
 
-        /// <summary>
-        /// Prepares the scenario for operation.
-        /// Attempts to start the optional "setup" scene (Setup.json).
-        /// </summary>
+        /// <inheritdoc />
         public async Task SetupAsync(CancellationToken ct = default)
         {
             _logger.LogInformation("Scenario is being set up…");
@@ -197,12 +169,7 @@ namespace BSolutions.Buttonboard.Scenario
             }
         }
 
-        /// <summary>
-        /// Resets to a clean state:
-        /// - Cancels any running scene
-        /// - Resets GPIO
-        /// - Resets progression stage
-        /// </summary>
+        /// <inheritdoc />
         public async Task ResetAsync(CancellationToken ct = default)
         {
             _logger.LogInformation("Scenario is being reset…");
@@ -219,8 +186,8 @@ namespace BSolutions.Buttonboard.Scenario
         #region --- Private Helpers ---
 
         /// <summary>
-        /// Detects a rising edge (not pressed → pressed) with debounce.
-        /// Invokes the supplied asynchronous action fire-and-forget.
+        /// Detects a rising edge (button transition from not pressed → pressed) with debounce logic applied.
+        /// Invokes the supplied asynchronous callback in a fire-and-forget manner.
         /// </summary>
         private void HandleButtonRisingEdge(Stopwatch sw, Button button, Func<Task> onPressedAsync)
         {
@@ -228,21 +195,22 @@ namespace BSolutions.Buttonboard.Scenario
             var wasPressed = _lastState[button];
             _lastState[button] = pressed;
 
-            if (!pressed || wasPressed) return;
+            if (!pressed || wasPressed)
+                return;
 
             var now = sw.ElapsedMilliseconds;
             var last = _lastFireMs[button];
 
-            if (last >= 0 && (now - last) < DebounceMs) return;
+            if (last >= 0 && (now - last) < DebounceMs)
+                return;
 
             _lastFireMs[button] = now;
-
             _ = SafeFireAndForget(onPressedAsync);
         }
 
         /// <summary>
-        /// Runs an asynchronous action and swallows exceptions.
-        /// Errors must be logged inside the action itself.
+        /// Executes an asynchronous delegate and suppresses all exceptions.
+        /// Errors must be logged within the delegate itself.
         /// </summary>
         private static async Task SafeFireAndForget(Func<Task> action)
         {
@@ -251,10 +219,10 @@ namespace BSolutions.Buttonboard.Scenario
         }
 
         /// <summary>
-        /// Attempts to trigger a scene:
-        /// - In TestOperation mode: always starts the scene, regardless of stage
-        /// - In normal mode: enforces sequential stage progression
+        /// Attempts to trigger a scene according to the configured progression mode.
         /// </summary>
+        /// <param name="scene">The scene definition to execute.</param>
+        /// <param name="ct">A <see cref="CancellationToken"/> for cooperative cancellation.</param>
         private async Task TryTriggerSceneAsync(SceneDef scene, CancellationToken ct)
         {
             if (_disableSceneOrder)
@@ -269,7 +237,7 @@ namespace BSolutions.Buttonboard.Scenario
                 return;
             }
 
-            // Normal mode checks.
+            // Enforce stage order in normal mode.
             if (_stage < scene.RequiredStage || _stage > scene.RequiredStage)
             {
                 await _gpio.LedsBlinkingAsync(5, 100);

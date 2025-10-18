@@ -74,7 +74,7 @@ namespace BSolutions.Buttonboard.App
                             var app = sp.GetRequiredService<ISettingsProvider>().Application;
                             return app.OperationMode == OperationMode.Simulated;
                         })
-                        .AddSingleton<IScenario, ScenarioRuntime>()
+                        .AddSingleton<IScenarioRuntime, ScenarioRuntime>()
                         .AddSingleton<IScenarioAssetRuntime, ScenarioAssetRuntime>()
                         .AddSingleton<IActionRouter, AudioActionRouter>()
                         .AddSingleton<IActionRouter, VideoActionRouter>()
