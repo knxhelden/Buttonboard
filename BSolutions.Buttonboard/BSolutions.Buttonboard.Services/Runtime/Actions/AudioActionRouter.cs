@@ -12,13 +12,14 @@ using System.Threading.Tasks;
 namespace BSolutions.Buttonboard.Services.Runtime.Actions
 {
     /// <summary>
-    /// Routes and executes audio-related actions such as <c>audio.play</c> and <c>audio.volume</c>.
+    /// Routes and executes audio-related actions such as <c>audio.play</c>, <c>audio.pause</c>, and <c>audio.volume</c>.
     /// </summary>
     /// <remarks>
     /// This router dispatches audio commands to OpenHAB-controlled Squeezebox players.
     /// Supported operations:
     /// <list type="bullet">
     /// <item><description><c>audio.play</c> – Plays an audio file from a given URL on the specified player.</description></item>
+    /// <item><description><c>audio.pause</c> – Pauses playback on the specified player.</description></item>
     /// <item><description><c>audio.volume</c> – Adjusts the playback volume of a given player.</description></item>
     /// </list>
     /// The router resolves OpenHAB player configuration from <see cref="ISettingsProvider"/>
@@ -33,12 +34,8 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         /// <inheritdoc />
         public string Domain => "audio";
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="AudioActionRouter"/> class.
-        /// </summary>
-        /// <param name="logger">The logger used for structured runtime diagnostics.</param>
-        /// <param name="settings">The settings provider giving access to OpenHAB player configuration.</param>
-        /// <param name="openhab">The OpenHAB client used to send item commands.</param>
+        #region --- Constructor ---
+
         public AudioActionRouter(
             ILogger<AudioActionRouter> logger,
             ISettingsProvider settings,
@@ -48,6 +45,10 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _openhab = openhab ?? throw new ArgumentNullException(nameof(openhab));
         }
+
+        #endregion
+
+        #region --- IActionRouter ---
 
         /// <inheritdoc />
         public bool CanHandle(string actionKey)
@@ -68,6 +69,10 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
                     await HandlePlayAsync(step, ct).ConfigureAwait(false);
                     break;
 
+                case "pause":
+                    await HandlePauseAsync(step, ct).ConfigureAwait(false);
+                    break;
+
                 case "volume":
                     await HandleVolumeAsync(step, ct).ConfigureAwait(false);
                     break;
@@ -79,12 +84,14 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
             }
         }
 
+        #endregion
+
+        #region --- Handlers ---
+
         /// <summary>
         /// Handles the <c>audio.play</c> operation.
         /// Sends the provided media URL to the selected OpenHAB audio player.
         /// </summary>
-        /// <param name="step">The scenario step containing the <c>url</c> and optional <c>player</c> arguments.</param>
-        /// <param name="ct">A <see cref="CancellationToken"/> for cooperative cancellation.</param>
         private async Task HandlePlayAsync(ScenarioAssetStep step, CancellationToken ct)
         {
             var args = step.Args;
@@ -112,11 +119,38 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         }
 
         /// <summary>
+        /// Handles the <c>audio.pause</c> operation.
+        /// Sends a "PAUSE" command to the specified OpenHAB player.
+        /// </summary>
+        private async Task HandlePauseAsync(ScenarioAssetStep step, CancellationToken ct)
+        {
+            var playerName = step.Args.GetString("player", "Player1");
+
+            if (!_settings.OpenHAB.Audio.TryGetValue(playerName, out var player))
+            {
+                _logger.LogWarning(LogEvents.ExecResourceMissing,
+                    "audio.pause: OpenHAB player not found {Player}", playerName);
+                throw new ArgumentException($"Unknown OpenHAB audio player '{playerName}'");
+            }
+
+            if (string.IsNullOrWhiteSpace(player.ControlItem))
+            {
+                _logger.LogWarning(LogEvents.ExecResourceMissing,
+                    "audio.pause: player {Player} has no configured ControlItem", playerName);
+                throw new ArgumentException($"audio.pause: ControlItem missing for player '{playerName}'");
+            }
+
+            _logger.LogInformation(LogEvents.ExecAudioPause,
+                "audio.pause: sending PAUSE to {Player} (Item {ControlItem})",
+                playerName, player.ControlItem);
+
+            await _openhab.SendCommandAsync(player.ControlItem, "PAUSE", ct).ConfigureAwait(false);
+        }
+
+        /// <summary>
         /// Handles the <c>audio.volume</c> operation.
         /// Sets the playback volume (0–100%) for the specified OpenHAB player.
         /// </summary>
-        /// <param name="step">The scenario step containing the <c>volume</c> and optional <c>player</c> arguments.</param>
-        /// <param name="ct">A <see cref="CancellationToken"/> for cooperative cancellation.</param>
         private async Task HandleVolumeAsync(ScenarioAssetStep step, CancellationToken ct)
         {
             var args = step.Args;
@@ -143,5 +177,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
 
             await _openhab.SendCommandAsync(player.VolumeItem, volume.ToString(), ct).ConfigureAwait(false);
         }
+
+        #endregion
     }
 }

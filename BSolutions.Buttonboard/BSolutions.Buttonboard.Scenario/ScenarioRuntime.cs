@@ -123,7 +123,7 @@ namespace BSolutions.Buttonboard.Scenario
 
         #endregion
 
-        #region --- IScenarioRuntime Implementation ---
+        #region --- IScenarioRuntime ---
 
         /// <inheritdoc />
         public async Task RunAsync(CancellationToken ct = default)

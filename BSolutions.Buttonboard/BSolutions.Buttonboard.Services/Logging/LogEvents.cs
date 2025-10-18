@@ -33,7 +33,8 @@ namespace BSolutions.Buttonboard.Services.Logging
         public static readonly EventId ExecResourceMissing = new(5002, nameof(ExecResourceMissing));
 
         public static readonly EventId ExecAudioPlay = new(5100, nameof(ExecAudioPlay));
-        public static readonly EventId ExecAudioVolume = new(5101, nameof(ExecAudioVolume));
+        public static readonly EventId ExecAudioPause = new(5101, nameof(ExecAudioPause));
+        public static readonly EventId ExecAudioVolume = new(5102, nameof(ExecAudioVolume));
 
         public static readonly EventId ExecVideoNext = new(5200, nameof(ExecVideoNext));
         public static readonly EventId ExecVideoPause = new(5201, nameof(ExecVideoPause));

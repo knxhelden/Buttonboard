@@ -241,7 +241,6 @@ namespace BSolutions.Buttonboard.Services.MqttClients
             }
         }
 
-
         /// <inheritdoc />
         public async Task StopAsync(CancellationToken ct = default)
         {
