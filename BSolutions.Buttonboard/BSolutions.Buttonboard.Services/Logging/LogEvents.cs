@@ -30,7 +30,7 @@ namespace BSolutions.Buttonboard.Services.Logging
         public static readonly EventId ExecUnknownAction = new(5000, nameof(ExecUnknownAction));
         public static readonly EventId ExecArgMissing = new(5001, nameof(ExecArgMissing));
         public static readonly EventId ExecArgInvalid = new(5002, nameof(ExecArgInvalid));
-        public static readonly EventId ExecResourceMissing = new(5002, nameof(ExecResourceMissing));
+        public static readonly EventId ExecResourceMissing = new(5003, nameof(ExecResourceMissing)); // ← fixed (war 5002)
 
         public static readonly EventId ExecAudioPlay = new(5100, nameof(ExecAudioPlay));
         public static readonly EventId ExecAudioPause = new(5101, nameof(ExecAudioPause));
@@ -60,13 +60,10 @@ namespace BSolutions.Buttonboard.Services.Logging
         public static readonly EventId MqttConnected = new(7001, nameof(MqttConnected));
         public static readonly EventId MqttDisconnected = new(7002, nameof(MqttDisconnected));
         public static readonly EventId MqttConnectFailed = new(7003, nameof(MqttConnectFailed));
-
         public static readonly EventId MqttOnlineAnnounced = new(7010, nameof(MqttOnlineAnnounced));
-
         public static readonly EventId MqttPublishEnqueued = new(7020, nameof(MqttPublishEnqueued));
         public static readonly EventId MqttPublishDropped = new(7021, nameof(MqttPublishDropped));
         public static readonly EventId MqttInvalidTopic = new(7022, nameof(MqttInvalidTopic));
-
         public static readonly EventId MqttStopping = new(7030, nameof(MqttStopping));
         public static readonly EventId MqttStopped = new(7031, nameof(MqttStopped));
         public static readonly EventId MqttPendingDrained = new(7032, nameof(MqttPendingDrained));
@@ -94,5 +91,15 @@ namespace BSolutions.Buttonboard.Services.Logging
         public static readonly EventId VlcCommandSent = new(8200, nameof(VlcCommandSent));
         public static readonly EventId VlcNonSuccess = new(8201, nameof(VlcNonSuccess));
         public static readonly EventId VlcError = new(8202, nameof(VlcError));
+
+        // ───────────────────────────── Lyrion (8300–8399)
+        public static readonly EventId LyrionResetStart = new(8300, nameof(LyrionResetStart));
+        public static readonly EventId LyrionResetNoPlayers = new(8301, nameof(LyrionResetNoPlayers));
+        public static readonly EventId LyrionResetSkippedEmptyId = new(8302, nameof(LyrionResetSkippedEmptyId));
+        public static readonly EventId LyrionResetCompleted = new(8303, nameof(LyrionResetCompleted));
+
+        public static readonly EventId LyrionCommandSent = new(8310, nameof(LyrionCommandSent));
+        public static readonly EventId LyrionNoResponse = new(8311, nameof(LyrionNoResponse));
+        public static readonly EventId LyrionError = new(8399, nameof(LyrionError));
     }
 }

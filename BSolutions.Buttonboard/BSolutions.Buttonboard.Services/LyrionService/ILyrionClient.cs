@@ -8,18 +8,31 @@ namespace BSolutions.Buttonboard.Services.LyrionService
     /// the Lyrion Media Server (formerly Logitech Media Server) via its CLI interface (TCP port 9090).
     /// </summary>
     /// <remarks>
-    /// Implementations are expected to handle URL-encoding of arguments,
-    /// proper TCP connection lifecycle, and optional authentication (login user/pass).
+    /// Implementations are responsible for:
+    /// - Managing the TCP connection lifecycle
+    /// - URL-encoding arguments where required (e.g. media URLs)
+    /// - Handling optional authentication (username/password)
+    /// - Providing best-effort resilience (no strict response dependency)
     /// </remarks>
     public interface ILyrionClient
     {
+        /// <summary>
+        /// Performs a best-effort global reset by pausing all configured players.
+        /// </summary>
+        /// <param name="ct">Cancellation token for cooperative cancellation.</param>
+        /// <returns>
+        /// A task that completes once all <c>pause</c> commands have been issued.
+        /// Individual player errors are logged but do not abort the operation.
+        /// </returns>
+        Task ResetAsync(CancellationToken ct = default);
+
         /// <summary>
         /// Starts playback of the specified media resource on the given player.
         /// </summary>
         /// <param name="playerName">Logical player name as defined in the configuration.</param>
         /// <param name="url">
         /// Media source to play (e.g. <c>http://server/music/track.mp3</c> or <c>spotify:track:…</c>).
-        /// The implementation is responsible for URL-encoding this argument.
+        /// Implementations must URL-encode this argument.
         /// </param>
         /// <param name="ct">Cancellation token for cooperative cancellation.</param>
         /// <returns>
@@ -33,7 +46,7 @@ namespace BSolutions.Buttonboard.Services.LyrionService
         /// </summary>
         /// <param name="playerName">Logical player name as defined in the configuration.</param>
         /// <param name="pause">
-        /// <see langword="true"/> to pause playback; <see langword="false"/> to resume.
+        /// <see langword="true"/> pauses playback; <see langword="false"/> resumes playback.
         /// </param>
         /// <param name="ct">Cancellation token for cooperative cancellation.</param>
         /// <returns>
@@ -48,7 +61,7 @@ namespace BSolutions.Buttonboard.Services.LyrionService
         /// <param name="playerName">Logical player name as defined in the configuration.</param>
         /// <param name="volumePercent">
         /// Target volume in percent (0–100).
-        /// Values outside this range should result in an <see cref="System.ArgumentOutOfRangeException"/>.
+        /// Values outside this range must throw an <see cref="System.ArgumentOutOfRangeException"/>.
         /// </param>
         /// <param name="ct">Cancellation token for cooperative cancellation.</param>
         /// <returns>
