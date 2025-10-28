@@ -15,13 +15,13 @@
       "name": "Mediaplayer 5: PLAY",
       "atMs": 0,
       "action": "video.next",
-      "args": { "player": "Mediaplayer5" }
+      "args": { "player": "Mediaplayer4" }
     },
     {
       "name": "Mediaplayer 5: PAUSE",
       "atMs": 60000,
       "action": "video.pause",
-      "args": { "player": "Mediaplayer5" }
+      "args": { "player": "Mediaplayer4" }
     },
     {
       "name": "LED Oben Zentral: AUS",

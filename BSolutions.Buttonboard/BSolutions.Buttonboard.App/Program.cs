@@ -71,11 +71,7 @@ namespace BSolutions.Buttonboard.App
                             return app.OperationMode == OperationMode.Simulated;
                         })
                         .AddSingleton<ILyrionClient, LyrionClient>()
-                        .AddByMode<IVlcPlayerClient, VlcPlayerClient, VlcPlayerClientMock>(sp =>
-                        {
-                            var app = sp.GetRequiredService<ISettingsProvider>().Application;
-                            return app.OperationMode == OperationMode.Simulated;
-                        })
+                        .AddSingleton<IVlcPlayerClient, VlcPlayerClient>()
                         .AddSingleton<IScenarioRuntime, ScenarioRuntime>()
                         .AddSingleton<IScenarioAssetRuntime, ScenarioAssetRuntime>()
                         .AddSingleton<IActionRouter, AudioActionRouter>()

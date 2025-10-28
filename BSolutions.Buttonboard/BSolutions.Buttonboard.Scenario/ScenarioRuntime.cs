@@ -1,6 +1,7 @@
 ﻿using BSolutions.Buttonboard.Services.Gpio;
 using BSolutions.Buttonboard.Services.LyrionService;
 using BSolutions.Buttonboard.Services.MqttClients;
+using BSolutions.Buttonboard.Services.RestApiClients;
 using BSolutions.Buttonboard.Services.Runtime;
 using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Logging;
@@ -45,6 +46,7 @@ namespace BSolutions.Buttonboard.Scenario
         private readonly IButtonboardGpioController _gpio;
         private readonly IMqttClient _mqtt;
         private readonly ILyrionClient _lyrion;
+        private readonly IVlcPlayerClient _vlc;
 
         private readonly bool _disableSceneOrder;
         private const int DebounceMs = 150;
@@ -101,6 +103,7 @@ namespace BSolutions.Buttonboard.Scenario
             IButtonboardGpioController gpio,
             IMqttClient mqtt,
             ILyrionClient lyrion,
+            IVlcPlayerClient vlc,
             IOptions<ScenarioOptions> scenarioOptions)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -109,6 +112,7 @@ namespace BSolutions.Buttonboard.Scenario
             _gpio = gpio ?? throw new ArgumentNullException(nameof(gpio));
             _mqtt = mqtt ?? throw new ArgumentNullException(nameof(mqtt));
             _lyrion = lyrion ?? throw new ArgumentNullException(nameof(lyrion));
+            _vlc = vlc ?? throw new ArgumentNullException(nameof(vlc));
 
             _disableSceneOrder = _settings.Application.DisableSceneOrder;
 
@@ -182,6 +186,7 @@ namespace BSolutions.Buttonboard.Scenario
             await _gpio.ResetAsync();
             await _mqtt.ResetAsync(ct);
             await _lyrion.ResetAsync(ct);
+            await _vlc.ResetAsync(ct);
 
             _stage = 0;
         }

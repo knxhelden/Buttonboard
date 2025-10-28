@@ -10,7 +10,7 @@ TARGET_USER="${SUDO_USER:-${USER}}"
 TARGET_UID="$(id -u "${TARGET_USER}")"
 TARGET_HOME="$(getent passwd "${TARGET_USER}" | cut -d: -f6)"
 TARGET_GROUP="$(id -gn "${TARGET_USER}")"   # NEU: echte Primärgruppe
-MEDIA_DIR="${TARGET_HOME}/Videos/horrorhouse"
+MEDIA_DIR="${TARGET_HOME}/Videos/halloween"
 
 # VLC start command
 VLC_CMD="vlc --intf dummy \
@@ -85,9 +85,24 @@ enable_user_service() {
 
   log "Autostart active. Service: ${SERVICE_NAME}"
   echo "  • Media folder:   ${MEDIA_DIR}"
-  echo "  • Web-UI:         http://<PI-IP>:${HTTP_PORT}/  (User leer, Passwort: ${HTTP_PASSWORD})"
-  echo "  • Stop service:   systemctl --user stop ${SERVICE_NAME}"
+  echo "  • VLC Web-UI:     http://<PI-IP>:${HTTP_PORT}/  (User leer, Passwort: ${HTTP_PASSWORD})"
   echo "  • Logs:           journalctl --user -u ${SERVICE_NAME} -f"
+}
+
+
+# ─────────────────────────── Webmin setup ───────────────────────────
+install_webmin() {
+  log "Installing Webmin (official repo)…"
+  if ! apt-cache policy | grep -qi "download.webmin.com"; then
+    curl -fsSL https://raw.githubusercontent.com/webmin/webmin/master/webmin-setup-repo.sh -o /tmp/webmin-setup-repo.sh
+    bash /tmp/webmin-setup-repo.sh --stable --force
+  else
+    log "Webmin repo already configured."
+  fi
+  apt-get update -y
+  apt_install webmin
+  systemctl enable --now webmin
+  log "Webmin running at: https://${PI_IP}:${WEBMIN_INFO_PORT}/"
 }
 
 # ═══════════════════════ main ══════════════════════════════════════
@@ -97,6 +112,7 @@ main() {
   install_vlc
   create_systemd_user_service
   enable_user_service
+  install_webmin
 }
 
 main "$@"
