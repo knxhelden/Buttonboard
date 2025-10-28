@@ -42,6 +42,8 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
             public const string Playlist = "playlist.xml";
         }
 
+        #region --- Constructor ---
+
         /// <summary>
         /// Initializes a new instance of the <see cref="VlcPlayerClient"/> class.
         /// </summary>
@@ -56,6 +58,10 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
         {
             _gpio = gpio ?? throw new ArgumentNullException(nameof(gpio));
         }
+
+        #endregion
+
+        #region --- IVlcPlayerClient ---
 
         /// <inheritdoc />
         public async Task ResetAsync(CancellationToken ct = default)
@@ -150,7 +156,9 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
             }
         }
 
-        // ───────────────────────────── Private helpers ─────────────────────────────
+        #endregion
+
+        #region --- Helpers ---
 
         /// <summary>
         /// Executes the full reset sequence for a single VLC instance:
@@ -270,5 +278,7 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
         /// </summary>
         private static int? ParseLengthInSeconds(XDocument statusXml)
             => int.TryParse(statusXml.Root?.Element("length")?.Value, out var len) ? len : null;
+
+        #endregion
     }
 }
