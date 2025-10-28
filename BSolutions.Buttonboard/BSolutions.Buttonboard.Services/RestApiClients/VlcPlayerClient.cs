@@ -15,28 +15,17 @@ using System.Xml.Linq;
 
 namespace BSolutions.Buttonboard.Services.RestApiClients
 {
-    /// <summary>
-    /// HTTP client for issuing remote control commands to VLC instances via their legacy HTTP interface.
-    /// </summary>
-    /// <remarks>
-    /// Responsibilities:
-    /// <list type="bullet">
-    ///   <item><description>Send high-level control commands to configured VLC players.</description></item>
-    ///   <item><description>Perform bulk resets of all players to a consistent paused state.</description></item>
-    ///   <item><description>Ensure robust timeout handling and structured logging for diagnostics.</description></item>
-    /// </list>
-    /// Thread-safety: instances are stateless per call and intended for transient use.
-    /// </remarks>
     public sealed class VlcPlayerClient : RestApiClientBase, IVlcPlayerClient
     {
         private readonly IButtonboardGpioController _gpio;
 
-        /// <summary>
-        /// Creates a new <see cref="VlcPlayerClient"/> using the shared HTTP infrastructure.
-        /// </summary>
-        /// <param name="logger">Logger for structured diagnostics.</param>
-        /// <param name="settingsProvider">Provides access to global application settings.</param>
-        /// <param name="gpio">Used to signal hardware status LEDs on warnings.</param>
+        private static class Routes
+        {
+            public const string Requests = "requests/";
+            public const string Status = "status.xml";
+            public const string Playlist = "playlist.xml";
+        }
+
         public VlcPlayerClient(
             ILogger<RestApiClientBase> logger,
             ISettingsProvider settingsProvider,
@@ -49,156 +38,98 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
         /// <inheritdoc />
         public async Task ResetAsync(CancellationToken ct = default)
         {
-            var vlc = _settings.VLC ?? throw new InvalidOperationException("VLC settings missing.");
+            var cfg = _settings.VLC ?? throw new InvalidOperationException("VLC settings missing.");
 
-            if (vlc.Devices is null || vlc.Devices.Count == 0)
+            if (cfg.Devices is null || cfg.Devices.Count == 0)
             {
-                _logger.LogInformation("VLC reset: no players configured.");
+                _logger.LogInformation("VLC Reset: no players configured.");
                 return;
             }
 
-            var resetCount = 0;
+            _logger.LogInformation("VLC Reset: starting for {Count} player(s)…", cfg.Devices.Count);
 
-            _logger.LogInformation("Starting reset of {Count} VLC player(s)…", vlc.Devices.Count);
-
-            foreach (var kvp in vlc.Devices)
+            var ok = 0;
+            foreach (var (playerName, device) in cfg.Devices)
             {
                 ct.ThrowIfCancellationRequested();
 
-                var playerName = kvp.Key;
-                var player = kvp.Value;
-
-                if (player?.BaseUri is null)
+                if (device?.BaseUri is null || !device.BaseUri.IsAbsoluteUri)
                 {
-                    _logger.LogWarning("VLC reset: skipping player '{Player}' – no BaseUri configured.", playerName);
-                    continue;
-                }
-
-                if (!player.BaseUri.IsAbsoluteUri)
-                {
-                    _logger.LogWarning("VLC reset: skipping player '{Player}' – invalid BaseUri '{Uri}'.", playerName, player.BaseUri);
+                    _logger.LogWarning("VLC Reset: skip '{Player}' – invalid BaseUri.", playerName);
                     continue;
                 }
 
                 try
                 {
-                    await ResetPlayerAsync(playerName, player.BaseUri, player.Password, ct).ConfigureAwait(false);
-                    resetCount++;
+                    await ResetPlayerAsync(playerName, device.BaseUri, device.Password, ct).ConfigureAwait(false);
+                    ok++;
                 }
-                catch (OperationCanceledException)
-                {
-                    throw;
-                }
+                catch (OperationCanceledException) { throw; }
                 catch (Exception ex)
                 {
-                    // Best-effort: other players continue
-                    _logger.LogWarning(ex, "VLC reset: failed for player '{Player}'.", playerName);
+                    // best effort; continue with others
+                    _logger.LogWarning(ex, "VLC Reset: failed for '{Player}'.", playerName);
                 }
             }
 
-            _logger.LogInformation("VLC reset complete. Players reset successfully: {Count}/{Total}", resetCount, vlc.Devices.Count);
+            _logger.LogInformation("VLC Reset: finished. Successful: {Ok}/{Total}", ok, cfg.Devices.Count);
         }
 
         /// <summary>
-        /// Performs the actual reset logic for a single VLC instance:
-        /// loads the playlist, plays the last item, seeks near its end, then pauses.
+        /// load playlist → select last → small wait → read length → seek to L-5 → force pause
         /// </summary>
         private async Task ResetPlayerAsync(string playerName, Uri baseUri, string? password, CancellationToken ct)
         {
-            var httpRoot = new Uri(baseUri, "requests/");
-            var basicToken = $":{password ?? string.Empty}".Base64Encode();
+            // shared
+            var requestsRoot = new Uri(baseUri, Routes.Requests);
+            var statusUri = new Uri(requestsRoot, Routes.Status);
+            var playlistUri = new Uri(requestsRoot, Routes.Playlist);
+            var authToken = CreateBasicToken(password);
 
-            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
+            using var to = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            to.CancelAfter(TimeSpan.FromSeconds(5));
 
-            // 1) Read playlist
-            var playlistUri = new Uri(httpRoot, "playlist.xml");
-            using var playlistReq = new HttpRequestMessage(HttpMethod.Get, playlistUri);
-            playlistReq.Headers.Authorization = new AuthenticationHeaderValue("Basic", basicToken);
-            using var playlistResp = await _httpClient.SendAsync(playlistReq, timeoutCts.Token).ConfigureAwait(false);
-            playlistResp.EnsureSuccessStatusCode();
+            // 1) Playlist laden & letztes Item bestimmen
+            var xdoc = await GetXmlAsync(playlistUri, authToken, to.Token).ConfigureAwait(false);
+            var lastItem = TryGetLastPlaylistItem(xdoc);
 
-            var xdoc = XDocument.Load(await playlistResp.Content.ReadAsStreamAsync(timeoutCts.Token).ConfigureAwait(false));
-
-            // Find the playlist node (EN/DE) or first node with leaves
-            var playlistNode =
-                xdoc.Descendants("node")
-                   .FirstOrDefault(n =>
-                        string.Equals((string)n.Attribute("type"), "playlist", StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals((string)n.Attribute("name"), "Playlist", StringComparison.OrdinalIgnoreCase) ||
-                        string.Equals((string)n.Attribute("name"), "Wiedergabeliste", StringComparison.OrdinalIgnoreCase))
-                ?? xdoc.Descendants("node").FirstOrDefault(n => n.Elements("leaf").Any())
-                ?? xdoc.Root;
-
-            // Last leaf by document order  ← THIS was the change you needed
-            var lastLeaf = playlistNode?.Elements("leaf").LastOrDefault();
-            if (lastLeaf is null)
+            if (lastItem is null)
             {
                 _logger.LogWarning(LogEvents.VlcNonSuccess,
-                    "VLC Reset → No playlist entry found for player {Player}", playerName);
+                    "VLC Reset → {Player}: no playlist entries.", playerName);
                 return;
             }
 
-            var lastId = (string?)lastLeaf.Attribute("id");
-            var lastName = (string?)lastLeaf.Attribute("name");
-            if (string.IsNullOrWhiteSpace(lastId))
-            {
-                _logger.LogWarning(LogEvents.VlcNonSuccess,
-                    "VLC Reset → Found leaf without id for player {Player}", playerName);
-                return;
-            }
-
+            var (lastId, lastName) = lastItem.Value;
             _logger.LogInformation(LogEvents.VlcCommandSent,
-                "VLC Reset → Player {Player}: selecting LAST-BY-ORDER id={Id} name=\"{Name}\"",
+                "VLC Reset → {Player}: selecting last playlist item id={Id} name=\"{Name}\"",
                 playerName, lastId, lastName);
 
-            // 2) Play that item  ← revert to in_play (this worked in your setup)
-            var playUri = new Uri(httpRoot, $"status.xml?command=pl_play&id={Uri.EscapeDataString(lastId)}");
-            await ExecuteSimpleGetAsync(playUri, basicToken, timeoutCts.Token).ConfigureAwait(false);
+            // 2) Play dieses Items (bewährtes Muster mit pl_play)
+            var playUri = new Uri(requestsRoot, $"{Routes.Status}?command=pl_play&id={Uri.EscapeDataString(lastId)}");
+            await SimpleGetAsync(playUri, authToken, to.Token).ConfigureAwait(false);
 
-            // tiny wait so 'length' is populated in status.xml (this was your original working pattern)
-            await Task.Delay(500, timeoutCts.Token).ConfigureAwait(false);
+            // 3) Kurzer Wait, damit 'length' bereit steht
+            await Task.Delay(500, to.Token).ConfigureAwait(false);
 
-            // 3) Read length from status.xml
-            int? lengthSec = null;
-            var statusUri = new Uri(httpRoot, "status.xml");
-            using (var req = new HttpRequestMessage(HttpMethod.Get, statusUri))
-            {
-                req.Headers.Authorization = new AuthenticationHeaderValue("Basic", basicToken);
-                using var resp = await _httpClient.SendAsync(req, timeoutCts.Token).ConfigureAwait(false);
-                resp.EnsureSuccessStatusCode();
+            // 4) Länge lesen
+            var statusXml = await GetXmlAsync(statusUri, authToken, to.Token).ConfigureAwait(false);
+            var lengthSec = ParseLengthInSeconds(statusXml);
 
-                var statusXml = XDocument.Load(await resp.Content.ReadAsStreamAsync(timeoutCts.Token).ConfigureAwait(false));
-                if (int.TryParse(statusXml.Root?.Element("length")?.Value, out var len))
-                    lengthSec = len;
-            }
-
-            // 4) Absolute seek to (length - 5) seconds (no unit → absolute seconds)
+            // 5) Seek (absolute Sekunden) auf L-5
             if (lengthSec is int L && L > 5)
             {
                 var target = Math.Max(0, L - 5);
-                var seekUri = new Uri(httpRoot, $"status.xml?command=seek&val={target}");
-                await ExecuteSimpleGetAsync(seekUri, basicToken, timeoutCts.Token).ConfigureAwait(false);
+                var seekUri = new Uri(requestsRoot, $"{Routes.Status}?command=seek&val={target}");
+                await SimpleGetAsync(seekUri, authToken, to.Token).ConfigureAwait(false);
             }
 
-            // 5) Force pause
-            var pauseUri = new Uri(httpRoot, "status.xml?command=pl_forcepause");
-            await ExecuteSimpleGetAsync(pauseUri, basicToken, timeoutCts.Token).ConfigureAwait(false);
+            // 6) Pause erzwingen
+            var pauseUri = new Uri(requestsRoot, $"{Routes.Status}?command=pl_forcepause");
+            await SimpleGetAsync(pauseUri, authToken, to.Token).ConfigureAwait(false);
 
             _logger.LogInformation(LogEvents.VlcCommandSent,
-                "VLC player {Player} reset: last item queued at tail and paused", playerName);
-        }
-
-
-        /// <summary>
-        /// Executes a simple authorized GET request against a VLC endpoint.
-        /// </summary>
-        private async Task ExecuteSimpleGetAsync(Uri uri, string basicToken, CancellationToken ct)
-        {
-            using var req = new HttpRequestMessage(HttpMethod.Get, uri);
-            req.Headers.Authorization = new AuthenticationHeaderValue("Basic", basicToken);
-            using var resp = await _httpClient.SendAsync(req, ct).ConfigureAwait(false);
-            resp.EnsureSuccessStatusCode();
+                "VLC Reset → {Player}: item selected, seeked near end, paused.", playerName);
         }
 
         /// <inheritdoc />
@@ -210,38 +141,33 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
             var players = _settings.VLC?.Devices
                 ?? throw new InvalidOperationException("No VLC players configured.");
 
-            if (!players.TryGetValue(playerName, out var player) || player is null)
-                throw new KeyNotFoundException($"VLC player '{playerName}' not configured.");
+            if (!players.TryGetValue(playerName, out var player) || player?.BaseUri is null)
+                throw new KeyNotFoundException($"VLC player '{playerName}' not configured or missing BaseUri.");
 
-            var baseUri = player.BaseUri
-                ?? throw new InvalidOperationException($"VLC player '{playerName}' has no BaseUri configured.");
+            var endpoint = new Uri(new Uri(player.BaseUri, Routes.Requests), Routes.Status);
+            var finalUri = new Uri($"{endpoint}?command={Uri.EscapeDataString(command.GetCommand())}");
+            var auth = CreateBasicToken(player.Password);
 
-            var endpoint = new Uri(baseUri, "requests/status.xml");
-            var cmdText = command.GetCommand();
-            var finalUri = new Uri($"{endpoint}?command={Uri.EscapeDataString(cmdText)}");
-            var password = player.Password ?? string.Empty;
-            var basicToken = $":{password}".Base64Encode();
-
-            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            timeoutCts.CancelAfter(TimeSpan.FromSeconds(5));
+            using var to = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            to.CancelAfter(TimeSpan.FromSeconds(5));
 
             try
             {
                 using var req = new HttpRequestMessage(HttpMethod.Get, finalUri);
-                req.Headers.Authorization = new AuthenticationHeaderValue("Basic", basicToken);
+                req.Headers.Authorization = new AuthenticationHeaderValue("Basic", auth);
 
                 _logger.LogInformation(LogEvents.VlcCommandSent,
-                    "VLC command → Player {Player} Command {Command} Url {Url}",
+                    "VLC → Player {Player} Command {Command} Url {Url}",
                     playerName, command, finalUri);
 
                 using var resp = await _httpClient
-                    .SendAsync(req, HttpCompletionOption.ResponseHeadersRead, timeoutCts.Token)
+                    .SendAsync(req, HttpCompletionOption.ResponseHeadersRead, to.Token)
                     .ConfigureAwait(false);
 
                 if (!resp.IsSuccessStatusCode)
                 {
                     _logger.LogWarning(LogEvents.VlcNonSuccess,
-                        "VLC non-success Player {Player} Command {Command} -> {Code}",
+                        "VLC non-success → Player {Player} Command {Command} -> {Code}",
                         playerName, command, (int)resp.StatusCode);
                     resp.EnsureSuccessStatusCode();
                 }
@@ -254,10 +180,59 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
             catch (Exception ex)
             {
                 _logger.LogError(LogEvents.VlcError, ex,
-                    "VLC request failed Player {Player} Command {Command} Url {Url}",
+                    "VLC request failed → Player {Player} Command {Command} Url {Url}",
                     playerName, command, finalUri);
                 throw;
             }
         }
+
+        // ───────────────────────────── Helpers
+
+        private static string CreateBasicToken(string? password) => $":{password ?? string.Empty}".Base64Encode();
+
+        private async Task<XDocument> GetXmlAsync(Uri uri, string basicToken, CancellationToken ct)
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, uri);
+            req.Headers.Authorization = new AuthenticationHeaderValue("Basic", basicToken);
+
+            using var resp = await _httpClient.SendAsync(req, ct).ConfigureAwait(false);
+            resp.EnsureSuccessStatusCode();
+
+            using var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+            return XDocument.Load(stream);
+        }
+
+        private async Task SimpleGetAsync(Uri uri, string basicToken, CancellationToken ct)
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, uri);
+            req.Headers.Authorization = new AuthenticationHeaderValue("Basic", basicToken);
+
+            using var resp = await _httpClient.SendAsync(req, ct).ConfigureAwait(false);
+            resp.EnsureSuccessStatusCode();
+        }
+
+        private static (string id, string? name)? TryGetLastPlaylistItem(XDocument playlistXml)
+        {
+            // Bevorzugt expliziten "playlist"-Node, fallback: erster Node mit Leaves, sonst Root
+            var playlistNode =
+                playlistXml.Descendants("node").FirstOrDefault(n =>
+                    string.Equals((string)n.Attribute("type"), "playlist", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals((string)n.Attribute("name"), "Playlist", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals((string)n.Attribute("name"), "Wiedergabeliste", StringComparison.OrdinalIgnoreCase))
+                ?? playlistXml.Descendants("node").FirstOrDefault(n => n.Elements("leaf").Any())
+                ?? playlistXml.Root;
+
+            var lastLeaf = playlistNode?.Elements("leaf").LastOrDefault();
+            if (lastLeaf is null) return null;
+
+            var id = (string?)lastLeaf.Attribute("id");
+            if (string.IsNullOrWhiteSpace(id)) return null;
+
+            var name = (string?)lastLeaf.Attribute("name");
+            return (id, name);
+        }
+
+        private static int? ParseLengthInSeconds(XDocument statusXml)
+            => int.TryParse(statusXml.Root?.Element("length")?.Value, out var len) ? len : null;
     }
 }
