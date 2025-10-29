@@ -26,6 +26,9 @@ SERVICE_NAME="vlc-kiosk.service"
 USER_SYSTEMD_DIR="${TARGET_HOME}/.config/systemd/user"
 SERVICE_PATH="${USER_SYSTEMD_DIR}/${SERVICE_NAME}"
 
+# host IP
+HOST_IP="$(hostname -I | awk '{print $1}')"
+
 # ═══════════════════════ Helpers ═════════════════════════════
 log() { echo -e "\033[1;32m[+] $*\033[0m"; }
 err() { echo -e "\033[1;31m[✗] $*\033[0m" >&2; }
@@ -98,8 +101,6 @@ EOF
   systemctl enable --now smbd nmbd 2>/dev/null || systemctl enable --now smbd || true
   systemctl restart smbd || true
 
-  local HOST_IP
-  HOST_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
   log "Samba share ready:"
   echo "  • Path:         \\\\${HOST_IP}\\${SAMBA_SHARE_NAME}"
   echo "  • Directory:    ${MEDIA_DIR}"
@@ -143,22 +144,46 @@ EOF
 enable_user_service() {
   log "Enabling systemd user service..."
 
-  # Keep the user manager running even without interactive login
+  # Keep the user manager running even without an interactive login
   loginctl enable-linger "${TARGET_USER}" || true
 
-  # Start user@UID manager and operate in that context (no need for DBUS/XDG env)
-  machinectl --quiet shell "${TARGET_USER}@.host" /bin/true || true
-  systemctl --user --machine="${TARGET_USER}@.host" daemon-reload
-  systemctl --user --machine="${TARGET_USER}@.host" enable --now "${SERVICE_NAME}"
+  # Prepare runtime directory for user systemd (created automatically once the user logs in)
+  local RUNTIME_DIR="/run/user/${TARGET_UID}"
+  mkdir -p "${RUNTIME_DIR}"
+  chmod 700 "${RUNTIME_DIR}"
 
-  local HOST_IP
-  HOST_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+  # Run all systemctl commands as the target user with proper environment variables
+  sudo -u "${TARGET_USER}" env \
+    XDG_RUNTIME_DIR="${RUNTIME_DIR}" \
+    DBUS_SESSION_BUS_ADDRESS="unix:path=${RUNTIME_DIR}/bus" \
+    bash -lc "
+      systemctl --user daemon-reload
+      systemctl --user enable --now '${SERVICE_NAME}'
+    "
 
   log "Autostart configured."
   echo "  • Media folder:  ${MEDIA_DIR}"
   echo "  • VLC Web UI:    http://${HOST_IP}:${VLC_HTTP_PORT}/  (no username, password: ${VLC_HTTP_PASSWORD})"
-  echo "  • Service check: systemctl --user --machine='${TARGET_USER}@.host' status '${SERVICE_NAME}'"
+  echo "  • Service check: sudo -u ${TARGET_USER} XDG_RUNTIME_DIR=${RUNTIME_DIR} systemctl --user status ${SERVICE_NAME}"
 }
+
+
+
+### ═══════════════════════ Webmin Installation ═══════════════════════
+install_webmin() {
+  log "Installing Webmin (official repo)..."
+  if ! apt-cache policy | grep -qi "download.webmin.com"; then
+    curl -fsSL https://raw.githubusercontent.com/webmin/webmin/master/webmin-setup-repo.sh -o /tmp/webmin-setup-repo.sh
+    bash /tmp/webmin-setup-repo.sh --stable --force
+  else
+    log "Webmin repo already configured."
+  fi
+  apt-get update -y
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends webmin
+  systemctl enable --now webmin
+  log "Webmin running at: https://${HOST_IP}:10000/"
+}
+
 
 # ═══════════════════════ Main ═══════════════════════════════
 main() {
@@ -168,6 +193,7 @@ main() {
   install_vlc
   create_systemd_user_service
   enable_user_service
+  install_webmin
 }
 
 main "$@"
