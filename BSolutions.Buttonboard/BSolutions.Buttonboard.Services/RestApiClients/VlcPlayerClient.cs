@@ -16,24 +16,17 @@ using System.Xml.Linq;
 namespace BSolutions.Buttonboard.Services.RestApiClients
 {
     /// <summary>
-    /// Real HTTP-based implementation of <see cref="IVlcPlayerClient"/> that communicates
-    /// with VLC instances via their legacy <c>/requests/</c> HTTP interface.
+    /// HTTP-based implementation of <see cref="IVlcPlayerClient"/> that talks to VLC via the legacy <c>/requests/</c> API.
     /// </summary>
     /// <remarks>
-    /// Responsibilities:
-    /// <list type="bullet">
-    ///   <item><description>Send high-level playback and control commands to VLC players.</description></item>
-    ///   <item><description>Perform bulk resets of all configured players to a defined idle state.</description></item>
-    ///   <item><description>Handle network timeouts and structured logging for diagnostics.</description></item>
-    /// </list>
-    /// Thread-safety: this class is <b>stateless per call</b> and intended for transient use.
+    /// Sends playback/control commands, performs bulk resets, and applies short network timeouts.
     /// </remarks>
     public sealed class VlcPlayerClient : RestApiClientBase, IVlcPlayerClient
     {
         private readonly IButtonboardGpioController _gpio;
 
         /// <summary>
-        /// Centralized route definitions for the VLC HTTP interface.
+        /// Centralized route fragments for the VLC HTTP interface.
         /// </summary>
         private static class Routes
         {
@@ -45,11 +38,11 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
         #region --- Constructor ---
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="VlcPlayerClient"/> class.
+        /// Creates a new <see cref="VlcPlayerClient"/>.
         /// </summary>
-        /// <param name="logger">Logger for structured diagnostics.</param>
-        /// <param name="settingsProvider">Provides global application configuration.</param>
-        /// <param name="gpio">Used to signal hardware status (e.g., LED warnings).</param>
+        /// <param name="logger">Logger for diagnostics.</param>
+        /// <param name="settingsProvider">Application settings (incl. VLC devices).</param>
+        /// <param name="gpio">GPIO controller for hardware signals (e.g., LED warnings).</param>
         public VlcPlayerClient(
             ILogger<RestApiClientBase> logger,
             ISettingsProvider settingsProvider,
@@ -102,7 +95,12 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
             _logger.LogInformation("VLC Reset: finished. Successful: {Ok}/{Total}", ok, cfg.Devices.Count);
         }
 
-        /// <inheritdoc />
+        /// <summary>
+        /// Sends a single VLC command to the specified player.
+        /// </summary>
+        /// <param name="command">Logical command to execute (e.g., <see cref="VlcPlayerCommand.PAUSE"/>).</param>
+        /// <param name="playerName">Configured VLC player name (key from settings).</param>
+        /// <param name="ct">Cancellation token.</param>
         public async Task SendCommandAsync(VlcPlayerCommand command, string playerName, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(playerName))
@@ -156,13 +154,56 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
             }
         }
 
+        /// <summary>
+        /// Plays the playlist entry at the given 1-based position.
+        /// </summary>
+        /// <param name="playerName">Configured VLC player name (key from settings).</param>
+        /// <param name="position1Based">1-based playlist position (1 = first item).</param>
+        /// <param name="ct">Cancellation token.</param>
+        public async Task PlayPlaylistItemAtAsync(string playerName, int position1Based, CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(playerName))
+                throw new ArgumentException("Player name must be provided.", nameof(playerName));
+            if (position1Based < 1)
+                throw new ArgumentOutOfRangeException(nameof(position1Based), "Position must be >= 1.");
+
+            var players = _settings.VLC?.Devices
+                ?? throw new InvalidOperationException("No VLC players configured.");
+
+            if (!players.TryGetValue(playerName, out var player) || player?.BaseUri is null || !player.BaseUri.IsAbsoluteUri)
+                throw new KeyNotFoundException($"VLC player '{playerName}' not configured or missing/invalid BaseUri.");
+
+            var requestsRoot = new Uri(player.BaseUri, Routes.Requests);
+            var playlistUri = new Uri(requestsRoot, Routes.Playlist);
+            var authToken = CreateBasicToken(player.Password);
+
+            using var to = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            to.CancelAfter(TimeSpan.FromSeconds(5));
+
+            // Load playlist and resolve the desired entry
+            var xdoc = await GetXmlAsync(playlistUri, authToken, to.Token).ConfigureAwait(false);
+
+            var item = TryGetPlaylistItemByIndex(xdoc, position1Based);
+            if (item is null)
+                throw new ArgumentOutOfRangeException(nameof(position1Based), $"Playlist does not contain position {position1Based}.");
+
+            var (id, name) = item.Value;
+
+            _logger.LogInformation(LogEvents.VlcCommandSent,
+                "VLC → Player {Player}: playing playlist position {Pos} (id={Id}, name=\"{Name}\")",
+                playerName, position1Based, id, name);
+
+            // Play via pl_play&id
+            var playUri = new Uri(requestsRoot, $"{Routes.Status}?command=pl_play&id={Uri.EscapeDataString(id)}");
+            await SimpleGetAsync(playUri, authToken, to.Token).ConfigureAwait(false);
+        }
+
         #endregion
 
         #region --- Helpers ---
 
         /// <summary>
-        /// Executes the full reset sequence for a single VLC instance:
-        /// load playlist → select last item → short delay → read duration → seek near end → pause.
+        /// Resets a single VLC instance: select last item → short delay → read duration → seek near end → force pause.
         /// </summary>
         private async Task ResetPlayerAsync(string playerName, Uri baseUri, string? password, CancellationToken ct)
         {
@@ -190,18 +231,18 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
                 "VLC Reset → {Player}: selecting last playlist item id={Id} name=\"{Name}\"",
                 playerName, lastId, lastName);
 
-            // 2) Play the item
+            // 2) Play last item
             var playUri = new Uri(requestsRoot, $"{Routes.Status}?command=pl_play&id={Uri.EscapeDataString(lastId)}");
             await SimpleGetAsync(playUri, authToken, to.Token).ConfigureAwait(false);
 
-            // 3) Wait for status.xml to populate "length"
+            // 3) Wait for status.xml to expose "length"
             await Task.Delay(500, to.Token).ConfigureAwait(false);
 
             // 4) Read total length
             var statusXml = await GetXmlAsync(statusUri, authToken, to.Token).ConfigureAwait(false);
             var lengthSec = ParseLengthInSeconds(statusXml);
 
-            // 5) Seek to last 5 seconds
+            // 5) Seek to last 5 seconds (if known)
             if (lengthSec is int L && L > 5)
             {
                 var target = Math.Max(0, L - 5);
@@ -218,13 +259,13 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
         }
 
         /// <summary>
-        /// Creates a Basic Authentication header value for VLC requests.
+        /// Builds the Basic auth token (username is empty, password optional).
         /// </summary>
         private static string CreateBasicToken(string? password)
             => $":{password ?? string.Empty}".Base64Encode();
 
         /// <summary>
-        /// Executes an authorized GET request and parses the response as XML.
+        /// Executes an authorized GET and parses the body as XML.
         /// </summary>
         private async Task<XDocument> GetXmlAsync(Uri uri, string basicToken, CancellationToken ct)
         {
@@ -239,7 +280,7 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
         }
 
         /// <summary>
-        /// Executes a simple authorized GET request, ensuring a successful HTTP status.
+        /// Executes an authorized GET and ensures a successful status code.
         /// </summary>
         private async Task SimpleGetAsync(Uri uri, string basicToken, CancellationToken ct)
         {
@@ -251,7 +292,7 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
         }
 
         /// <summary>
-        /// Attempts to retrieve the last playlist item (by document order) from the given VLC playlist XML.
+        /// Returns the last playlist item (document order) from a VLC playlist XML.
         /// </summary>
         private static (string id, string? name)? TryGetLastPlaylistItem(XDocument playlistXml)
         {
@@ -274,10 +315,41 @@ namespace BSolutions.Buttonboard.Services.RestApiClients
         }
 
         /// <summary>
-        /// Extracts the total media length (in seconds) from a VLC <c>status.xml</c> document.
+        /// Reads the total media length (seconds) from a VLC <c>status.xml</c> document.
         /// </summary>
         private static int? ParseLengthInSeconds(XDocument statusXml)
             => int.TryParse(statusXml.Root?.Element("length")?.Value, out var len) ? len : null;
+
+        /// <summary>
+        /// Returns the playlist item at the given 1-based position (flattens nested folders).
+        /// </summary>
+        private static (string id, string? name)? TryGetPlaylistItemByIndex(XDocument playlistXml, int position1Based)
+        {
+            if (playlistXml?.Root is null) return null;
+
+            var playlistNode =
+                playlistXml.Descendants("node").FirstOrDefault(n =>
+                    string.Equals((string)n.Attribute("type"), "playlist", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals((string)n.Attribute("name"), "Playlist", StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals((string)n.Attribute("name"), "Wiedergabeliste", StringComparison.OrdinalIgnoreCase))
+                ?? playlistXml.Root;
+
+            var leaves = playlistNode
+                .Descendants("leaf")
+                .ToList();
+
+            if (leaves.Count == 0) return null;
+
+            var idx = position1Based - 1; // 1-based → 0-based
+            if (idx < 0 || idx >= leaves.Count) return null;
+
+            var leaf = leaves[idx];
+            var id = (string?)leaf.Attribute("id");
+            if (string.IsNullOrWhiteSpace(id)) return null;
+
+            var name = (string?)leaf.Attribute("name");
+            return (id!, name);
+        }
 
         #endregion
     }

@@ -5,41 +5,33 @@ using System.Threading.Tasks;
 namespace BSolutions.Buttonboard.Services.RestApiClients
 {
     /// <summary>
-    /// Defines the contract for sending control commands to one or more VLC player instances.
+    /// Defines control operations for one or more VLC player instances via HTTP.
     /// </summary>
-    /// <remarks>
-    /// Implementations of this interface provide control over VLC media players
-    /// through their HTTP interface. It supports sending individual commands and
-    /// resetting all configured players to a defined idle state.
-    /// 
-    /// <list type="bullet">
-    ///   <item><description><see cref="VlcPlayerClient"/> – real HTTP-based implementation.</description></item>
-    ///   <item><description><see cref="VlcPlayerClientMock"/> – in-memory simulation for tests or offline use.</description></item>
-    /// </list>
-    /// </remarks>
     public interface IVlcPlayerClient
     {
         /// <summary>
-        /// Resets all configured VLC players (best-effort).
+        /// Resets all configured VLC players to an idle state.
         /// </summary>
         /// <remarks>
-        /// For each configured VLC instance, this method:
-        /// <list type="number">
-        ///   <item><description>Selects the last playlist item.</description></item>
-        ///   <item><description>Seeks to its last 5 seconds (if known).</description></item>
-        ///   <item><description>Pauses playback, leaving the player in a ready state.</description></item>
-        /// </list>
-        /// Intended to prepare all players for a synchronized scenario start.
+        /// Selects the last playlist item, seeks near the end, and pauses playback.
         /// </remarks>
-        /// <param name="ct">Cancellation token for cooperative shutdown.</param>
+        /// <param name="ct">Cancellation token.</param>
         Task ResetAsync(CancellationToken ct = default);
 
         /// <summary>
-        /// Sends a high-level VLC control command (e.g. play, pause, stop) to a specific player.
+        /// Sends a single VLC command (e.g., play, pause, stop) to the specified player.
         /// </summary>
-        /// <param name="command">The logical VLC command to execute.</param>
-        /// <param name="playerName">Configured VLC player name (key in <c>appsettings.json</c>).</param>
-        /// <param name="ct">Cancellation token for cooperative shutdown.</param>
+        /// <param name="command">The logical command to execute.</param>
+        /// <param name="playerName">Configured VLC player name (key in settings).</param>
+        /// <param name="ct">Cancellation token.</param>
         Task SendCommandAsync(VlcPlayerCommand command, string playerName, CancellationToken ct = default);
+
+        /// <summary>
+        /// Plays the playlist item at the given 1-based position on the specified player.
+        /// </summary>
+        /// <param name="playerName">Configured VLC player name (key in settings).</param>
+        /// <param name="position1Based">1-based playlist position (1 = first item).</param>
+        /// <param name="ct">Cancellation token.</param>
+        Task PlayPlaylistItemAtAsync(string playerName, int position1Based, CancellationToken ct = default);
     }
 }
