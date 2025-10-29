@@ -18,10 +18,13 @@
       }
     },
     {
-      "name": "Mediaplayer 5: PLAY",
+      "name": "Mediaplayer 5: PLAY ITEM 2",
       "atMs": 0,
-      "action": "video.next",
-      "args": { "player": "Mediaplayer4" }
+      "action": "video.playitem",
+      "args": {
+        "player": "Mediaplayer4",
+        "position": 2
+      }
     },
     {
       "name": "Mediaplayer 5: PAUSE",
