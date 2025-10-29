@@ -2,11 +2,9 @@
 using BSolutions.Buttonboard.Services.Loaders;
 using BSolutions.Buttonboard.Services.Logging;
 using BSolutions.Buttonboard.Services.LyrionService;
-using BSolutions.Buttonboard.Services.RestApiClients;
 using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Logging;
 using System;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -16,15 +14,13 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
     /// Routes and executes audio-related actions such as <c>audio.play</c>, <c>audio.pause</c>, and <c>audio.volume</c>.
     /// </summary>
     /// <remarks>
-    /// This router dispatches audio commands to OpenHAB-controlled Squeezebox players.
-    /// Supported operations:
+    /// Dispatches audio commands to Lyrion (Logitech Media Server) players via <see cref="ILyrionClient"/>.
+    /// Required arguments:
     /// <list type="bullet">
-    /// <item><description><c>audio.play</c> – Plays an audio file from a given URL on the specified player.</description></item>
-    /// <item><description><c>audio.pause</c> – Pauses playback on the specified player.</description></item>
-    /// <item><description><c>audio.volume</c> – Adjusts the playback volume of a given player.</description></item>
+    ///   <item><description><c>audio.play</c> → <c>player</c>, <c>url</c></description></item>
+    ///   <item><description><c>audio.pause</c> → <c>player</c> (optional: <c>paused</c>, default: <c>true</c>)</description></item>
+    ///   <item><description><c>audio.volume</c> → <c>player</c>, <c>level</c> (0–100)</description></item>
     /// </list>
-    /// The router resolves OpenHAB player configuration from <see cref="ISettingsProvider"/>
-    /// and uses <see cref="IOpenHabClient"/> to send commands asynchronously.
     /// </remarks>
     public sealed class AudioActionRouter : IActionRouter
     {
@@ -64,24 +60,39 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
             var key = step.Action?.Trim().ToLowerInvariant() ?? string.Empty;
             var (_, op) = ActionKeyHelper.Split(key);
 
-            switch (op)
+            try
             {
-                case "play":
-                    await HandlePlayAsync(step, ct).ConfigureAwait(false);
-                    break;
+                switch (op)
+                {
+                    case "play":
+                        await HandlePlayAsync(step, ct).ConfigureAwait(false);
+                        break;
 
-                case "pause":
-                    await HandlePauseAsync(step, ct).ConfigureAwait(false);
-                    break;
+                    case "pause":
+                        await HandlePauseAsync(step, ct).ConfigureAwait(false);
+                        break;
 
-                case "volume":
-                    await HandleVolumeAsync(step, ct).ConfigureAwait(false);
-                    break;
+                    case "volume":
+                        await HandleVolumeAsync(step, ct).ConfigureAwait(false);
+                        break;
 
-                default:
-                    _logger.LogWarning(LogEvents.ExecUnknownAction,
-                        "Unknown audio action {Action}", key);
-                    break;
+                    default:
+                        _logger.LogWarning(LogEvents.ExecUnknownAction, "Unknown audio action {Action}", key);
+                        break;
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(LogEvents.ExecActionArgInvalid, "Audio action argument error: {Message}", ex.Message);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(LogEvents.ExecActionFailed, ex, "Audio action failed for {Action}", key);
+                throw;
             }
         }
 
@@ -90,51 +101,66 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         #region --- Handlers ---
 
         /// <summary>
-        /// Handles the <c>audio.play</c> operation.
-        /// Sends the provided media URL to the selected OpenHAB audio player.
+        /// Executes <c>audio.play</c> — plays the given URL on the specified player.
+        /// Required args: <c>player</c>, <c>url</c>.
         /// </summary>
         private async Task HandlePlayAsync(ScenarioAssetStep step, CancellationToken ct)
         {
-            var url = step.Args.GetString("url");
-            if (string.IsNullOrWhiteSpace(url))
-            {
-                _logger.LogWarning(LogEvents.ExecArgMissing, "audio.play requires argument {Arg}", "url");
-                throw new ArgumentException("audio.play requires 'url'");
-            }
+            var playerName = step.Args.GetRequiredString("player");
+            var url = step.Args.GetRequiredString("url");
 
-            var playerName = step.Args.GetString("player", "Player1");
-            _logger.LogInformation(LogEvents.ExecAudioPlay, "audio.play via Lyrion: {Player} -> {Url}", playerName, url);
+            EnsureKnownPlayer(playerName);
+
+            _logger.LogInformation(LogEvents.ExecAudioPlay,
+                "audio.play via Lyrion → {Player} -> {Url}", playerName, url);
+
             await _lyrion.PlayUrlAsync(playerName, url, ct).ConfigureAwait(false);
         }
 
         /// <summary>
-        /// Handles the <c>audio.pause</c> operation.
-        /// Sends a "PAUSE" command to the specified OpenHAB player.
+        /// Executes <c>audio.pause</c> — pauses/resumes the specified player.
+        /// Required args: <c>player</c>. Optional: <c>paused</c> (default: <c>true</c>).
         /// </summary>
         private async Task HandlePauseAsync(ScenarioAssetStep step, CancellationToken ct)
         {
-            var playerName = step.Args.GetString("player", "Player1");
-            var paused = step.Args.GetBool("paused", true); // optional: default = pause
-            _logger.LogInformation(LogEvents.ExecAudioPause, "audio.pause via Lyrion: {Player} paused={Paused}", playerName, paused);
+            var playerName = step.Args.GetRequiredString("player");
+            var paused = step.Args.GetBool("paused", true);
+
+            EnsureKnownPlayer(playerName);
+
+            _logger.LogInformation(LogEvents.ExecAudioPause,
+                "audio.pause via Lyrion → {Player}, paused={Paused}", playerName, paused);
+
             await _lyrion.PauseAsync(playerName, paused, ct).ConfigureAwait(false);
         }
 
         /// <summary>
-        /// Handles the <c>audio.volume</c> operation.
-        /// Sets the playback volume (0–100%) for the specified OpenHAB player.
+        /// Executes <c>audio.volume</c> — sets playback volume (0–100) for the specified player.
+        /// Required args: <c>player</c>, <c>level</c>.
         /// </summary>
         private async Task HandleVolumeAsync(ScenarioAssetStep step, CancellationToken ct)
         {
-            var volume = step.Args.GetInt("volume", -1);
-            if (volume < 0 || volume > 100)
-            {
-                _logger.LogWarning(LogEvents.ExecArgInvalid, "audio.volume requires valid argument {Arg} (0–100)", "volume");
-                throw new ArgumentException("audio.volume requires 'volume' between 0 and 100");
-            }
+            var playerName = step.Args.GetRequiredString("player");
+            var level = step.Args.GetRequiredInt("level");
+            if (level < 0 || level > 100)
+                throw new ArgumentException("level must be between 0 and 100", nameof(level));
 
-            var playerName = step.Args.GetString("player", "Player1");
-            _logger.LogInformation(LogEvents.ExecAudioVolume, "audio.volume via Lyrion: {Player} -> {Volume}%", playerName, volume);
-            await _lyrion.SetVolumeAsync(playerName, volume, ct).ConfigureAwait(false);
+            EnsureKnownPlayer(playerName);
+
+            _logger.LogInformation(LogEvents.ExecAudioVolume,
+                "audio.volume via Lyrion → {Player} -> {Level}%", playerName, level);
+
+            await _lyrion.SetVolumeAsync(playerName, level, ct).ConfigureAwait(false);
+        }
+
+        #endregion
+
+        #region --- Validation Helper ---
+
+        private void EnsureKnownPlayer(string playerName)
+        {
+            if (!_settings.Lyrion.Players.ContainsKey(playerName))
+                throw new ArgumentException($"Unknown Lyrion player '{playerName}'", nameof(playerName));
         }
 
         #endregion

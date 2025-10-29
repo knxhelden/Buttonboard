@@ -26,12 +26,6 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         /// <inheritdoc />
         public string Domain => "video";
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="VideoActionRouter"/> class.
-        /// </summary>
-        /// <param name="logger">Logger for runtime diagnostics.</param>
-        /// <param name="settings">Provides access to VLC player configuration.</param>
-        /// <param name="vlc">Client used to send commands to VLC instances.</param>
         public VideoActionRouter(
             ILogger<VideoActionRouter> logger,
             ISettingsProvider settings,
@@ -55,83 +49,90 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
             var key = step.Action?.Trim().ToLowerInvariant() ?? string.Empty;
             var (_, op) = ActionKeyHelper.Split(key);
 
-            switch (op)
+            try
             {
-                case "next":
-                    await HandleNextAsync(step, ct);
-                    break;
-                case "pause":
-                    await HandlePauseAsync(step, ct);
-                    break;
-                case "playitem":
-                    await HandlePlayItemAsync(step, ct);
-                    break;
-                default:
-                    _logger.LogWarning(LogEvents.ExecUnknownAction,
-                        "Unknown video action {Action}", key);
-                    break;
+                switch (op)
+                {
+                    case "next":
+                        await HandleNextAsync(step, ct);
+                        break;
+                    case "pause":
+                        await HandlePauseAsync(step, ct);
+                        break;
+                    case "playitem":
+                        await HandlePlayItemAsync(step, ct);
+                        break;
+                    default:
+                        _logger.LogWarning(LogEvents.ExecUnknownAction, "Unknown video action {Action}", key);
+                        break;
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                // Invalid/missing args etc. → warn and return (no crash)
+                _logger.LogWarning(LogEvents.ExecActionArgInvalid, "Video action argument error: {Message}", ex.Message);
+            }
+            catch (OperationCanceledException)
+            {
+                // Respect cancellation silently
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // Unexpected runtime issue → log error and rethrow to bubble up if desired
+                _logger.LogError(LogEvents.ExecActionFailed, ex, "Video action failed for {Action}", key);
+                throw;
             }
         }
 
         /// <summary>
         /// Executes <c>video.next</c> — skips to the next playlist entry on the given player.
+        /// Required args: <c>player</c>.
         /// </summary>
-        /// <param name="step">Scene step containing the optional <c>player</c> argument.</param>
-        /// <param name="ct">Cancellation token.</param>
         private async Task HandleNextAsync(ScenarioAssetStep step, CancellationToken ct)
         {
-            var playerName = step.Args.GetString("player", "Mediaplayer1");
+            var playerName = step.Args.GetRequiredString("player");
+            EnsureKnownPlayer(playerName);
 
-            if (!_settings.VLC.Devices.ContainsKey(playerName))
-                throw new ArgumentException($"Unknown VLC player '{playerName}'");
-
-            _logger.LogInformation(LogEvents.ExecVideoNext,
-                "video.next → {Player}", playerName);
-
+            _logger.LogInformation(LogEvents.ExecVideoNext, "video.next → {Player}", playerName);
             await _vlc.SendCommandAsync(VlcPlayerCommand.NEXT, playerName, ct);
         }
 
         /// <summary>
         /// Executes <c>video.pause</c> — toggles pause/resume on the given player.
+        /// Required args: <c>player</c>.
         /// </summary>
-        /// <param name="step">Scene step containing the optional <c>player</c> argument.</param>
-        /// <param name="ct">Cancellation token.</param>
         private async Task HandlePauseAsync(ScenarioAssetStep step, CancellationToken ct)
         {
-            var playerName = step.Args.GetString("player", "Mediaplayer1");
+            var playerName = step.Args.GetRequiredString("player");
+            EnsureKnownPlayer(playerName);
 
-            if (!_settings.VLC.Devices.ContainsKey(playerName))
-                throw new ArgumentException($"Unknown VLC player '{playerName}'");
-
-            _logger.LogInformation(LogEvents.ExecVideoPause,
-                "video.pause → {Player}", playerName);
-
+            _logger.LogInformation(LogEvents.ExecVideoPause, "video.pause → {Player}", playerName);
             await _vlc.SendCommandAsync(VlcPlayerCommand.PAUSE, playerName, ct);
         }
 
         /// <summary>
         /// Executes <c>video.playItem</c> — plays a specific playlist entry at the given position.
+        /// Required args: <c>player</c>, <c>position</c> (1-based).
         /// </summary>
-        /// <param name="step">
-        /// Scene step containing:
-        /// <list type="bullet">
-        /// <item><description><c>player</c> — optional VLC player name (default: <c>Mediaplayer1</c>).</description></item>
-        /// <item><description><c>position</c> — 1-based playlist position (default: <c>1</c>).</description></item>
-        /// </list>
-        /// </param>
-        /// <param name="ct">Cancellation token.</param>
         private async Task HandlePlayItemAsync(ScenarioAssetStep step, CancellationToken ct)
         {
-            var playerName = step.Args.GetString("player", "Mediaplayer1");
-            var position = step.Args.GetInt("position", 1);
+            var playerName = step.Args.GetRequiredString("player");
+            var position = step.Args.GetRequiredInt("position");
+            if (position < 1) throw new ArgumentException("position must be >= 1", nameof(position));
 
-            if (!_settings.VLC.Devices.ContainsKey(playerName))
-                throw new ArgumentException($"Unknown VLC player '{playerName}'");
+            EnsureKnownPlayer(playerName);
 
             _logger.LogInformation(LogEvents.ExecVideoNext,
                 "video.playItem → {Player}, position={Position}", playerName, position);
 
             await _vlc.PlayPlaylistItemAtAsync(playerName, position, ct);
+        }
+
+        private void EnsureKnownPlayer(string playerName)
+        {
+            if (!_settings.VLC.Devices.ContainsKey(playerName))
+                throw new ArgumentException($"Unknown VLC player '{playerName}'", nameof(playerName));
         }
     }
 }
