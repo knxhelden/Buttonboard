@@ -3,12 +3,18 @@
   "version": 1,
   "steps": [
     {
+      "name": "Led Oben Zentral: AUS",
+      "atMs": 0,
+      "action": "gpio.off",
+      "args": { "led": "ButtonTopCenter" }
+    },
+    {
       "name": "Audio Player 1: PLAY",
       "atMs": 0,
       "action": "audio.play",
       "args": {
-        "url": "file:///home/tc/halloween/01_Szene_Horrorhouse.MP3",
-        "player": "Player1"
+        "url": "file:///mnt/usb/Halloween/01 - Szene 1.MP3",
+        "player": "Halloween1"
       }
     },
     {
@@ -19,19 +25,13 @@
     },
     {
       "name": "Mediaplayer 5: PAUSE",
-      "atMs": 60000,
+      "atMs": 62000,
       "action": "video.pause",
       "args": { "player": "Mediaplayer4" }
     },
     {
-      "name": "LED Oben Zentral: AUS",
-      "atMs": 61000,
-      "action": "gpio.off",
-      "args": { "led": "ButtonTopCenter" }
-    },
-    {
-      "name": "LED Unten Links: AN",
-      "atMs": 61000,
+      "name": "Led Unten Links: AN",
+      "atMs": 63000,
       "action": "gpio.on",
       "args": { "led": "ButtonBottomLeft" }
     }

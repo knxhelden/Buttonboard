@@ -8,7 +8,7 @@
       "action": "audio.volume",
       "args": {
         "volume": 30,
-        "player": "Player1"
+        "player": "Halloween1"
       }
     },
     {

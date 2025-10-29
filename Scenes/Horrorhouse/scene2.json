@@ -1,31 +1,37 @@
 {
-  "name": "Szene 2: Geisterm�dchen erschreckt die Besucher",
+  "name": "Szene 2: Geistermädchen erschreckt die Besucher",
   "version": 1,
   "steps": [
+    {
+      "name": "Led Unten Links: AUS",
+      "atMs": 0,
+      "action": "gpio.off",
+      "args": { "led": "ButtonBottomLeft" }
+    },
     {
       "name": "Audio Player 1: PLAY",
       "atMs": 0,
       "action": "audio.play",
       "args": {
-        "url": "http://192.168.20.28:9000/music/35403/download/Szene2.MP3",
-        "player": "Player1"
+        "url": "file:///mnt/usb/Halloween/02 - Szene 2.MP3",
+        "player": "Halloween1"
       }
     },
     {
       "name": "Mediaplayer 5: PLAY",
       "atMs": 0,
       "action": "video.next",
-      "args": { "player": "Mediaplayer5" }
+      "args": { "player": "Mediaplayer4" }
     },
     {
       "name": "Mediaplayer 5: PAUSE",
       "atMs": 65000,
       "action": "video.pause",
-      "args": { "player": "Mediaplayer5" }
+      "args": { "player": "Mediaplayer4" }
     },
     {
       "name": "Strobo 3 u. 4: AN",
-      "atMs": 65000,
+      "atMs": 66000,
       "action": "mqtt.pub",
       "args": {
         "topic": "cmnd/bremus/entertainment/strobo3/POWER",
@@ -34,7 +40,7 @@
     },
     {
       "name": "Strobo 3 u. 4: AUS",
-      "atMs": 69000,
+      "atMs": 71000,
       "action": "mqtt.pub",
       "args": {
         "topic": "cmnd/bremus/entertainment/strobo3/POWER",
@@ -42,14 +48,8 @@
       }
     },
     {
-      "name": "Led Unten Links: AUS",
-      "atMs": 70000,
-      "action": "gpio.off",
-      "args": { "led": "ButtonBottomLeft" }
-    },
-    {
       "name": "Led Unten Links: AN",
-      "atMs": 70000,
+      "atMs": 75000,
       "action": "gpio.on",
       "args": { "led": "ButtonBottomCenter" }
     }
