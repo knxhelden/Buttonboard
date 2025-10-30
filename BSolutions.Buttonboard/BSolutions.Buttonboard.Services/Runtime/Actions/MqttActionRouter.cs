@@ -32,6 +32,8 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         /// <inheritdoc />
         public string Domain => "mqtt";
 
+        #region --- Constructor ---
+
         /// <summary>
         /// Initializes a new instance of the <see cref="MqttActionRouter"/> class.
         /// </summary>
@@ -44,6 +46,10 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _mqtt = mqtt ?? throw new ArgumentNullException(nameof(mqtt));
         }
+
+        #endregion
+
+        #region --- IActionRouter ---
 
         /// <inheritdoc />
         public bool CanHandle(string actionKey)
@@ -70,6 +76,10 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
                     break;
             }
         }
+
+        #endregion
+
+        #region --- Handlers ---
 
         /// <summary>
         /// Handles the <c>mqtt.pub</c> operation.
@@ -117,5 +127,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
 
             await _mqtt.PublishAsync(topic, payload, ct).ConfigureAwait(false);
         }
+
+        #endregion
     }
 }

@@ -32,6 +32,8 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         /// <inheritdoc />
         public string Domain => "gpio";
 
+        #region --- Constructor ---
+
         /// <summary>
         /// Initializes a new instance of the <see cref="GpioActionRouter"/> class.
         /// </summary>
@@ -44,6 +46,10 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _gpio = gpio ?? throw new ArgumentNullException(nameof(gpio));
         }
+
+        #endregion
+
+        #region --- IActionRouter ---
 
         /// <inheritdoc />
         public bool CanHandle(string actionKey)
@@ -78,6 +84,10 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
                     break;
             }
         }
+
+        #endregion
+
+        #region --- Handlers ---
 
         /// <summary>
         /// Handles the <c>gpio.on</c> operation by turning on a specific LED.
@@ -143,6 +153,10 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
             await _gpio.LedsBlinkingAsync(count, interval, ct).ConfigureAwait(false);
         }
 
+        #endregion
+
+        #region --- Helpers ---
+
         /// <summary>
         /// Parses a string value into a <see cref="Led"/> enum.
         /// </summary>
@@ -156,5 +170,9 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
 
             throw new ArgumentException($"Unknown LED '{s}'", nameof(s));
         }
+
+        #endregion
+
+
     }
 }

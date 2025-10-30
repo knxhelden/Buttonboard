@@ -155,7 +155,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
 
         #endregion
 
-        #region --- Validation Helper ---
+        #region --- Helpers ---
 
         private void EnsureKnownPlayer(string playerName)
         {

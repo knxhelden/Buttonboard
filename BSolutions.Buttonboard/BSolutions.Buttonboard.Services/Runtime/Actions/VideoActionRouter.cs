@@ -26,6 +26,8 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         /// <inheritdoc />
         public string Domain => "video";
 
+        #region --- Constructor ---
+
         public VideoActionRouter(
             ILogger<VideoActionRouter> logger,
             ISettingsProvider settings,
@@ -35,6 +37,10 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
             _settings = settings ?? throw new ArgumentNullException(nameof(settings));
             _vlc = vlc ?? throw new ArgumentNullException(nameof(vlc));
         }
+
+        #endregion
+
+        #region --- IActionRouter ---
 
         /// <inheritdoc />
         public bool CanHandle(string actionKey)
@@ -85,6 +91,10 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
             }
         }
 
+        #endregion
+
+        #region --- Handlers ---
+
         /// <summary>
         /// Executes <c>video.next</c> — skips to the next playlist entry on the given player.
         /// Required args: <c>player</c>.
@@ -129,10 +139,16 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
             await _vlc.PlayPlaylistItemAtAsync(playerName, position, ct);
         }
 
+        #endregion
+
+        #region --- Helpers ---
+
         private void EnsureKnownPlayer(string playerName)
         {
             if (!_settings.VLC.Devices.ContainsKey(playerName))
                 throw new ArgumentException($"Unknown VLC player '{playerName}'", nameof(playerName));
         }
+
+        #endregion
     }
 }
