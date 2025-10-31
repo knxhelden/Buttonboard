@@ -1,0 +1,257 @@
+{
+  "name": "Szene 4: Michael Jackson Tribute Band",
+  "version": 1,
+  "steps": [
+    {
+      "name": "LED Unten Rechts: AUS",
+      "atMs": 0,
+      "action": "gpio.off",
+      "args": { "led": "ButtonBottomRight" }
+    },
+
+    // Audio Player 1: PLAY
+    {
+      "name": "Audio Player 1: PLAY",
+      "atMs": 0,
+      "action": "audio.play",
+      "args": {
+        "url": "file:///mnt/usb/Halloween/04 - Szene 4.MP3",
+        "player": "Halloween1"
+      }
+    },
+
+    // Videoplayer 1-5: PLAY
+    //{
+    //  "name": "Videoplayer 1: PLAY",
+    //  "atMs": 0,
+    //  "action": "video.next",
+    //  "args": { "player": "Videoplayer1" }
+    //},
+    //{
+    //  "name": "Videoplayer 2: PLAY",
+    //  "atMs": 0,
+    //  "action": "video.next",
+    //  "args": { "player": "Videoplayer2" }
+    //},
+    //{
+    //  "name": "Videoplayer 3: PLAY",
+    //  "atMs": 0,
+    //  "action": "video.next",
+    //  "args": { "player": "Videoplayer3" }
+    //},
+    //{
+    //  "name": "Videoplayer 4: PLAY",
+    //  "atMs": 0,
+    //  "action": "video.next",
+    //  "args": { "player": "Videoplayer4" }
+    //},
+    {
+      "name": "Videoplayer 5: PLAY ITEM 4",
+      "atMs": 0,
+      "action": "video.playitem",
+      "args": {
+        "player": "Videoplayer4",
+        "position": 4
+      }
+    },
+
+    // Strobo 3 u. 4: AN
+    {
+      "name": "Strobo 3: AN",
+      "atMs": 12500,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/strobo3/POWER",
+        "payload": "ON"
+      }
+    },
+    {
+      "name": "Strobo 4: AN",
+      "atMs": 12500,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/strobo4/POWER",
+        "payload": "ON"
+      }
+    },
+
+    // Strobo 3 u. 4: AUS
+    {
+      "name": "Strobo 3: AUS",
+      "atMs": 16000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/strobo3/POWER",
+        "payload": "OFF"
+      }
+    },
+    {
+      "name": "Strobo 4: AUS",
+      "atMs": 16000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/strobo4/POWER",
+        "payload": "OFF"
+      }
+    },
+
+    // Nebelmaschine 2 u. 4: AN
+    {
+      "name": "Nebelmaschine 2: AN",
+      "atMs": 38500,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/fogmachine2/POWER",
+        "payload": "ON"
+      }
+    },
+    {
+      "name": "Nebelmaschine 4: AN",
+      "atMs": 38500,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/fogmachine4/POWER",
+        "payload": "ON"
+      }
+    },
+
+    // Strobo 1 u. 2: AN
+    {
+      "name": "Strobo 1: AN",
+      "atMs": 38500,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/strobo1/POWER",
+        "payload": "ON"
+      }
+    },
+    {
+      "name": "Strobo 2: AN",
+      "atMs": 38500,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/strobo2/POWER",
+        "payload": "ON"
+      }
+    },
+
+    // Strobo 1 u. 2: AUS
+    {
+      "name": "Strobo 1: AUS",
+      "atMs": 130000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/strobo1/POWER",
+        "payload": "OFF"
+      }
+    },
+    {
+      "name": "Strobo 2: AUS",
+      "atMs": 130000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/strobo2/POWER",
+        "payload": "OFF"
+      }
+    },
+
+    // Nebelmaschine 2 u. 4: AUS
+    {
+      "name": "Nebelmaschine 2: AUS",
+      "atMs": 130000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/fogmachine2/POWER",
+        "payload": "OFF"
+      }
+    },
+    {
+      "name": "Nebelmaschine 4: AUS",
+      "atMs": 130000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/fogmachine4/POWER",
+        "payload": "OFF"
+      }
+    },
+
+    // Strobo 3 u. 4: AN
+    {
+      "name": "Strobo 3: AN",
+      "atMs": 160000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/strobo3/POWER",
+        "payload": "ON"
+      }
+    },
+    {
+      "name": "Strobo 4: AN",
+      "atMs": 160000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/strobo4/POWER",
+        "payload": "ON"
+      }
+    },
+
+    // Strobo 3 u. 4: AUS
+    {
+      "name": "Strobo 3: AUS",
+      "atMs": 169000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/strobo3/POWER",
+        "payload": "OFF"
+      }
+    },
+    {
+      "name": "Strobo 4: AUS",
+      "atMs": 169000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/strobo4/POWER",
+        "payload": "OFF"
+      }
+    },
+
+    // Videoplayer 1-5: PAUSE
+    //{
+    //  "name": "Videoplayer 1: PAUSE",
+    //  "atMs": 190000,
+    //  "action": "video.pause",
+    //  "args": { "player": "Videoplayer1" }
+    //},
+    //{
+    //  "name": "Videoplayer 2: PAUSE",
+    //  "atMs": 190000,
+    //  "action": "video.pause",
+    //  "args": { "player": "Videoplayer2" }
+    //},
+    //{
+    //  "name": "Videoplayer 3: PAUSE",
+    //  "atMs": 190000,
+    //  "action": "video.pause",
+    //  "args": { "player": "Videoplayer3" }
+    //},
+    //{
+    //  "name": "Videoplayer 4: PAUSE",
+    //  "atMs": 190000,
+    //  "action": "video.pause",
+    //  "args": { "player": "Videoplayer4" }
+    //},
+    {
+      "name": "Videoplayer 5: PAUSE",
+      "atMs": 190000,
+      "action": "video.pause",
+      "args": { "player": "Videoplayer4" }
+    },
+
+    {
+      "name": "Led Oben Zentral: AN",
+      "atMs": 191000,
+      "action": "gpio.on",
+      "args": { "led": "ButtonTopCenter" }
+    }
+  ]
+}

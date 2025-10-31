@@ -18,16 +18,16 @@
       }
     },
     {
-      "name": "Mediaplayer 5: PLAY",
+      "name": "Videoplayer 5: PLAY",
       "atMs": 0,
       "action": "video.next",
-      "args": { "player": "Mediaplayer4" }
+      "args": { "player": "Videoplayer4" }
     },
     {
-      "name": "Mediaplayer 5: PAUSE",
+      "name": "Videoplayer 5: PAUSE",
       "atMs": 62000,
       "action": "video.pause",
-      "args": { "player": "Mediaplayer4" }
+      "args": { "player": "Videoplayer4" }
     },
     {
       "name": "Led Unten Links: AN",

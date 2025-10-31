@@ -14,37 +14,37 @@
       }
     },
 
-    // Mediaplayer 1-5: PLAY
+    // Videoplayer 1-5: PLAY
     //{
-    //  "name": "Mediaplayer 1: PLAY",
+    //  "name": "Videoplayer 1: PLAY",
     //  "atMs": 0,
     //  "action": "video.next",
-    //  "args": { "player": "Mediaplayer1" }
+    //  "args": { "player": "Videoplayer1" }
     //},
     //{
-    //  "name": "Mediaplayer 2: PLAY",
+    //  "name": "Videoplayer 2: PLAY",
     //  "atMs": 0,
     //  "action": "video.next",
-    //  "args": { "player": "Mediaplayer2" }
+    //  "args": { "player": "Videoplayer2" }
     //},
     //{
-    //  "name": "Mediaplayer 3: PLAY",
+    //  "name": "Videoplayer 3: PLAY",
     //  "atMs": 0,
     //  "action": "video.next",
-    //  "args": { "player": "Mediaplayer3" }
+    //  "args": { "player": "Videoplayer3" }
     //},
     //{
-    //  "name": "Mediaplayer 4: PLAY",
+    //  "name": "Videoplayer 4: PLAY",
     //  "atMs": 0,
     //  "action": "video.next",
-    //  "args": { "player": "Mediaplayer4" }
+    //  "args": { "player": "Videoplayer4" }
     //},
     {
-      "name": "Mediaplayer 5: PLAY ITEM 3",
+      "name": "Videoplayer 5: PLAY ITEM 3",
       "atMs": 0,
       "action": "video.playitem",
       "args": {
-        "player": "Mediaplayer4",
+        "player": "Videoplayer4",
         "position": 3
       }
     },
@@ -281,48 +281,48 @@
       }
     },
 
-    // Mediaplayer 1-5: PAUSE
+    // Videoplayer 1-5: PAUSE
     //{
-    //  "name": "Mediaplayer 1: PAUSE",
+    //  "name": "Videoplayer 1: PAUSE",
     //  "atMs": 110000,
     //  "action": "video.pause",
-    //  "args": { "player": "Mediaplayer1" }
+    //  "args": { "player": "Videoplayer1" }
     //},
     //{
-    //  "name": "Mediaplayer 2: PAUSE",
+    //  "name": "Videoplayer 2: PAUSE",
     //  "atMs": 110000,
     //  "action": "video.pause",
-    //  "args": { "player": "Mediaplayer2" }
+    //  "args": { "player": "Videoplayer2" }
     //},
     //{
-    //  "name": "Mediaplayer 3: PAUSE",
+    //  "name": "Videoplayer 3: PAUSE",
     //  "atMs": 110000,
     //  "action": "video.pause",
-    //  "args": { "player": "Mediaplayer3" }
+    //  "args": { "player": "Videoplayer3" }
     //},
     //{
-    //  "name": "Mediaplayer 4: PAUSE",
+    //  "name": "Videoplayer 4: PAUSE",
     //  "atMs": 110000,
     //  "action": "video.pause",
-    //  "args": { "player": "Mediaplayer4" }
+    //  "args": { "player": "Videoplayer4" }
     //},
     {
-      "name": "Mediaplayer 5: PAUSE",
+      "name": "Videoplayer 5: PAUSE",
       "atMs": 110000,
       "action": "video.pause",
-      "args": { "player": "Mediaplayer5" }
+      "args": { "player": "Videoplayer4" }
     },
 
     // Button LEDs
     {
       "name": "LED Unten Zentral: AUS",
-      "atMs": 120000,
+      "atMs": 115000,
       "action": "gpio.off",
       "args": { "led": "ButtonBottomCenter" }
     },
     {
       "name": "LED Unten Rechts: AN",
-      "atMs": 120000,
+      "atMs": 115000,
       "action": "gpio.on",
       "args": { "led": "ButtonBottomRight" }
     }

@@ -18,19 +18,19 @@
       }
     },
     {
-      "name": "Mediaplayer 5: PLAY ITEM 2",
+      "name": "Videoplayer 5: PLAY ITEM 2",
       "atMs": 0,
       "action": "video.playitem",
       "args": {
-        "player": "Mediaplayer4",
+        "player": "Videoplayer4",
         "position": 2
       }
     },
     {
-      "name": "Mediaplayer 5: PAUSE",
+      "name": "Videoplayer 5: PAUSE",
       "atMs": 65000,
       "action": "video.pause",
-      "args": { "player": "Mediaplayer4" }
+      "args": { "player": "Videoplayer4" }
     },
     {
       "name": "Strobo 3 u. 4: AN",
