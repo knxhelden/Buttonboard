@@ -7,7 +7,7 @@
       "atMs": 0,
       "action": "audio.volume",
       "args": {
-        "level": 25,
+        "level": 80,
         "player": "Halloween1"
       }
     },
