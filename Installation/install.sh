@@ -1,28 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+
+# ================================================================================== #
+# Buttonboard Host Setup                                                             #
+# - Creates a deployment share via Samba                                             #
+# - Installs Webmin                                                                  #
+# - Installs Frontail (global npm) and wires a systemd service with highlight preset #
+# ================================================================================== #
+
+
 ### ─────────────────────────── User Config ────────────────────────────
-APP_NAME="buttonboard"              # Your app/binary name
-APP_DIR="/opt/${APP_NAME}"           # Target directory for deployment
+APP_NAME="buttonboard"                         # Your app/binary name
+APP_DIR="/opt/${APP_NAME}"                     # Deployment target directory
 
 # Samba share for deployments
 SAMBA_SHARE_NAME="deploy"
-SAMBA_USER="${SUDO_USER:-${USER}}"   # Default: current user
-SAMBA_PASSWORD="buttonboard"         # Change for other password
-SAMBA_READONLY="no"                  # "yes" for read-only
+SAMBA_USER="${SUDO_USER:-${USER}}"            # Default: current user
+SAMBA_PASSWORD="buttonboard"                   # Change this in production
+SAMBA_READONLY="no"                            # "yes" for read-only
 
-# Webmin (default port 10000)
-WEBMIN_INFO_PORT="10000"
-
-# Frontail
+# Frontail (log viewer)
 FRONTAIL_PORT="9001"
-FRONTAIL_THEME="dark"                # "dark" or "light"
-FRONTAIL_LINES="500"                 # number of lines to show initially
+FRONTAIL_THEME="dark"                          # "default" or "dark"
+FRONTAIL_LINES="500"                           # Number of lines initially shown
+FRONTAIL_BASE="${FRONTAIL_BASE:-/usr/local/lib/node_modules/frontail}"  # Autodetected if missing
 LIVE_LOG_PATH="${APP_DIR}/logs/live.log"
 FRONTAIL_SERVICE="/etc/systemd/system/frontail.service"
 
-# VLC player
-VLC_USER="${SUDO_USER:-${USER}}"   # Default: current user
+# VLC – kept here for future use (not used in this script yet)
+VLC_USER="${SUDO_USER:-${USER}}"
 VLC_HOME="$(getent passwd "${VLC_USER}" | cut -d: -f6)"
 VLC_CFG_DIR="${VLC_HOME}/.config/vlc"
 VLC_CFG_DST="${VLC_CFG_DIR}/vlcrc"
@@ -33,16 +40,36 @@ log()  { echo -e "\033[1;32m[+] $*\033[0m"; }
 warn() { echo -e "\033[1;33m[!] $*\033[0m"; }
 err()  { echo -e "\033[1;31m[✗] $*\033[0m" >&2; }
 
+trap 'err "Script failed at line $LINENO."' ERR
+
 
 ### ─────────────────────────── Host IP ────────────────────────────────
-# Same approach as in your other script: first IPv4 from hostname -I
-PI_IP="$(hostname -I | awk '{print $1}')"
+# Try to get the first IPv4 from hostname -I; fallback to ip/awk if needed.
+PI_IP="$(hostname -I 2>/dev/null | awk "{print \$1}")"
+if [[ -z "${PI_IP}" ]]; then
+  PI_IP="$(ip -4 addr show scope global | awk "/inet /{print \$2}" | cut -d/ -f1 | head -n1 || true)"
+fi
+PI_IP="${PI_IP:-127.0.0.1}"
 
 
 ### ─────────────────────────── Helpers ────────────────────────────────
-require_root() { [[ "${EUID}" -eq 0 ]] || { err "Please run this script with sudo/root."; exit 1; }; }
+require_root() {
+  [[ "${EUID}" -eq 0 ]] || { err "Please run this script with sudo/root."; exit 1; }
+}
 
-apt_install() { DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "$@"; }
+# Run apt-get install with common flags; call apt-get update beforehand once.
+apt_updated="false"
+apt_update_once() {
+  if [[ "${apt_updated}" != "true" ]]; then
+    log "Updating package index…"
+    apt-get update -y
+    apt_updated="true"
+  fi
+}
+apt_install() {
+  apt_update_once
+  DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "$@"
+}
 
 file_has_block() { local f="$1" h="$2"; [[ -f "$f" ]] && grep -qF "$h" "$f"; }
 
@@ -56,22 +83,28 @@ append_block_if_missing() {
   fi
 }
 
+ensure_dir_owned() {
+  local path="$1" user="$2"
+  mkdir -p "${path}"
+  chown -R "${user}:${user}" "${path}"
+}
+
 
 ### ─────────────────────── Prepare filesystem ─────────────────────────
 prepare_fs() {
-  log "Updating package index…"
-  apt-get update -y
   log "Installing base packages…"
   apt_install ca-certificates curl gnupg lsb-release
-  mkdir -p "${APP_DIR}"
-  chown -R "${SAMBA_USER}:${SAMBA_USER}" "${APP_DIR}"
+
+  log "Preparing app directory…"
+  ensure_dir_owned "${APP_DIR}" "${SAMBA_USER}"
+  chmod 2775 "${APP_DIR}"
   log "App directory ready: ${APP_DIR}"
 
-  # Ensure logs dir + live.log exist for frontail
-  mkdir -p "${APP_DIR}/logs"
+  log "Preparing logs for Frontail…"
+  ensure_dir_owned "${APP_DIR}/logs" "${SAMBA_USER}"
   touch "${LIVE_LOG_PATH}"
-  chown -R "${SAMBA_USER}:${SAMBA_USER}" "${APP_DIR}/logs"
-  log "Prepared logs directory and live log: ${LIVE_LOG_PATH}"
+  chown "${SAMBA_USER}:${SAMBA_USER}" "${LIVE_LOG_PATH}"
+  log "Live log prepared: ${LIVE_LOG_PATH}"
 }
 
 
@@ -80,11 +113,10 @@ setup_samba() {
   log "Installing and configuring Samba…"
   apt_install samba samba-common-bin
 
-  mkdir -p "${APP_DIR}"
-  chown -R "${SAMBA_USER}:${SAMBA_USER}" "${APP_DIR}"
+  ensure_dir_owned "${APP_DIR}" "${SAMBA_USER}"
   chmod 2775 "${APP_DIR}"
 
-  # Backup once
+  # Backup smb.conf once
   if [[ -f /etc/samba/smb.conf && ! -f /etc/samba/smb.conf.bak ]]; then
     cp /etc/samba/smb.conf /etc/samba/smb.conf.bak
   fi
@@ -104,16 +136,16 @@ ${header}
 "
   append_block_if_missing "/etc/samba/smb.conf" "$header" "$block"
 
-  # Create/ensure Samba user
+  # Create or update Samba user password
   if ! pdbedit -L | cut -d: -f1 | grep -qx "${SAMBA_USER}"; then
     log "Creating Samba user: ${SAMBA_USER}"
     printf '%s\n%s\n' "${SAMBA_PASSWORD}" "${SAMBA_PASSWORD}" | smbpasswd -a -s "${SAMBA_USER}"
-else
+  else
     log "Updating Samba password for user: ${SAMBA_USER}"
     printf '%s\n%s\n' "${SAMBA_PASSWORD}" "${SAMBA_PASSWORD}" | smbpasswd -s "${SAMBA_USER}"
-fi
+  fi
 
-  systemctl enable --now smbd nmbd || systemctl enable --now smbd
+  systemctl enable --now smbd nmbd >/dev/null 2>&1 || systemctl enable --now smbd
   systemctl restart smbd || true
 
   log "Samba share is ready."
@@ -134,17 +166,16 @@ install_webmin() {
   else
     log "Webmin repo already configured."
   fi
-  apt-get update -y
+
   apt_install webmin
   systemctl enable --now webmin
-  log "Webmin running at: https://${PI_IP}:${WEBMIN_INFO_PORT}/"
+  log "Webmin running at: https://${PI_IP}:10000/"
 }
 
 
 ### ────────────────────────── Frontail setup ──────────────────────────
 setup_frontail() {
-  log "Installing Node.js + npm (for frontail)…"
-  # Use distro nodejs/npm; sufficient for frontail
+  log "Installing Node.js + npm (for Frontail)…"
   if ! command -v node >/dev/null 2>&1; then
     apt_install nodejs npm
   else
@@ -152,33 +183,72 @@ setup_frontail() {
   fi
 
   log "Installing frontail globally via npm…"
-  # Ensure npm can write globally; on Debian/Ubuntu it installs to /usr/local/bin
   npm install -g frontail >/dev/null 2>&1 || npm install -g frontail
+
   local FRONTAIL_BIN
   FRONTAIL_BIN="$(command -v frontail || true)"
   if [[ -z "${FRONTAIL_BIN}" ]]; then
-    err "frontail binary not found after installation."
+    err "Frontail binary not found after installation."
     exit 1
   fi
-  log "frontail installed at: ${FRONTAIL_BIN}"
+  log "Frontail binary: ${FRONTAIL_BIN}"
 
-  # Ensure log file exists and is accessible
-  mkdir -p "$(dirname "${LIVE_LOG_PATH}")"
+  # Autodetect FRONTAIL_BASE if the provided/default path does not exist
+  if [[ ! -d "${FRONTAIL_BASE}" ]]; then
+    local npm_root
+    npm_root="$(npm root -g 2>/dev/null || true)"
+    if [[ -n "${npm_root}" && -d "${npm_root}/frontail" ]]; then
+      FRONTAIL_BASE="${npm_root}/frontail"
+    elif [[ -d "/usr/lib/node_modules/frontail" ]]; then
+      FRONTAIL_BASE="/usr/lib/node_modules/frontail"
+    fi
+  fi
+  log "Frontail base: ${FRONTAIL_BASE}"
+
+  # Ensure log file is present and owned correctly (idempotent)
+  ensure_dir_owned "$(dirname "${LIVE_LOG_PATH}")" "${SAMBA_USER}"
   touch "${LIVE_LOG_PATH}"
-  chown -R "${SAMBA_USER}:${SAMBA_USER}" "$(dirname "${LIVE_LOG_PATH}")"
+  chown "${SAMBA_USER}:${SAMBA_USER}" "${LIVE_LOG_PATH}"
 
-  log "Creating/Updating systemd service for frontail…"
-  cat > "${FRONTAIL_SERVICE}" <<EOF
+  # Write highlight preset (upstream Frontail supports 'words' and 'lines' with inline CSS)
+  log "Creating/Updating Frontail highlight preset…"
+  install -d -m 0755 "${FRONTAIL_BASE}/preset"
+  tee "${FRONTAIL_BASE}/preset/buttonboard.json" >/dev/null <<'JSON'
+{
+  "lines": {
+    "[ERR]": "color: #ef5350; font-weight: 500;",
+    "[WRN]": "color: #ffca28;",
+    "[INF]": "color: #00e676;",
+    "[DBG]": "color: #29b6f6;"
+  }
+}
+JSON
+
+  # Systemd service for Frontail
+  log "Creating/Updating systemd service for Frontail…"
+  tee "${FRONTAIL_SERVICE}" >/dev/null <<EOF
 [Unit]
 Description=Frontail live log viewer for ${APP_NAME}
 After=network.target
 
 [Service]
-ExecStart=${FRONTAIL_BIN} --theme ${FRONTAIL_THEME} -p ${FRONTAIL_PORT} -h 0.0.0.0 -n ${FRONTAIL_LINES} ${LIVE_LOG_PATH}
-Restart=always
+Type=simple
 User=${SAMBA_USER}
 WorkingDirectory=${APP_DIR}
 Environment=NODE_OPTIONS=--no-deprecation
+Environment=FORCE_COLOR=1
+ExecStart=/bin/sh -lc '\
+  ${FRONTAIL_BIN} \
+    --disable-usage-stats \
+    --ui-highlight \
+    --ui-highlight-preset ${FRONTAIL_BASE}/preset/buttonboard.json \
+    --theme ${FRONTAIL_THEME} \
+    --port ${FRONTAIL_PORT} \
+    --host 0.0.0.0 \
+    --lines ${FRONTAIL_LINES} \
+    ${LIVE_LOG_PATH}'
+Restart=on-failure
+RestartSec=2s
 
 [Install]
 WantedBy=multi-user.target
@@ -195,52 +265,6 @@ EOF
 }
 
 
-### ────────────────────────── VLC player setup ──────────────────────────
-setup_vlc() {
-  log "Installing VLC…"
-  apt_install vlc
-
-  if [[ ! -f "${VLC_CFG_SRC}" ]]; then
-    err "No vlcrc file found in script directory: ${VLC_CFG_SRC}"
-    err "Place your config file 'vlcrc' next to this script and start again."
-    return 1
-  fi
-
-  # Create target directory & set owner
-  mkdir -p "${VLC_CFG_DIR}"
-  chown -R "${VLC_USER}:${VLC_USER}" "${VLC_HOME}/.config"
-
-  # Backup of the current configuration (only if available and content differs)
-  if [[ -f "${VLC_CFG_DST}" ]] && ! cmp -s "${VLC_CFG_SRC}" "${VLC_CFG_DST}"; then
-    ts="$(date +%Y%m%d-%H%M%S)"
-    cp -a "${VLC_CFG_DST}" "${VLC_CFG_DST}.bak.${ts}"
-    log "Backup created: ${VLC_CFG_DST}.bak.${ts}"
-  fi
-
-  # Copy the new configuration (idempotent if identical)
-  install -m 0644 -o "${VLC_USER}" -g "${VLC_USER}" "${VLC_CFG_SRC}" "${VLC_CFG_DST}"
-  log "VLC config deployed: ${VLC_CFG_DST}"
-
-  # Read http port & password from the config (for hint)
-  local http_port http_pwd
-  http_port="$(awk -F= '/^[[:space:]]*http-port[[:space:]]*=/{print $2}' "${VLC_CFG_DST}" | tail -n1 | tr -d '[:space:]')"
-  http_pwd="$(awk -F= '/^[[:space:]]*http-password[[:space:]]*=/{print $2}' "${VLC_CFG_DST}" | tail -n1 | sed 's/[[:space:]]*$//')"
-
-  # Defaults if not set
-  [[ -z "${http_port}" ]] && http_port="8080"
-
-  # Check if http interface has been activated
-  if grep -Eq '^[[:space:]]*extraintf[[:space:]]*=[[:space:]]*http[[:space:]]*$' "${VLC_CFG_DST}"; then
-    log "VLC Web-Interface konfiguriert."
-    echo "  • URL:         http://${PI_IP}:${http_port}/"
-    [[ -n "${http_pwd}" ]] && echo "  • Passwort:    ${http_pwd} (Benutzername leer lassen)"
-  else
-    warn "In the vlcrc, 'extraintf=http' is not set. Otherwise, the web interface would be accessible at 'http://${PI_IP}:${http_port}'."
-  fi
-}
-
-
-
 ### ───────────────────────────── Main ─────────────────────────────────
 main() {
   require_root
@@ -249,7 +273,6 @@ main() {
   setup_samba
   install_webmin
   setup_frontail
-  setup_vlc
 
   cat <<SUMMARY
 
@@ -259,10 +282,10 @@ main() {
     ${APP_DIR}
   (make sure the binary is executable, e.g.: chmod +x ${APP_DIR}/BSolutions.Buttonboard.App)
 
-• Webmin:            https://${PI_IP}:${WEBMIN_INFO_PORT}/  (self-signed)
+• Webmin:            https://${PI_IP}:10000/  (self-signed)
 • Frontail:          http://${PI_IP}:${FRONTAIL_PORT}/
   → Live view of:    ${LIVE_LOG_PATH}
-• VLC Player:        http://${PI_IP}:8080/
+• VLC Player:        http://${PI_IP}:8080/   (reserved; not configured here)
 
 • App Start:         Start your app manually after deployment, e.g.:
   ${APP_DIR}/./BSolutions.Buttonboard.App
