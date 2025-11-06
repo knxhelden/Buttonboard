@@ -59,7 +59,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         }
 
         /// <inheritdoc />
-        public async Task ExecuteAsync(ScenarioAssetStep step, CancellationToken ct)
+        public async Task ExecuteAsync(ScenarioStepDefinition step, CancellationToken ct)
         {
             var key = step.Action?.Trim().ToLowerInvariant() ?? string.Empty;
             var (_, op) = ActionKeyHelper.Split(key);
@@ -94,7 +94,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         /// </param>
         /// <param name="ct">A <see cref="CancellationToken"/> for cooperative cancellation.</param>
         /// <exception cref="ArgumentException">Thrown when <c>topic</c> is missing or invalid.</exception>
-        private async Task HandlePublishAsync(ScenarioAssetStep step, CancellationToken ct)
+        private async Task HandlePublishAsync(ScenarioStepDefinition step, CancellationToken ct)
         {
             var args = step.Args;
 

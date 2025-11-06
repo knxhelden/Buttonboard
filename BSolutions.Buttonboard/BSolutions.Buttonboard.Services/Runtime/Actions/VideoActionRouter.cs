@@ -50,7 +50,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         }
 
         /// <inheritdoc />
-        public async Task ExecuteAsync(ScenarioAssetStep step, CancellationToken ct)
+        public async Task ExecuteAsync(ScenarioStepDefinition step, CancellationToken ct)
         {
             var key = step.Action?.Trim().ToLowerInvariant() ?? string.Empty;
             var (_, op) = ActionKeyHelper.Split(key);
@@ -99,7 +99,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         /// Executes <c>video.next</c> — skips to the next playlist entry on the given player.
         /// Required args: <c>player</c>.
         /// </summary>
-        private async Task HandleNextAsync(ScenarioAssetStep step, CancellationToken ct)
+        private async Task HandleNextAsync(ScenarioStepDefinition step, CancellationToken ct)
         {
             var playerName = step.Args.GetRequiredString("player");
             EnsureKnownPlayer(playerName);
@@ -112,7 +112,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         /// Executes <c>video.pause</c> — toggles pause/resume on the given player.
         /// Required args: <c>player</c>.
         /// </summary>
-        private async Task HandlePauseAsync(ScenarioAssetStep step, CancellationToken ct)
+        private async Task HandlePauseAsync(ScenarioStepDefinition step, CancellationToken ct)
         {
             var playerName = step.Args.GetRequiredString("player");
             EnsureKnownPlayer(playerName);
@@ -125,7 +125,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         /// Executes <c>video.playItem</c> — plays a specific playlist entry at the given position.
         /// Required args: <c>player</c>, <c>position</c> (1-based).
         /// </summary>
-        private async Task HandlePlayItemAsync(ScenarioAssetStep step, CancellationToken ct)
+        private async Task HandlePlayItemAsync(ScenarioStepDefinition step, CancellationToken ct)
         {
             var playerName = step.Args.GetRequiredString("player");
             var position = step.Args.GetRequiredInt("position");

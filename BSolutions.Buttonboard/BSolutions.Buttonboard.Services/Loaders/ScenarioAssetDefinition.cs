@@ -35,7 +35,7 @@ namespace BSolutions.Buttonboard.Services.Loaders
         /// Steps are executed in sequence according to their <c>AtMs</c> offset.
         /// </summary>
         [JsonPropertyName("steps")]
-        public List<ScenarioAssetStep> Steps { get; set; } = new();
+        public List<ScenarioStepDefinition> Steps { get; set; } = new();
 
         /// <summary>
         /// Kind of asset, derived from the file name during load

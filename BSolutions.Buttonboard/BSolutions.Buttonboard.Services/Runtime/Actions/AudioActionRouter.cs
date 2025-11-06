@@ -55,7 +55,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         }
 
         /// <inheritdoc />
-        public async Task ExecuteAsync(ScenarioAssetStep step, CancellationToken ct)
+        public async Task ExecuteAsync(ScenarioStepDefinition step, CancellationToken ct)
         {
             var key = step.Action?.Trim().ToLowerInvariant() ?? string.Empty;
             var (_, op) = ActionKeyHelper.Split(key);
@@ -104,7 +104,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         /// Executes <c>audio.play</c> — plays the given URL on the specified player.
         /// Required args: <c>player</c>, <c>url</c>.
         /// </summary>
-        private async Task HandlePlayAsync(ScenarioAssetStep step, CancellationToken ct)
+        private async Task HandlePlayAsync(ScenarioStepDefinition step, CancellationToken ct)
         {
             var playerName = step.Args.GetRequiredString("player");
             var url = step.Args.GetRequiredString("url");
@@ -121,7 +121,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         /// Executes <c>audio.pause</c> — pauses/resumes the specified player.
         /// Required args: <c>player</c>. Optional: <c>paused</c> (default: <c>true</c>).
         /// </summary>
-        private async Task HandlePauseAsync(ScenarioAssetStep step, CancellationToken ct)
+        private async Task HandlePauseAsync(ScenarioStepDefinition step, CancellationToken ct)
         {
             var playerName = step.Args.GetRequiredString("player");
             var paused = step.Args.GetBool("paused", true);
@@ -138,7 +138,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         /// Executes <c>audio.volume</c> — sets playback volume (0–100) for the specified player.
         /// Required args: <c>player</c>, <c>level</c>.
         /// </summary>
-        private async Task HandleVolumeAsync(ScenarioAssetStep step, CancellationToken ct)
+        private async Task HandleVolumeAsync(ScenarioStepDefinition step, CancellationToken ct)
         {
             var playerName = step.Args.GetRequiredString("player");
             var level = step.Args.GetRequiredInt("level");

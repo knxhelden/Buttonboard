@@ -32,9 +32,9 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         /// <summary>
         /// Executes the given scenario step asynchronously.
         /// </summary>
-        /// <param name="step">The <see cref="ScenarioAssetStep"/> containing the action and its arguments.</param>
+        /// <param name="step">The <see cref="ScenarioStepDefinition"/> containing the action and its arguments.</param>
         /// <param name="ct">A <see cref="CancellationToken"/> for cooperative cancellation.</param>
         /// <returns>A <see cref="Task"/> representing the asynchronous execution.</returns>
-        Task ExecuteAsync(ScenarioAssetStep step, CancellationToken ct);
+        Task ExecuteAsync(ScenarioStepDefinition step, CancellationToken ct);
     }
 }

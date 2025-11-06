@@ -11,7 +11,7 @@ namespace BSolutions.Buttonboard.Services.Loaders
     /// relative to the start of the asset.
     /// </para>
     /// </summary>
-    public sealed class ScenarioAssetStep
+    public sealed class ScenarioStepDefinition
     {
         /// <summary>
         /// Optional display name for this step (e.g. for logging or authoring).

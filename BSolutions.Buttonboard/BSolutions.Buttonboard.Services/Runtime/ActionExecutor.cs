@@ -13,13 +13,13 @@ namespace BSolutions.Buttonboard.Services.Runtime
     /// </summary>
     /// <remarks>
     /// The <see cref="ActionExecutor"/> serves as the central entry point for executing
-    /// <see cref="ScenarioAssetStep"/> instances. It determines the responsible
+    /// <see cref="ScenarioStepDefinition"/> instances. It determines the responsible
     /// <see cref="IActionRouter"/> by inspecting the action key prefix (e.g., <c>audio.play</c>, <c>gpio.on</c>)
     /// and delegates execution to it.
     ///
     /// Responsibilities:
     /// <list type="bullet">
-    /// <item><description>Normalize and validate the incoming <see cref="ScenarioAssetStep"/>.</description></item>
+    /// <item><description>Normalize and validate the incoming <see cref="ScenarioStepDefinition"/>.</description></item>
     /// <item><description>Resolve the correct <see cref="IActionRouter"/> via <see cref="IActionRouterRegistry"/>.</description></item>
     /// <item><description>Log routing decisions and unknown actions for observability.</description></item>
     /// </list>
@@ -45,7 +45,7 @@ namespace BSolutions.Buttonboard.Services.Runtime
         }
 
         /// <inheritdoc />
-        public async Task ExecuteAsync(ScenarioAssetStep step, CancellationToken ct)
+        public async Task ExecuteAsync(ScenarioStepDefinition step, CancellationToken ct)
         {
             if (step is null)
                 throw new ArgumentNullException(nameof(step));

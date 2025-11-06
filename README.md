@@ -130,19 +130,3 @@ You can then start the application with:
 ```bash
 /opt/buttonboard/./BSolutions.Buttonboard.App
 ```
-
----
-
-## 🐞 Debugging
-
-Für das Debuggen gibt es zwei empfehlenswerte Ansätze:  
-
-1. **Visual Studio-Erweiterung „Raspberry Debugger“**  
-   👉 [RaspberryDebugger auf GitHub](https://github.com/nforgeio/RaspberryDebugger)  
-
-2. **Remote Debugging via SSH**  
-   👉 [Debuggen von .NET Core unter Linux mit SSH](https://learn.microsoft.com/de-de/visualstudio/debugger/remote-debugging-dotnet-core-linux-with-ssh?view=vs-2022)  
-
-### Installation des Visual Studio Remote Debugger
-
-[Weitere Informationen](https://github.com/nforgeio/RaspberryDebugger)

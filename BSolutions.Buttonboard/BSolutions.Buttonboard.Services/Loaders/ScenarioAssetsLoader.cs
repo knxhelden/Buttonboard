@@ -17,14 +17,14 @@ namespace BSolutions.Buttonboard.Services.Loaders
 {
     /// <summary>
     /// Loader implementation for <see cref="IScenarioAssetsLoader"/>.
-    /// Watches a directory for <c>*.json</c> files, keeps a thread-safe in-memory cache,
+    /// Watches a directory for *.json and *.scene files, keeps a thread-safe in-memory cache,
     /// and normalizes assets (step filtering/sorting, kind detection).
     /// </summary>
     public sealed class ScenarioAssetsLoader : IScenarioAssetsLoader, IDisposable
     {
         #region --- Constants / Static ---
 
-        private const string JsonSearchPattern = "*.json";
+        private static readonly string[] SearchPatterns = new[] { "*.json", "*.scene" };
         private static readonly StringComparer KeyComparer = StringComparer.OrdinalIgnoreCase;
 
         #endregion
@@ -51,13 +51,6 @@ namespace BSolutions.Buttonboard.Services.Loaders
 
         #region --- Constructor ---
 
-        /// <summary>
-        /// Creates a new <see cref="ScenarioAssetsLoader"/>.
-        /// </summary>
-        /// <param name="logger">Logger instance for this loader.</param>
-        /// <param name="assetsDirectory">Directory that contains the scenario JSON files.</param>
-        /// <param name="scenarioOptions">Options to resolve the setup key.</param>
-        /// <exception cref="ArgumentNullException">Thrown when <paramref name="assetsDirectory"/> is null.</exception>
         public ScenarioAssetsLoader(
             ILogger<ScenarioAssetsLoader> logger,
             string assetsDirectory,
@@ -67,47 +60,42 @@ namespace BSolutions.Buttonboard.Services.Loaders
             _assetsDirectory = assetsDirectory ?? throw new ArgumentNullException(nameof(assetsDirectory));
 
             var opts = scenarioOptions?.Value ?? throw new ArgumentNullException(nameof(scenarioOptions));
-            _setupKey = string.IsNullOrWhiteSpace(opts.Setup?.Key) ? "setup" : opts.Setup.Key;
+            _setupKey = string.IsNullOrWhiteSpace(opts.Setup?.Key) ? "setup" : opts.Setup!.Key;
 
-            // Ensure directory exists (no-op if already present).
             Directory.CreateDirectory(_assetsDirectory);
 
-            // Configure file watcher (no events until StartAsync enables it).
-            _watcher = new FileSystemWatcher(_assetsDirectory, JsonSearchPattern)
+            // Watcher: we cannot set multiple filters, so use "*.*" and filter in code.
+            _watcher = new FileSystemWatcher(_assetsDirectory)
             {
                 IncludeSubdirectories = false,
                 EnableRaisingEvents = false,
                 NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite | NotifyFilters.Size
             };
 
-            // Use background tasks to avoid blocking the watcher event thread.
-            _watcher.Changed += (_, e) => _ = Task.Run(() => LoadAssetToCacheAsync(e.FullPath));
-            _watcher.Created += (_, e) => _ = Task.Run(() => LoadAssetToCacheAsync(e.FullPath));
-            _watcher.Renamed += (_, e) => _ = Task.Run(() => LoadAssetToCacheAsync(e.FullPath));
-            _watcher.Deleted += (_, e) => RemoveAssetFromCache(e.FullPath);
+            _watcher.Changed += (_, e) => { if (IsInteresting(e.FullPath)) _ = Task.Run(() => LoadAssetToCacheAsync(e.FullPath)); };
+            _watcher.Created += (_, e) => { if (IsInteresting(e.FullPath)) _ = Task.Run(() => LoadAssetToCacheAsync(e.FullPath)); };
+            _watcher.Renamed += (_, e) => { if (IsInteresting(e.FullPath)) _ = Task.Run(() => LoadAssetToCacheAsync(e.FullPath)); };
+            _watcher.Deleted += (_, e) => { if (IsInteresting(e.FullPath)) RemoveAssetFromCache(e.FullPath); };
         }
 
         #endregion
 
         #region --- IScenarioAssetsLoader ---
 
-        /// <inheritdoc />
         public async Task StartAsync(CancellationToken ct = default)
         {
-            foreach (var file in Directory.EnumerateFiles(_assetsDirectory, JsonSearchPattern))
+            foreach (var file in EnumerateAllFiles(_assetsDirectory, SearchPatterns))
             {
                 ct.ThrowIfCancellationRequested();
                 await LoadAssetToCacheAsync(file).ConfigureAwait(false);
-                await Task.Yield(); // small pacing to keep startup responsive
+                await Task.Yield();
             }
 
             _watcher.EnableRaisingEvents = true;
-
             _logger.LogInformation(LogEvents.LoaderStarted,
-                "ScenarioAssetsLoader started. Watching directory {Dir}", _assetsDirectory);
+                "ScenarioAssetsLoader started. Watching directory {Dir} for *.json and *.scene", _assetsDirectory);
         }
 
-        /// <inheritdoc />
         public Task StopAsync(CancellationToken ct = default)
         {
             _watcher.EnableRaisingEvents = false;
@@ -115,57 +103,78 @@ namespace BSolutions.Buttonboard.Services.Loaders
             return Task.CompletedTask;
         }
 
-        /// <inheritdoc />
         public bool TryGet(string key, out ScenarioAssetDefinition? asset) =>
             _cache.TryGetValue(key, out asset);
 
-        /// <inheritdoc />
         public bool TryGetSetup(out ScenarioAssetDefinition? setup) =>
             TryGet(_setupKey, out setup);
 
-        /// <inheritdoc />
-        public IEnumerable<string> Keys => _cache.Keys.ToArray(); // snapshot to avoid enumeration issues
+        public IEnumerable<string> Keys => _cache.Keys.ToArray();
 
         #endregion
 
         #region --- Helpers ---
 
-        /// <summary>
-        /// Loads or reloads a single asset file into the cache.
-        /// </summary>
+        private static IEnumerable<string> EnumerateAllFiles(string dir, IEnumerable<string> patterns)
+        {
+            foreach (var p in patterns)
+                foreach (var f in Directory.EnumerateFiles(dir, p))
+                    yield return f;
+        }
+
+        private static bool IsInteresting(string path)
+        {
+            var ext = Path.GetExtension(path);
+            return ext.Equals(".json", StringComparison.OrdinalIgnoreCase)
+                || ext.Equals(".scene", StringComparison.OrdinalIgnoreCase);
+        }
+
         private async Task LoadAssetToCacheAsync(string path)
         {
             try
             {
-                // Debounce: file editors may trigger multiple rapid events.
                 await Task.Delay(75).ConfigureAwait(false);
-
-                if (!File.Exists(path))
-                    return;
+                if (!File.Exists(path)) return;
 
                 var key = Path.GetFileNameWithoutExtension(path);
+                var ext = Path.GetExtension(path).ToLowerInvariant();
                 _logger.LogDebug("Loading scenario asset {Key} from {Path}…", key, path);
 
-                // Share read to allow editors to keep the file open.
-                using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                using var sr = new StreamReader(fs);
-                var json = await sr.ReadToEndAsync().ConfigureAwait(false);
+                string raw;
+                using (var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var sr = new StreamReader(fs))
+                    raw = await sr.ReadToEndAsync().ConfigureAwait(false);
 
-                ScenarioAssetDefinition? def;
-                try
+                ScenarioAssetDefinition? def = null;
+
+                if (ext == ".json")
                 {
-                    def = JsonSerializer.Deserialize<ScenarioAssetDefinition>(json, _jsonOptions);
+                    try
+                    {
+                        def = System.Text.Json.JsonSerializer.Deserialize<ScenarioAssetDefinition>(raw, _jsonOptions);
+                    }
+                    catch (System.Text.Json.JsonException jx)
+                    {
+                        _logger.LogWarning(LogEvents.AssetJsonInvalid, jx,
+                            "JSON parse failed for {Path}. JsonPath={JsonPath}", path, jx.Path);
+                        return;
+                    }
                 }
-                catch (JsonException jx)
+                else if (ext == ".scene")
                 {
-                    // Parsing errors are expected during editing; log as Warning with JSON path context.
-                    _logger.LogWarning(LogEvents.AssetJsonInvalid, jx,
-                        "JSON parse failed for {Path}. JsonPath={JsonPath}", path, jx.Path);
-                    return;
+                    try
+                    {
+                        def = SceneDslParser.ParseToAssetDefinition(raw, key, _setupKey, _logger);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(LogEvents.AssetJsonInvalid, ex,
+                            "Scene DSL parse failed for {Path}. Error={Message}", path, ex.Message);
+                        return;
+                    }
                 }
 
-                if (def is null)
-                    return;
+                if (def is null) return;
 
                 def = Normalize(def, key, _setupKey);
                 _cache[key] = def;
@@ -176,7 +185,6 @@ namespace BSolutions.Buttonboard.Services.Loaders
             }
             catch (OperationCanceledException)
             {
-                // If a token is introduced in the future, a canceled load is not an error.
                 _logger.LogInformation("Loading scenario asset canceled");
             }
             catch (Exception ex)
@@ -186,30 +194,20 @@ namespace BSolutions.Buttonboard.Services.Loaders
             }
         }
 
-        /// <summary>
-        /// Removes an asset from the cache if present.
-        /// </summary>
         private void RemoveAssetFromCache(string path)
         {
             try
             {
                 var key = Path.GetFileNameWithoutExtension(path);
                 if (_cache.TryRemove(key, out _))
-                {
                     _logger.LogInformation(LogEvents.AssetRemoved, "Scenario asset removed: {Key}", key);
-                }
             }
-            catch
-            {
-                // Best-effort removal: ignore unexpected exceptions.
-            }
+            catch { /* best-effort */ }
         }
 
-        /// <summary>
-        /// Ensures a consistent shape: filters invalid steps, sorts by time and sets the asset kind.
-        /// </summary>
         private static ScenarioAssetDefinition Normalize(ScenarioAssetDefinition def, string key, string setupKey)
         {
+            def.Name ??= key;
             def.Steps ??= new();
             def.Steps = def.Steps
                 .Where(s => s != null && !string.IsNullOrWhiteSpace(s.Action))
@@ -223,11 +221,6 @@ namespace BSolutions.Buttonboard.Services.Loaders
             return def;
         }
 
-        #endregion
-
-        #region --- IDisposable ---
-
-        /// <inheritdoc />
         public void Dispose() => _watcher.Dispose();
 
         #endregion
