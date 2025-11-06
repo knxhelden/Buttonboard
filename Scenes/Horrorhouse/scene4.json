@@ -24,32 +24,47 @@
     {
      "name": "Videoplayer 1: PLAY ITEM 1",
       "atMs": 0,
-      "action": "video.next",
-      "args": { "player": "Videoplayer1" }
+      "action": "video.playItem",
+      "args": {
+        "player": "Videoplayer1",
+        "position": 2
+      }
     },
     {
      "name": "Videoplayer 2: PLAY ITEM 1",
       "atMs": 0,
-      "action": "video.next",
-      "args": { "player": "Videoplayer2" }
+      "action": "video.playItem",
+      "args": {
+        "player": "Videoplayer2",
+        "position": 2
+      }
     },
     {
      "name": "Videoplayer 3: PLAY ITEM 1",
       "atMs": 0,
-      "action": "video.next",
-      "args": { "player": "Videoplayer3" }
+      "action": "video.playItem",
+      "args": {
+        "player": "Videoplayer3",
+        "position": 2
+      }
     },
     {
      "name": "Videoplayer 4: PLAY ITEM 1",
       "atMs": 0,
-      "action": "video.next",
-      "args": { "player": "Videoplayer4" }
+      "action": "video.playItem",
+      "args": {
+        "player": "Videoplayer4",
+        "position": 2
+      }
     },
     {
       "name": "Videoplayer 5: PLAY ITEM 4",
       "atMs": 0,
-      "action": "video.next",
-      "args": { "player": "Videoplayer5" }
+      "action": "video.playItem",
+      "args": {
+        "player": "Videoplayer5",
+        "position": 4
+      }
     },
 
     // Strobo 3 u. 4: AN

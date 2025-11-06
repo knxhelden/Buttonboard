@@ -18,32 +18,47 @@
     {
      "name": "Videoplayer 1: PLAY",
      "atMs": 0,
-      "action": "video.next",
-      "args": { "player": "Videoplayer1" }
+     "action": "video.playItem",
+      "args": {
+        "player": "Videoplayer1",
+        "position": 1
+      }
     },
     {
      "name": "Videoplayer 2: PLAY",
      "atMs": 0,
-      "action": "video.next",
-      "args": { "player": "Videoplayer2" }
+     "action": "video.playItem",
+      "args": {
+        "player": "Videoplayer2",
+        "position": 1
+      }
     },
     {
      "name": "Videoplayer 3: PLAY",
      "atMs": 0,
-      "action": "video.next",
-      "args": { "player": "Videoplayer3" }
+     "action": "video.playItem",
+      "args": {
+        "player": "Videoplayer3",
+        "position": 1
+      }
     },
     {
      "name": "Videoplayer 4: PLAY",
      "atMs": 0,
-      "action": "video.next",
-      "args": { "player": "Videoplayer4" }
+     "action": "video.playItem",
+      "args": {
+        "player": "Videoplayer4",
+        "position": 1
+      }
     },
     {
       "name": "Videoplayer 5: PLAY ITEM 3",
       "atMs": 0,
-      "action": "video.next",
-      "args": { "player": "Videoplayer5" }
+     "action": "video.playItem",
+      "args": {
+        "player": "Videoplayer5",
+        "position": 3
+      }
     },
 
     // Nebelmaschine 2-4: AN

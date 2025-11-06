@@ -19,9 +19,11 @@
     },
     {
       "name": "Videoplayer 5: PLAY ITEM 2",
-      "atMs": 0,
-      "action": "video.next",
-      "args": { "player": "Videoplayer5" }
+      "action": "video.playItem",
+      "args": {
+        "player": "Videoplayer5",
+        "position": 2
+      }
     },
     {
       "name": "Videoplayer 5: PAUSE",
@@ -30,7 +32,7 @@
       "args": { "player": "Videoplayer5" }
     },
     {
-      "name": "Strobo 3 u. 4: AN",
+      "name": "Strobo 3: AN",
       "atMs": 66000,
       "action": "mqtt.pub",
       "args": {
@@ -39,11 +41,29 @@
       }
     },
     {
-      "name": "Strobo 3 u. 4: AUS",
+      "name": "Strobo 4: AN",
+      "atMs": 66000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/strobo4/POWER",
+        "payload": "ON"
+      }
+    },
+    {
+      "name": "Strobo 3: AUS",
       "atMs": 71000,
       "action": "mqtt.pub",
       "args": {
         "topic": "cmnd/bremus/entertainment/strobo3/POWER",
+        "payload": "OFF"
+      }
+    },
+    {
+      "name": "Strobo 4: AUS",
+      "atMs": 71000,
+      "action": "mqtt.pub",
+      "args": {
+        "topic": "cmnd/bremus/entertainment/strobo4/POWER",
         "payload": "OFF"
       }
     },

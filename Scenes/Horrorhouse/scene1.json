@@ -27,7 +27,7 @@
       "name": "Videoplayer 5: PAUSE",
       "atMs": 62000,
       "action": "video.pause",
-      "args": { "player": "Videoplayer4" }
+      "args": { "player": "Videoplayer5" }
     },
     {
       "name": "Led Unten Links: AN",
