@@ -39,23 +39,23 @@ Typical use cases:
 
 ### LEDs
 
-| LED                     | Farbe  | GPIO (BCM) | Pin (Board) | Resistor |
-|-------------------------|--------|------------|-------------|----------|
-| LED 1 (Top Center)      | Green  | GPIO 16    | Pin 36      | 220Ω     |
-| LED 2 (Bottom Left)     | Green  | GPIO 9     | Pin 21      | 220Ω     |
-| LED 3 (Bottom Center)   | Green  | GPIO 26    | Pin 37      | 220Ω     |
-| LED 4 (Bottom Right)    | Green  | GPIO 10    | Pin 19      | 220Ω     |
-| LED 5 (Process 1)       | Red    | GPIO 23    | Pin 16      | 220Ω     |
-| LED 6 (Process 2)       | Red    | GPIO 22    | Pin 15      | 220Ω     |
-| LED 7 (Process 3)       | Red    | GPIO 12    | Pin 32      | 220Ω     |
-| LED 8 (Process 4)       | Yellow | GPIO 20    | Pin 38      | 220Ω     |
-| LED 9 (Process 5)       | Yellow | GPIO 19    | Pin 35      | 220Ω     |
-| LED 10 (Process 6)      | Yellow | GPIO 24    | Pin 18      | 220Ω     |
-| LED 11 (Process 7)      | Green  | GPIO 25    | Pin 22      | 220Ω     |
-| LED 12 (Process 8)      | Green  | GPIO 5     | Pin 29      | 220Ω     |
-| LED 13 (Process 9)      | Green  | GPIO 6     | Pin 31      | 220Ω     |
-| LED 14 (System Ready)   | Green  | GPIO 17    | Pin 11      | 220Ω     |
-| LED 15 (System Warning) | Yellow | GPIO 18    | Pin 12      | 220Ω     |
+| LED                     | Farbe           | GPIO (BCM) | Pin (Board) | Voltage | El. Current | Resistor |
+|-------------------------|-----------------|------------|-------------|---------|-------------|----------|
+| LED 1 (Top Center)      | :green_circle:  | GPIO 16    | Pin 36      | 3.2V    | 20mA        | 2kΩ      |
+| LED 2 (Bottom Left)     | :green_circle:  | GPIO 9     | Pin 21      | 3.2V    | 20mA        | 2kΩ      |
+| LED 3 (Bottom Center)   | :green_circle:  | GPIO 26    | Pin 37      | 3.2V    | 20mA        | 2kΩ      |
+| LED 4 (Bottom Right)    | :green_circle:  | GPIO 10    | Pin 19      | 3.2V    | 20mA        | 2kΩ      |
+| LED 5 (Process 1)       | :red_circle:    | GPIO 23    | Pin 16      | 2.4V    | 20mA        | 120Ω     |
+| LED 6 (Process 2)       | :red_circle:    | GPIO 22    | Pin 15      | 2.4V    | 20mA        | 120Ω     |
+| LED 7 (Process 3)       | :red_circle:    | GPIO 12    | Pin 32      | 2.4V    | 20mA        | 120Ω     |
+| LED 8 (Process 4)       | :yellow_circle: | GPIO 20    | Pin 38      | 2.4V    | 20mA        | 120Ω     |
+| LED 9 (Process 5)       | :yellow_circle: | GPIO 19    | Pin 35      | 2.4V    | 20mA        | 120Ω     |
+| LED 10 (Process 6)      | :yellow_circle: | GPIO 24    | Pin 18      | 2.4V    | 20mA        | 120Ω     |
+| LED 11 (Process 7)      | :green_circle:  | GPIO 25    | Pin 22      | 3.2V    | 20mA        | 2kΩ      |
+| LED 12 (Process 8)      | :green_circle:  | GPIO 5     | Pin 29      | 3.2V    | 20mA        | 2kΩ      |
+| LED 13 (Process 9)      | :green_circle:  | GPIO 6     | Pin 31      | 3.2V    | 20mA        | 2kΩ      |
+| LED 14 (System Ready)   | :green_circle:  | GPIO 17    | Pin 11      | 3.2V    | 20mA        | 2kΩ      |
+| LED 15 (System Warning) | :yellow_circle: | GPIO 18    | Pin 12      | 2.4V    | 20mA        | 120Ω     |
 
 
 ***LED Series Resistor Calculation:***
@@ -65,6 +65,8 @@ Typical use cases:
 `R = (3.3V – 2.0V) / 0.010A = 130Ω`
 
 👉 In practice, use the next higher standard resistor value (e.g., **150Ω** or **220Ω**) to ensure safe operation.
+
+ℹ️ Higher resistors were deliberately chosen to protect the GPIOs and to maintain the same brightness across all colors.
 
 ## 📦 Installation Guide
 
