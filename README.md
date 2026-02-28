@@ -68,6 +68,18 @@ Typical use cases:
 
 ℹ️ Higher resistors were deliberately chosen to protect the GPIOs and to maintain the same brightness across all colors.
 
+### LCD Display
+
+**Display**: HD44780 1602 LCD Module Display Bundle with I2C Interface 2x16 Characters
+
+| LCD-Display | GPIO (BCM)   | Pin (Board) |
+|-------------|--------------|-------------|
+| 5V          | 5V power     | Pin 4       |
+| GND         | Ground       | Pin 6       |
+| SDA         | GPIO 2 (SDA) | Pin 3       |
+| SCL         | GPIO 3 (SCL) | Pin 5       |
+
+
 ## 📦 Installation Guide
 
 ### 📥 Raspberry Pi OS (64-bit, Bookworm)
