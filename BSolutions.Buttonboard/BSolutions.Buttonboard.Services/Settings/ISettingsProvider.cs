@@ -42,5 +42,10 @@
         /// Gets the configuration for MQTT connectivity, topics, and credentials.
         /// </summary>
         MqttOptions Mqtt { get; }
+
+        /// <summary>
+        /// Gets the configuration for the HD44780 LCD display on I2C.
+        /// </summary>
+        LcdOptions Lcd { get; }
     }
 }

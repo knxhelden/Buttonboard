@@ -29,6 +29,7 @@ namespace BSolutions.Buttonboard.Services.Settings
             Lyrion = o.Lyrion;
             VLC = o.VLC;
             Mqtt = o.Mqtt;
+            Lcd = o.Lcd;
         }
 
         /// <inheritdoc />
@@ -45,5 +46,8 @@ namespace BSolutions.Buttonboard.Services.Settings
 
         /// <inheritdoc />
         public MqttOptions Mqtt { get; }
+
+        /// <inheritdoc />
+        public LcdOptions Lcd { get; }
     }
 }

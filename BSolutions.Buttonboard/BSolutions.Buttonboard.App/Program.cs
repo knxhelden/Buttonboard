@@ -2,6 +2,7 @@
 using BSolutions.Buttonboard.Scenario;
 using BSolutions.Buttonboard.Services.Gpio;
 using BSolutions.Buttonboard.Services.Loaders;
+using BSolutions.Buttonboard.Services.LcdService;
 using BSolutions.Buttonboard.Services.LyrionService;
 using BSolutions.Buttonboard.Services.MqttClients;
 using BSolutions.Buttonboard.Services.RestApiClients;
@@ -60,6 +61,7 @@ namespace BSolutions.Buttonboard.App
                         })
                         .AddSingleton<GpioController>()
                         .AddSingleton<IButtonboardGpioController, ButtonboardGpioController>()
+                        .AddSingleton<ILcdDisplayService, LcdDisplayService>()
                         .AddByMode<IOpenHabClient, OpenHabClient, OpenHabClientMock>(sp =>
                         {
                             var app = sp.GetRequiredService<ISettingsProvider>().Application;

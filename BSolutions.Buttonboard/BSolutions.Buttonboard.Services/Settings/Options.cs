@@ -14,6 +14,7 @@ namespace BSolutions.Buttonboard.Services.Settings
         [Required] public required LyrionOptions Lyrion { get; init; }
         [Required] public required VlcOptions VLC { get; init; }
         [Required] public required MqttOptions Mqtt { get; init; }
+        [Required] public required LcdOptions Lcd { get; init; }
     }
 
     public sealed class ApplicationOptions
@@ -106,5 +107,14 @@ namespace BSolutions.Buttonboard.Services.Settings
         public string? Name { get; init; }
         public string? Topic { get; init; }
         public string? Reset { get; init; }
+    }
+
+    public sealed class LcdOptions
+    {
+        [Range(0, 10)] public int BusId { get; init; } = 1;
+        [Range(0x03, 0x77)] public int Address { get; init; } = 0x27;
+        [Range(8, 40)] public int Columns { get; init; } = 16;
+        [Range(1, 4)] public int Rows { get; init; } = 2;
+        public bool DefaultBacklight { get; init; } = true;
     }
 }
