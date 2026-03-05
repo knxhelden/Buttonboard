@@ -82,11 +82,11 @@ Typical use cases:
 
 ## 📦 Installation Guide
 
-### 📥 Raspberry Pi OS (64-bit, Bookworm)
+### 📥 Raspberry Pi OS (64-bit, Trixie)
 
-1. Flash **Raspberry Pi OS Bookworm (64-bit)** to a microSD card using the [Raspberry Pi Imager](https://www.raspberrypi.com/software/).
+1. Flash **Raspberry Pi OS Trixie (64-bit)** to a microSD card using the [Raspberry Pi Imager](https://www.raspberrypi.com/software/).
 
-2. Insert the card into the Raspberry Pi 3 B+ and power it on.
+2. Insert the card into the Raspberry Pi 5 and power it on.
 
 3. Connect the Pi to **Wi-Fi** (via desktop GUI, `nmtui`, or `nmcli`) and enable **SSH**.
 
@@ -100,7 +100,11 @@ sudo apt update && sudo apt full-upgrade -y
 
 ### 🌐 Install Buttonboard Runtime Environment
 
-1. Copy all files from the **Installation** folder to your Raspberry Pi (e.g., via **SFTP**).
+1. Copy all files from the **Installation** folder to your Raspberry Pi (e.g., via **SFTP**) and change permissions:
+
+``bash
+chmod +x install.sh
+```
 
 2. Run the installation script with root permissions:
 

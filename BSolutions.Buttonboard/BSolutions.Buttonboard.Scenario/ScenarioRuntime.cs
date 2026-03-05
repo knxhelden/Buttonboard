@@ -1,6 +1,6 @@
 ﻿using BSolutions.Buttonboard.Services.Gpio;
-using BSolutions.Buttonboard.Services.LyrionService;
-using BSolutions.Buttonboard.Services.MqttClients;
+using BSolutions.Buttonboard.Services.Integrations.Lyrion;
+using BSolutions.Buttonboard.Services.Integrations.Mqtt;
 using BSolutions.Buttonboard.Services.Integrations.Vlc;
 using BSolutions.Buttonboard.Services.Runtime;
 using BSolutions.Buttonboard.Services.Settings;
