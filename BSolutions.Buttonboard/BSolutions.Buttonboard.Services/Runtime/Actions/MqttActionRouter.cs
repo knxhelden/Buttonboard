@@ -1,7 +1,7 @@
 ﻿using BSolutions.Buttonboard.Services.Extensions;
 using BSolutions.Buttonboard.Services.Loaders;
 using BSolutions.Buttonboard.Services.Logging;
-using BSolutions.Buttonboard.Services.MqttClients;
+using BSolutions.Buttonboard.Services.Integrations.Mqtt;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Text;

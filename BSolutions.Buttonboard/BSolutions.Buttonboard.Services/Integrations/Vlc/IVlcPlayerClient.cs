@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BSolutions.Buttonboard.Services.RestApiClients
+namespace BSolutions.Buttonboard.Services.Integrations.Vlc
 {
     /// <summary>
     /// Defines control operations for one or more VLC player instances via HTTP.

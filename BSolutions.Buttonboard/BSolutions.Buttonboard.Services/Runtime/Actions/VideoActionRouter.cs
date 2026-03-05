@@ -2,7 +2,7 @@
 using BSolutions.Buttonboard.Services.Extensions;
 using BSolutions.Buttonboard.Services.Loaders;
 using BSolutions.Buttonboard.Services.Logging;
-using BSolutions.Buttonboard.Services.RestApiClients;
+using BSolutions.Buttonboard.Services.Integrations.Vlc;
 using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Logging;
 using System;

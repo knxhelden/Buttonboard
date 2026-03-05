@@ -9,7 +9,7 @@ using MQTTnet.Extensions.ManagedClient;
 using Microsoft.Extensions.Logging;
 using System.Linq;
 
-namespace BSolutions.Buttonboard.Services.MqttClients
+namespace BSolutions.Buttonboard.Services.Integrations.Mqtt
 {
     /// <summary>
     /// MQTT client implementation based on <see cref="IManagedMqttClient"/> from the MQTTnet library.
