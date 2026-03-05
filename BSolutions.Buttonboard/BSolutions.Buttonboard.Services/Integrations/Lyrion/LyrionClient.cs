@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BSolutions.Buttonboard.Services.LyrionService
+namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
 {
     /// <summary>
     /// Provides a TCP-based client implementation for the Lyrion (Logitech) Media Server CLI (default port 9090).

@@ -1,7 +1,7 @@
 ﻿using BSolutions.Buttonboard.Services.Extensions;
 using BSolutions.Buttonboard.Services.Loaders;
 using BSolutions.Buttonboard.Services.Logging;
-using BSolutions.Buttonboard.Services.LyrionService;
+using BSolutions.Buttonboard.Services.Integrations.Lyrion;
 using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Logging;
 using System;

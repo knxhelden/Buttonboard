@@ -1,7 +1,7 @@
 ﻿using BSolutions.Buttonboard.Scenario;
 using BSolutions.Buttonboard.Services.Gpio;
 using BSolutions.Buttonboard.Services.Loaders;
-using BSolutions.Buttonboard.Services.MqttClients;
+using BSolutions.Buttonboard.Services.Integrations.Mqtt;
 using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;

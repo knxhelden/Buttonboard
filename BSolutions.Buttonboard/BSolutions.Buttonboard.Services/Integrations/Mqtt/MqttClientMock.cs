@@ -8,7 +8,7 @@ using BSolutions.Buttonboard.Services.Logging;
 using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Logging;
 
-namespace BSolutions.Buttonboard.Services.MqttClients
+namespace BSolutions.Buttonboard.Services.Integrations.Mqtt
 {
     /// <summary>
     /// In-memory mock of <see cref="IMqttClient"/> for tests and local development.
