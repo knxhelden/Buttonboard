@@ -3,6 +3,7 @@ using BSolutions.Buttonboard.Services.Extensions;
 using BSolutions.Buttonboard.Services.Gpio;
 using BSolutions.Buttonboard.Services.Logging;
 using BSolutions.Buttonboard.Services.Settings;
+using BSolutions.Buttonboard.Services.Integrations.Http;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
@@ -16,7 +17,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 
-namespace BSolutions.Buttonboard.Services.RestApiClients
+namespace BSolutions.Buttonboard.Services.Integrations.Vlc
 {
     /// <summary>
     /// HTTP-based implementation of <see cref="IVlcPlayerClient"/> that talks to VLC via the legacy <c>/requests/</c> API.

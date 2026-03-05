@@ -2,7 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BSolutions.Buttonboard.Services.RestApiClients
+namespace BSolutions.Buttonboard.Services.Integrations.OpenHab
 {
     /// <summary>
     /// Contract for interacting with the openHAB REST API to control and inspect items.

@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Net.Http;
 
-namespace BSolutions.Buttonboard.Services.RestApiClients
+namespace BSolutions.Buttonboard.Services.Integrations.Http
 {
     public abstract class RestApiClientBase : IDisposable
     {
