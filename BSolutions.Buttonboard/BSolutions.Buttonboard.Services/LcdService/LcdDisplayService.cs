@@ -39,7 +39,17 @@ namespace BSolutions.Buttonboard.Services.LcdService
             _defaultBacklight = config.DefaultBacklight;
 
             var connection = new I2cConnectionSettings(config.BusId, config.Address);
-            _device = I2cDevice.Create(connection);
+            try
+            {
+                _device = I2cDevice.Create(connection);
+            }
+            catch (Exception ex) when (ex is System.IO.IOException || ex is UnauthorizedAccessException)
+            {
+                throw new InvalidOperationException(
+                    $"Unable to open LCD I2C device '/dev/i2c-{config.BusId}' at address 0x{config.Address:X2}. " +
+                    "Please verify I2C is enabled on the Raspberry Pi (raspi-config), wiring on SDA/SCL, and appsettings Lcd:BusId/Address.",
+                    ex);
+            }
         }
 
         public void Initialize()
