@@ -44,7 +44,7 @@ namespace BSolutions.Buttonboard.Services.Gpio
                 {
                     var pin = button.GetGpio();
                     if (!_gpio.IsPinOpen(pin))
-                        _gpio.OpenPin(pin, PinMode.Input);
+                        _gpio.OpenPin(pin, PinMode.InputPullDown);
                 }
 
                 // LEDs → Output (default Low/off)
