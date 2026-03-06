@@ -54,8 +54,8 @@ Typical use cases:
 | LED 11 (Process 7)      | :green_circle:  | GPIO 25    | Pin 22      | 3.2V    | 20mA        | 2kΩ      |
 | LED 12 (Process 8)      | :green_circle:  | GPIO 5     | Pin 29      | 3.2V    | 20mA        | 2kΩ      |
 | LED 13 (Process 9)      | :green_circle:  | GPIO 6     | Pin 31      | 3.2V    | 20mA        | 2kΩ      |
-| LED 14 (System Ready)   | :yellow_circle: | GPIO 17    | Pin 11      | 3.2V    | 20mA        | 2kΩ      |
-| LED 15 (System Error)   | :red_circle:    | GPIO 18    | Pin 12      | 2.4V    | 20mA        | 120Ω     |
+| LED 14 (Scenario Ready) | :yellow_circle: | GPIO 17    | Pin 11      | 3.2V    | 20mA        | 2kΩ      |
+| LED 15 (Scenario Error) | :red_circle:    | GPIO 18    | Pin 12      | 2.4V    | 20mA        | 120Ω     |
 
 
 ***LED Series Resistor Calculation:***
