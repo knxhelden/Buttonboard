@@ -2,6 +2,7 @@
 using BSolutions.Buttonboard.Services.Integrations.Lyrion;
 using BSolutions.Buttonboard.Services.Integrations.Mqtt;
 using BSolutions.Buttonboard.Services.Integrations.Vlc;
+using BSolutions.Buttonboard.Services.LcdService;
 using BSolutions.Buttonboard.Services.Runtime;
 using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Logging;
@@ -47,6 +48,7 @@ namespace BSolutions.Buttonboard.Scenario
         private readonly IMqttClient _mqtt;
         private readonly ILyrionClient _lyrion;
         private readonly IVlcPlayerClient _vlc;
+        private readonly ILcdDisplayService _lcd;
 
         private readonly bool _disableSceneOrder;
         private const int DebounceMs = 150;
@@ -104,6 +106,7 @@ namespace BSolutions.Buttonboard.Scenario
             IMqttClient mqtt,
             ILyrionClient lyrion,
             IVlcPlayerClient vlc,
+            ILcdDisplayService lcd,
             IOptions<ScenarioOptions> scenarioOptions)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -113,6 +116,7 @@ namespace BSolutions.Buttonboard.Scenario
             _mqtt = mqtt ?? throw new ArgumentNullException(nameof(mqtt));
             _lyrion = lyrion ?? throw new ArgumentNullException(nameof(lyrion));
             _vlc = vlc ?? throw new ArgumentNullException(nameof(vlc));
+            _lcd = lcd ?? throw new ArgumentNullException(nameof(lcd));
 
             _disableSceneOrder = _settings.Application.DisableSceneOrder;
 
@@ -137,7 +141,7 @@ namespace BSolutions.Buttonboard.Scenario
         public async Task RunAsync(CancellationToken ct = default)
         {
             _logger.LogInformation("Scenario is running… (TestOperation={Test})", _disableSceneOrder);
-            await _gpio.LedOnAsync(Led.SystemGreen);
+            await _gpio.LedOnAsync(Led.SystemYellow);
 
             var sw = Stopwatch.StartNew();
 
@@ -187,6 +191,7 @@ namespace BSolutions.Buttonboard.Scenario
             await _mqtt.ResetAsync(ct);
             await _lyrion.ResetAsync(ct);
             await _vlc.ResetAsync(ct);
+            _lcd.Clear();
 
             _stage = 0;
         }
