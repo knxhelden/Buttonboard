@@ -25,8 +25,12 @@ namespace BSolutions.Buttonboard.App
 {
     internal sealed class Program
     {
-        private static async Task Main(string[] args)
+        private static async Task<int> Main(string[] args)
         {
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .CreateBootstrapLogger();
+
             try
             {
                 Log.Information("Bootstrapping host…");
@@ -86,10 +90,14 @@ namespace BSolutions.Buttonboard.App
                         .AddSingleton<IActionExecutor, ActionExecutor>();
                     })
                     .RunConsoleAsync();
+
+                return 0;
             }
             catch (Exception ex)
             {
                 Log.Fatal(ex, "Host terminated unexpectedly.");
+                Console.Error.WriteLine($"Fatal startup error: {ex}");
+                return 1;
             }
             finally
             {
