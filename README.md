@@ -102,7 +102,7 @@ sudo apt update && sudo apt full-upgrade -y
 
 1. Copy all files from the **Installation** folder to your Raspberry Pi (e.g., via **SFTP**) and change permissions:
 
-``bash
+```bash
 chmod +x install.sh
 ```
 
