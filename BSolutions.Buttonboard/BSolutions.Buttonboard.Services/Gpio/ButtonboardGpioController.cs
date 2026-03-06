@@ -146,7 +146,7 @@ namespace BSolutions.Buttonboard.Services.Gpio
         {
             try
             {
-                var pressed = _gpio.Read(button.GetGpio()) == PinValue.High;
+                var pressed = _gpio.Read(button.GetGpio()) == PinValue.Low;
                 _logger.LogDebug(LogEvents.GpioButtonRead,
                     "Button read {Button}: {Pressed}", button, pressed);
                 return pressed;
