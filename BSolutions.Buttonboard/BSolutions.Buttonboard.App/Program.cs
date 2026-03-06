@@ -81,6 +81,7 @@ namespace BSolutions.Buttonboard.App
                         .AddSingleton<IActionRouter, VideoActionRouter>()
                         .AddSingleton<IActionRouter, GpioActionRouter>()
                         .AddSingleton<IActionRouter, MqttActionRouter>()
+                        .AddSingleton<IActionRouter, LcdActionRouter>()
                         .AddSingleton<IActionRouterRegistry, ActionRouterRegistry>()
                         .AddSingleton<IActionExecutor, ActionExecutor>();
                     })
