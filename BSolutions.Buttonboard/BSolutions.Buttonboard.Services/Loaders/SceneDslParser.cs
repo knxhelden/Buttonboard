@@ -202,6 +202,23 @@ namespace BSolutions.Buttonboard.Services.Loaders
                     // gpio.on/off -> led
                     EnsureKey(step.Args!, "led");
                 }
+                else if (domain == "lcd")
+                {
+                    if (action.EndsWith(".write", StringComparison.OrdinalIgnoreCase))
+                    {
+                        EnsureKey(step.Args!, "text");
+                    }
+                    else if (action.EndsWith(".line", StringComparison.OrdinalIgnoreCase))
+                    {
+                        EnsureKey(step.Args!, "row");
+                        EnsureKey(step.Args!, "text");
+                    }
+                    else if (action.EndsWith(".lines", StringComparison.OrdinalIgnoreCase))
+                    {
+                        EnsureKey(step.Args!, "line1");
+                        EnsureKey(step.Args!, "line2");
+                    }
+                }
             }
 
             return step;
@@ -228,6 +245,8 @@ namespace BSolutions.Buttonboard.Services.Loaders
                     return $"{action} → {item}";
                 if (domain == "gpio")
                     return $"{action} {item}";
+                if (domain == "lcd")
+                    return $"LCD: {action}";
             }
 
             return action;

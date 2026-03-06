@@ -1,6 +1,7 @@
 ﻿using BSolutions.Buttonboard.Scenario;
 using BSolutions.Buttonboard.Services.Gpio;
 using BSolutions.Buttonboard.Services.Loaders;
+using BSolutions.Buttonboard.Services.LcdService;
 using BSolutions.Buttonboard.Services.Integrations.Mqtt;
 using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Hosting;
@@ -18,6 +19,7 @@ namespace BSolutions.Buttonboard.App
         private readonly IButtonboardGpioController _gpio;
         private readonly IScenarioAssetsLoader _sceneLoader;
         private readonly IScenarioRuntime _scenario;
+        private readonly ILcdDisplayService _lcd;
         private CancellationTokenSource? _cts;
         private Task? _runTask;
 
@@ -26,13 +28,15 @@ namespace BSolutions.Buttonboard.App
             IMqttClient mqtt,
             IButtonboardGpioController gpio,
             IScenarioAssetsLoader sceneLoader,
-            IScenarioRuntime scenario)
+            IScenarioRuntime scenario,
+            ILcdDisplayService lcd)
         {
             _logger = logger;
             _mqtt = mqtt;
             _gpio = gpio;
             _sceneLoader = sceneLoader;
             _scenario = scenario;
+            _lcd = lcd;
         }
 
         public async Task StartAsync(CancellationToken cancellationToken)
@@ -46,6 +50,7 @@ namespace BSolutions.Buttonboard.App
             // Start services
             await _mqtt.ConnectAsync();
             _gpio.Initialize();
+            _lcd.Initialize();
             await _sceneLoader.StartAsync(ct);
 
             // Prepare scenario

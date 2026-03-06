@@ -56,6 +56,13 @@ namespace BSolutions.Buttonboard.Services.Logging
         // ─── MQTT Actions (5400–5499)
         public static readonly EventId ExecMqttPublish = new(5400, nameof(ExecMqttPublish));
 
+
+        // ─── LCD Actions (5500–5599)
+        public static readonly EventId ExecLcdClear = new(5501, nameof(ExecLcdClear));
+        public static readonly EventId ExecLcdWrite = new(5502, nameof(ExecLcdWrite));
+        public static readonly EventId ExecLcdWriteLine = new(5503, nameof(ExecLcdWriteLine));
+        public static readonly EventId ExecLcdWriteLines = new(5504, nameof(ExecLcdWriteLines));
+
         // ─────────────────────────────── GPIO (6000–6999)
         public static readonly EventId GpioInitialized = new(6000, nameof(GpioInitialized));
         public static readonly EventId GpioReset = new(6001, nameof(GpioReset));
