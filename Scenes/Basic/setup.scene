@@ -8,3 +8,4 @@ name: Setup
 
 00:00 lcd.lines line1="Buttonboard" line2="Default Scenario" align=center
 00:00 gpio.on led=ButtonTopCenter
+00:00 gpio.on led=SystemYellow
