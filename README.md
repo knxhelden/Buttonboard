@@ -103,18 +103,19 @@ sudo apt update && sudo apt full-upgrade -y
 1. Copy all files from the **Installation** folder to your Raspberry Pi (e.g., via **SFTP**) and change permissions:
 
 ```bash
-chmod +x install.sh
+chmod +x install-buttonboard.sh
 ```
 
 2. Run the installation script with root permissions:
 
 ```bash
-sudo bash install.sh
+sudo bash install-buttonboard.sh
 ```
 
 The script will:
 
 - Install all required dependencies
+- Enable SSH and I2C on the Raspberry Pi (when `raspi-config` is available)
 - Set up Webmin system administration tool (`https://[RASPBERRY-PI-IP]:10000`)
 - Set up frontail for log monitoring: (`http://[RASPBERRY-PI-IP]:9001`)
 - Set up VLC player for media playback: (`http://[RASPBERRY-PI-IP]:8080`)

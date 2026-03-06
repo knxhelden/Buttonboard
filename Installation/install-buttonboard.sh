@@ -89,6 +89,20 @@ ensure_dir_owned() {
   chown -R "${user}:${user}" "${path}"
 }
 
+enable_ssh_and_i2c() {
+  if ! command -v raspi-config >/dev/null 2>&1; then
+    warn "raspi-config not found. Skipping SSH/I2C enablement (not a Raspberry Pi OS image?)."
+    return
+  fi
+
+  log "Enabling SSH service on Raspberry Pi…"
+  raspi-config nonint do_ssh 0
+  systemctl enable --now ssh >/dev/null 2>&1 || systemctl enable --now sshd
+
+  log "Enabling I2C interface on Raspberry Pi…"
+  raspi-config nonint do_i2c 0
+}
+
 
 ### ─────────────────────── Prepare filesystem ─────────────────────────
 prepare_fs() {
@@ -269,6 +283,7 @@ EOF
 main() {
   require_root
   log "Detected host IP: ${PI_IP}"
+  enable_ssh_and_i2c
   prepare_fs
   setup_samba
   install_webmin
