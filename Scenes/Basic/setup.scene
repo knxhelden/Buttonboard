@@ -1,0 +1,10 @@
+name: Setup
+
+# Groups (collections of related devices)
+
+
+
+# Timeline (time, action, optional target + arguments)
+
+00:00 lcd.lines line1="Buttonboard" line2="Default Scenario" align=center
+00:00 gpio.on led=ButtonTopCenter
