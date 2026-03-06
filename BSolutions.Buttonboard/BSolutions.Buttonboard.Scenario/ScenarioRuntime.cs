@@ -137,7 +137,7 @@ namespace BSolutions.Buttonboard.Scenario
         public async Task RunAsync(CancellationToken ct = default)
         {
             _logger.LogInformation("Scenario is running… (TestOperation={Test})", _disableSceneOrder);
-            await _gpio.LedOnAsync(Led.SystemGreen);
+            await _gpio.LedOnAsync(Led.SystemYellow);
 
             var sw = Stopwatch.StartNew();
 
