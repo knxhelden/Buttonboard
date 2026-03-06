@@ -118,7 +118,7 @@ The script will:
 - Set up Webmin system administration tool (`https://[RASPBERRY-PI-IP]:10000`)
 - Set up frontail for log monitoring: (`http://[RASPBERRY-PI-IP]:9001`)
 - Set up VLC player for media playback: (`http://[RASPBERRY-PI-IP]:8080`)
-- Configure Samba shared folder for buttonboard app deployment
+- Configure Samba shared folder for buttonboard app deployment (User: `[Default User Name]` / Password: `buttonboard`)
   
 *(By default the app path is `/opt/buttonboard` on the Raspberry Pi and exposes it as a network share `\\buttonboard\deploy`)*
 
