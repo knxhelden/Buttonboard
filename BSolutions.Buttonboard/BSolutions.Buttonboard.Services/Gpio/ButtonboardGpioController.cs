@@ -39,29 +39,12 @@ namespace BSolutions.Buttonboard.Services.Gpio
         {
             try
             {
-                // Buttons → Input
+                // Buttons are wired GPIO -> Button -> GND, so use internal pull-up.
                 foreach (Button button in Enum.GetValues<Button>())
                 {
                     var pin = button.GetGpio();
-                    if (_gpio.IsPinOpen(pin))
-                        continue;
-
-                    try
-                    {
+                    if (!_gpio.IsPinOpen(pin))
                         _gpio.OpenPin(pin, PinMode.InputPullUp);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(LogEvents.GpioOperationErr, ex,
-                            "GPIO pin {Pin} ({Button}) does not support InputPullUp. Falling back to plain input mode.",
-                            pin, button);
-                        _gpio.OpenPin(pin, PinMode.Input);
-                    }
-                }
-
-                foreach (Button button in Enum.GetValues<Button>())
-                {
-                    _logger.LogInformation("Button mapping {Button} -> GPIO {Pin} (active-low)", button, button.GetGpio());
                 }
 
                 // LEDs → Output (default Low/off)
