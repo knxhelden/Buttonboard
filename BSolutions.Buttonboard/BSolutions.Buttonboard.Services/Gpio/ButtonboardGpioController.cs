@@ -39,12 +39,12 @@ namespace BSolutions.Buttonboard.Services.Gpio
         {
             try
             {
-                // Buttons → Input
+                // Buttons are wired GPIO -> Button -> GND, so use internal pull-up.
                 foreach (Button button in Enum.GetValues<Button>())
                 {
                     var pin = button.GetGpio();
                     if (!_gpio.IsPinOpen(pin))
-                        _gpio.OpenPin(pin, PinMode.InputPullDown);
+                        _gpio.OpenPin(pin, PinMode.InputPullUp);
                 }
 
                 // LEDs → Output (default Low/off)
