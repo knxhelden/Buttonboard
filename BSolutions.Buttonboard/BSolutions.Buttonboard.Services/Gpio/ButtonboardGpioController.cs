@@ -43,8 +43,25 @@ namespace BSolutions.Buttonboard.Services.Gpio
                 foreach (Button button in Enum.GetValues<Button>())
                 {
                     var pin = button.GetGpio();
-                    if (!_gpio.IsPinOpen(pin))
+                    if (_gpio.IsPinOpen(pin))
+                        continue;
+
+                    try
+                    {
+                        _gpio.OpenPin(pin, PinMode.InputPullUp);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(LogEvents.GpioOperationErr, ex,
+                            "GPIO pin {Pin} ({Button}) does not support InputPullUp. Falling back to plain input mode.",
+                            pin, button);
                         _gpio.OpenPin(pin, PinMode.Input);
+                    }
+                }
+
+                foreach (Button button in Enum.GetValues<Button>())
+                {
+                    _logger.LogInformation("Button mapping {Button} -> GPIO {Pin} (active-low)", button, button.GetGpio());
                 }
 
                 // LEDs → Output (default Low/off)
@@ -146,7 +163,7 @@ namespace BSolutions.Buttonboard.Services.Gpio
         {
             try
             {
-                var pressed = _gpio.Read(button.GetGpio()) == PinValue.High;
+                var pressed = _gpio.Read(button.GetGpio()) == PinValue.Low;
                 _logger.LogDebug(LogEvents.GpioButtonRead,
                     "Button read {Button}: {Pressed}", button, pressed);
                 return pressed;
