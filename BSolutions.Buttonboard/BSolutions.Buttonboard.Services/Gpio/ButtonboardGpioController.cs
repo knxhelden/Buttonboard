@@ -44,7 +44,7 @@ namespace BSolutions.Buttonboard.Services.Gpio
                 {
                     var pin = button.GetGpio();
                     if (!_gpio.IsPinOpen(pin))
-                        _gpio.OpenPin(pin, PinMode.InputPullUp);
+                        OpenButtonPin(pin);
                 }
 
                 // LEDs → Output (default Low/off)
@@ -65,6 +65,22 @@ namespace BSolutions.Buttonboard.Services.Gpio
             {
                 _logger.LogError(LogEvents.GpioOperationErr, ex, "GPIO initialization failed");
                 throw;
+            }
+        }
+
+        private void OpenButtonPin(int pin)
+        {
+            try
+            {
+                _gpio.OpenPin(pin, PinMode.InputPullUp);
+            }
+            catch (Exception ex) when (!_gpio.IsPinOpen(pin))
+            {
+                // Not every GPIO driver/kernel combination supports internal pull-up via libgpiod.
+                // Fall back to plain input to keep the app running on boards with external pull resistors.
+                _logger.LogWarning(LogEvents.GpioOperationErr, ex,
+                    "GPIO pin {Pin} does not support InputPullUp. Falling back to Input mode.", pin);
+                _gpio.OpenPin(pin, PinMode.Input);
             }
         }
 
