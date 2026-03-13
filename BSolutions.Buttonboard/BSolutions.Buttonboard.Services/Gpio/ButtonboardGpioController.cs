@@ -3,6 +3,7 @@ using BSolutions.Buttonboard.Services.Logging;
 using BSolutions.Buttonboard.Services.Settings;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Diagnostics;
 using System.Device.Gpio;
 using System.Threading;
 using System.Threading.Tasks;
@@ -71,28 +72,65 @@ namespace BSolutions.Buttonboard.Services.Gpio
 
         private void OpenButtonPin(int pin)
         {
+            if (!TryConfigurePullUpWithPinctrl(pin))
+            {
+                throw new InvalidOperationException(
+                    $"GPIO pin {pin} pull-up could not be configured via pinctrl. " +
+                    "On Raspberry Pi 5 this is required because libgpiod InputPullUp reconfigure can fail with EINVAL.");
+            }
+
+            if (_gpio.IsPinOpen(pin))
+                _gpio.SetPinMode(pin, PinMode.Input);
+            else
+                _gpio.OpenPin(pin, PinMode.Input);
+
+            _logger.LogDebug(LogEvents.GpioButtonRead,
+                "Button GPIO {Pin} initialized as Input with pull-up configured via pinctrl.", pin);
+        }
+
+        private bool TryConfigurePullUpWithPinctrl(int pin)
+        {
+            if (!OperatingSystem.IsLinux())
+                return false;
+
             try
             {
-                _gpio.OpenPin(pin, PinMode.InputPullUp);
-
-                if (_gpio.GetPinMode(pin) != PinMode.InputPullUp)
+                using var process = Process.Start(new ProcessStartInfo
                 {
-                    _logger.LogWarning(LogEvents.GpioOperationErr,
-                        "Button GPIO {Pin} did not stay in InputPullUp mode after OpenPin. Trying SetPinMode(InputPullUp).",
-                        pin);
-                    _gpio.SetPinMode(pin, PinMode.InputPullUp);
+                    FileName = "pinctrl",
+                    Arguments = $"set {pin} ip pu",
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                });
+
+                if (process is null)
+                    return false;
+
+                process.WaitForExit(2000);
+                if (!process.HasExited)
+                {
+                    process.Kill(true);
+                    _logger.LogError(LogEvents.GpioOperationErr,
+                        "pinctrl timed out while configuring GPIO {Pin} pull-up.", pin);
+                    return false;
                 }
 
-                _logger.LogDebug(LogEvents.GpioButtonRead, "Button GPIO {Pin} initialized as InputPullUp", pin);
+                if (process.ExitCode == 0)
+                    return true;
+
+                var stderr = process.StandardError.ReadToEnd();
+                _logger.LogError(LogEvents.GpioOperationErr,
+                    "pinctrl failed for GPIO {Pin} with exit code {ExitCode}: {Error}",
+                    pin, process.ExitCode, stderr);
+                return false;
             }
             catch (Exception ex)
             {
                 _logger.LogError(LogEvents.GpioOperationErr, ex,
-                    "Failed to initialize button GPIO {Pin} in InputPullUp mode.", pin);
-                throw new InvalidOperationException(
-                    $"GPIO pin {pin} could not be configured as InputPullUp. " +
-                    "Buttonboard requires internal pull-ups on Raspberry Pi 5.",
-                    ex);
+                    "pinctrl execution failed while configuring GPIO {Pin} pull-up.", pin);
+                return false;
             }
         }
 
