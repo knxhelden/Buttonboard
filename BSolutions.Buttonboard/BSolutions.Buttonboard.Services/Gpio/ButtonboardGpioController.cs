@@ -72,6 +72,9 @@ namespace BSolutions.Buttonboard.Services.Gpio
 
         private void OpenButtonPin(int pin)
         {
+            if (TryOpenButtonPinWithPinctrl(pin, "preferred"))
+                return;
+
             try
             {
                 _gpio.OpenPin(pin, PinMode.InputPullUp);
@@ -89,12 +92,22 @@ namespace BSolutions.Buttonboard.Services.Gpio
             }
             catch (Exception ex)
             {
-                // Not every GPIO driver/kernel combination supports internal pull-up via libgpiod.
-                // We will try plain input + pinctrl fallback before warning about a floating input.
+                // Some GPIO stacks reject InputPullUp. Keep pinctrl as a secondary fallback.
                 _logger.LogDebug(LogEvents.GpioOperationErr, ex,
-                    "GPIO pin {Pin} does not support InputPullUp directly. Trying Input mode with pinctrl fallback.", pin);
+                    "GPIO pin {Pin} does not support InputPullUp directly. Trying pinctrl fallback.", pin);
             }
 
+            if (TryOpenButtonPinWithPinctrl(pin, "fallback"))
+                return;
+
+            _logger.LogWarning(LogEvents.GpioButtonRead,
+                "GPIO pin {Pin} does not support InputPullUp and pinctrl fallback failed. " +
+                "Button stays in Input mode only; ensure hardware pull-up is present.", pin);
+        }
+
+
+        private bool TryOpenButtonPinWithPinctrl(int pin, string mode)
+        {
             try
             {
                 if (_gpio.IsPinOpen(pin))
@@ -105,20 +118,65 @@ namespace BSolutions.Buttonboard.Services.Gpio
                 if (TryConfigurePullUpWithPinctrl(pin))
                 {
                     _logger.LogInformation(LogEvents.GpioButtonRead,
-                        "Button GPIO {Pin} initialized via pinctrl pull-up fallback (pinctrl set {Pin} ip pu).",
-                        pin);
-                    return;
+                        "Button GPIO {Pin} initialized via pinctrl pull-up ({Mode}).",
+                        pin,
+                        mode);
+                    return true;
                 }
 
-                _logger.LogWarning(LogEvents.GpioButtonRead,
-                    "GPIO pin {Pin} does not support InputPullUp and pinctrl fallback failed. " +
-                    "Button stays in Input mode only; ensure hardware pull-up is present.", pin);
+                return false;
             }
-            catch (Exception fallbackEx)
+            catch (Exception ex)
             {
-                _logger.LogError(LogEvents.GpioOperationErr, fallbackEx,
-                    "GPIO pin {Pin} could not be initialized in InputPullUp or Input mode.", pin);
-                throw;
+                _logger.LogDebug(LogEvents.GpioOperationErr, ex,
+                    "Failed to initialize GPIO {Pin} in Input mode before pinctrl {Mode} pull-up.", pin, mode);
+                return false;
+            }
+        }
+
+        private bool TryConfigurePullUpWithPinctrl(int pin)
+        {
+            if (!OperatingSystem.IsLinux())
+                return false;
+
+            try
+            {
+                using var process = Process.Start(new ProcessStartInfo
+                {
+                    FileName = "pinctrl",
+                    Arguments = $"set {pin} ip pu",
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                });
+
+                if (process is null)
+                    return false;
+
+                process.WaitForExit(2000);
+                if (!process.HasExited)
+                {
+                    process.Kill(true);
+                    _logger.LogWarning(LogEvents.GpioOperationErr,
+                        "pinctrl call timed out while configuring GPIO {Pin} pull-up.", pin);
+                    return false;
+                }
+
+                if (process.ExitCode == 0)
+                    return true;
+
+                var stderr = process.StandardError.ReadToEnd();
+                _logger.LogDebug(LogEvents.GpioOperationErr,
+                    "pinctrl failed for GPIO {Pin} with exit code {ExitCode}: {Error}",
+                    pin, process.ExitCode, stderr);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(LogEvents.GpioOperationErr, ex,
+                    "pinctrl fallback unavailable for GPIO {Pin}.", pin);
+                return false;
             }
         }
 
