@@ -253,8 +253,13 @@ namespace BSolutions.Buttonboard.Scenario
             }
 
             // Enforce stage order in normal mode.
-            if (_stage < scene.RequiredStage || _stage > scene.RequiredStage)
+            if (_stage != scene.RequiredStage)
             {
+                _logger.LogInformation(
+                    "Button for scene {Key} pressed, but current stage is {CurrentStage} (required: {RequiredStage}).",
+                    scene.Key,
+                    _stage,
+                    scene.RequiredStage);
                 await _gpio.LedsBlinkingAsync(5, 100);
                 return;
             }
