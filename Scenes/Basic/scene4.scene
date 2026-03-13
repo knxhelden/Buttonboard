@@ -6,6 +6,15 @@ name: Szene 4
 
 # Timeline (time, action, optional target + arguments)
 
+00:00 gpio.off led=ProcessRed1
+00:00 gpio.off led=ProcessRed2
+00:00 gpio.off led=ProcessRed3
+00:00 gpio.off led=ProcessYellow1
+00:00 gpio.off led=ProcessYellow2
+00:00 gpio.off led=ProcessYellow3
+00:00 gpio.off led=ProcessGreen1
+00:00 gpio.off led=ProcessGreen2
+00:00 gpio.off led=ProcessGreen3
 00:00 gpio.off led=ButtonBottomRight
 00:01 gpio.on led=ButtonTopCenter
 00:01 lcd.lines line1="Buttonboard" line2="Szene 4" align=center
