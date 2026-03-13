@@ -180,52 +180,6 @@ namespace BSolutions.Buttonboard.Services.Gpio
             }
         }
 
-        private bool TryConfigurePullUpWithPinctrl(int pin)
-        {
-            if (!OperatingSystem.IsLinux())
-                return false;
-
-            try
-            {
-                using var process = Process.Start(new ProcessStartInfo
-                {
-                    FileName = "pinctrl",
-                    Arguments = $"set {pin} ip pu",
-                    RedirectStandardError = true,
-                    RedirectStandardOutput = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                });
-
-                if (process is null)
-                    return false;
-
-                process.WaitForExit(2000);
-                if (!process.HasExited)
-                {
-                    process.Kill(true);
-                    _logger.LogWarning(LogEvents.GpioOperationErr,
-                        "pinctrl call timed out while configuring GPIO {Pin} pull-up.", pin);
-                    return false;
-                }
-
-                if (process.ExitCode == 0)
-                    return true;
-
-                var stderr = process.StandardError.ReadToEnd();
-                _logger.LogDebug(LogEvents.GpioOperationErr,
-                    "pinctrl failed for GPIO {Pin} with exit code {ExitCode}: {Error}",
-                    pin, process.ExitCode, stderr);
-                return false;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogDebug(LogEvents.GpioOperationErr, ex,
-                    "pinctrl fallback unavailable for GPIO {Pin}.", pin);
-                return false;
-            }
-        }
-
         /// <inheritdoc />
         public Task ResetAsync(CancellationToken ct = default)
         {
