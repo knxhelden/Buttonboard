@@ -60,6 +60,7 @@ namespace BSolutions.Buttonboard.Services.Gpio
                 _logger.LogInformation(LogEvents.GpioInitialized,
                     "GPIO initialized: {Buttons} buttons, {Leds} LEDs",
                     Enum.GetValues<Button>().Length, Enum.GetValues<Led>().Length);
+
             }
             catch (Exception ex)
             {
@@ -73,14 +74,31 @@ namespace BSolutions.Buttonboard.Services.Gpio
             try
             {
                 _gpio.OpenPin(pin, PinMode.InputPullUp);
+                _logger.LogDebug(LogEvents.GpioButtonRead, "Button GPIO {Pin} initialized as InputPullUp", pin);
+                return;
             }
-            catch (Exception ex) when (!_gpio.IsPinOpen(pin))
+            catch (Exception ex)
             {
                 // Not every GPIO driver/kernel combination supports internal pull-up via libgpiod.
                 // Fall back to plain input to keep the app running on boards with external pull resistors.
                 _logger.LogWarning(LogEvents.GpioOperationErr, ex,
                     "GPIO pin {Pin} does not support InputPullUp. Falling back to Input mode.", pin);
-                _gpio.OpenPin(pin, PinMode.Input);
+            }
+
+            try
+            {
+                if (_gpio.IsPinOpen(pin))
+                    _gpio.SetPinMode(pin, PinMode.Input);
+                else
+                    _gpio.OpenPin(pin, PinMode.Input);
+
+                _logger.LogDebug(LogEvents.GpioButtonRead, "Button GPIO {Pin} initialized as Input", pin);
+            }
+            catch (Exception fallbackEx)
+            {
+                _logger.LogError(LogEvents.GpioOperationErr, fallbackEx,
+                    "GPIO pin {Pin} could not be initialized in InputPullUp or Input mode.", pin);
+                throw;
             }
         }
 
@@ -162,7 +180,8 @@ namespace BSolutions.Buttonboard.Services.Gpio
         {
             try
             {
-                var pressed = _gpio.Read(button.GetGpio()) == PinValue.Low;
+                var pin = button.GetGpio();
+                var pressed = _gpio.Read(pin) == PinValue.Low;
                 _logger.LogDebug(LogEvents.GpioButtonRead,
                     "Button read {Button}: {Pressed}", button, pressed);
                 return pressed;

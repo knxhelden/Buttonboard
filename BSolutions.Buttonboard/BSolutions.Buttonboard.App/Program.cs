@@ -18,6 +18,7 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using System;
 using System.Device.Gpio;
+using System.Device.Gpio.Drivers;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -64,7 +65,24 @@ namespace BSolutions.Buttonboard.App
 
                             return new ScenarioAssetsLoader(logger, path, scenarioOptions);
                         })
-                        .AddSingleton<GpioController>()
+                        .AddSingleton<GpioController>(sp =>
+                        {
+                            var logger = sp.GetRequiredService<ILogger<Program>>();
+                            try
+                            {
+                                // Prefer direct Raspberry Pi driver because libgpiod can reject pull-up reconfiguration
+                                // on some kernels/HAT combinations even though the same lines are valid as regular GPIOs.
+                                var controller = new GpioController(PinNumberingScheme.Logical, new RaspberryPi3Driver());
+                                logger.LogInformation("Using RaspberryPi3Driver for GPIO access (PinNumberingScheme.Logical / BCM).");
+                                return controller;
+                            }
+                            catch (Exception ex)
+                            {
+                                logger.LogWarning(ex,
+                                    "Failed to initialize RaspberryPi3Driver, falling back to default GPIO driver.");
+                                return new GpioController();
+                            }
+                        })
                         .AddSingleton<IButtonboardGpioController, ButtonboardGpioController>()
                         .AddSingleton<ILcdDisplayService, LcdDisplayService>()
                         .AddByMode<IOpenHabClient, OpenHabClient, OpenHabClientMock>(sp =>
