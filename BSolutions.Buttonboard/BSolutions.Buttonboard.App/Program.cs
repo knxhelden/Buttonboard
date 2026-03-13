@@ -67,8 +67,8 @@ namespace BSolutions.Buttonboard.App
                         .AddSingleton<GpioController>(sp =>
                         {
                             var logger = sp.GetRequiredService<ILogger<Program>>();
-                            logger.LogInformation("Using default GpioController (PinNumberingScheme.Logical / BCM).");
-                            return new GpioController(PinNumberingScheme.Logical);
+                            logger.LogInformation("Using default GpioController (default pin numbering / BCM).");
+                            return new GpioController();
                         })
                         .AddSingleton<IButtonboardGpioController, ButtonboardGpioController>()
                         .AddSingleton<ILcdDisplayService, LcdDisplayService>()
