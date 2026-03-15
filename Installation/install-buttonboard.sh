@@ -28,6 +28,12 @@ FRONTAIL_BASE="${FRONTAIL_BASE:-/usr/local/lib/node_modules/frontail}"  # Autode
 LIVE_LOG_PATH="${APP_DIR}/logs/live.log"
 FRONTAIL_SERVICE="/etc/systemd/system/frontail.service"
 
+# Mosquitto MQTT
+MQTT_USER="tbremus"
+MQTT_PASSWORD="buttonboard"
+MQTT_CONF_FILE="/etc/mosquitto/conf.d/buttonboard.conf"
+MQTT_PASSWORD_FILE="/etc/mosquitto/passwd"
+
 # VLC – kept here for future use (not used in this script yet)
 VLC_USER="${SUDO_USER:-${USER}}"
 VLC_HOME="$(getent passwd "${VLC_USER}" | cut -d: -f6)"
@@ -279,6 +285,32 @@ EOF
 }
 
 
+### ───────────────────────── Mosquitto setup ─────────────────────────
+setup_mosquitto() {
+  log "Installing and configuring Mosquitto MQTT server…"
+  apt_install mosquitto mosquitto-clients
+
+  log "Creating/updating MQTT credentials for user: ${MQTT_USER}"
+  install -d -m 0755 "$(dirname "${MQTT_PASSWORD_FILE}")"
+  mosquitto_passwd -b -c "${MQTT_PASSWORD_FILE}" "${MQTT_USER}" "${MQTT_PASSWORD}"
+  chmod 0640 "${MQTT_PASSWORD_FILE}"
+  chown root:mosquitto "${MQTT_PASSWORD_FILE}"
+
+  log "Writing Mosquitto authentication config…"
+  tee "${MQTT_CONF_FILE}" >/dev/null <<EOF
+listener 1883
+allow_anonymous false
+password_file ${MQTT_PASSWORD_FILE}
+EOF
+
+  systemctl enable --now mosquitto
+  systemctl restart mosquitto
+
+  log "Mosquitto MQTT server running at: mqtt://${PI_IP}:1883"
+  echo "  • MQTT User:      ${MQTT_USER}"
+  echo "  • MQTT Password:  ${MQTT_PASSWORD}"
+}
+
 ### ───────────────────────────── Main ─────────────────────────────────
 main() {
   require_root
@@ -288,6 +320,7 @@ main() {
   setup_samba
   install_webmin
   setup_frontail
+  setup_mosquitto
 
   cat <<SUMMARY
 
@@ -300,6 +333,9 @@ main() {
 • Webmin:            https://${PI_IP}:10000/  (self-signed)
 • Frontail:          http://${PI_IP}:${FRONTAIL_PORT}/
   → Live view of:    ${LIVE_LOG_PATH}
+• Mosquitto MQTT:    mqtt://${PI_IP}:1883/
+  • Username:        ${MQTT_USER}
+  • Password:        ${MQTT_PASSWORD}
 • VLC Player:        http://${PI_IP}:8080/   (reserved; not configured here)
 
 • App Start:         Start your app manually after deployment, e.g.:
