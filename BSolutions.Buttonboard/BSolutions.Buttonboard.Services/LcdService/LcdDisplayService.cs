@@ -192,7 +192,7 @@ namespace BSolutions.Buttonboard.Services.LcdService
 
         private (int Column, int Row) MapPosition(int column, int row)
         {
-            return (_columns - 1 - column, _rows - 1 - row);
+            return (column, _rows - 1 - row);
         }
 
         private static string ReverseForRotation(string text)
