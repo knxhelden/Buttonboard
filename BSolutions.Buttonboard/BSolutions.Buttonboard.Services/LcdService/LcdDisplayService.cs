@@ -102,8 +102,9 @@ namespace BSolutions.Buttonboard.Services.LcdService
                 EnsureInitialized();
                 ValidatePosition(column, row);
 
+                var (mappedColumn, mappedRow) = MapPosition(column, row);
                 byte[] rowOffsets = { 0x00, 0x40, 0x14, 0x54 };
-                var address = (byte)(0x80 | (column + rowOffsets[row]));
+                var address = (byte)(0x80 | (mappedColumn + rowOffsets[mappedRow]));
                 SendCommand(address);
             }
         }
@@ -114,7 +115,9 @@ namespace BSolutions.Buttonboard.Services.LcdService
             {
                 EnsureInitialized();
 
-                foreach (var ch in text ?? string.Empty)
+                var output = ReverseForRotation(text ?? string.Empty);
+
+                foreach (var ch in output)
                 {
                     SendData((byte)ch);
                 }
@@ -184,6 +187,22 @@ namespace BSolutions.Buttonboard.Services.LcdService
                 LcdTextAlignment.Right => normalized.PadLeft(_columns),
                 _ => throw new ArgumentOutOfRangeException(nameof(alignment), alignment, null)
             };
+        }
+
+
+        private (int Column, int Row) MapPosition(int column, int row)
+        {
+            return (_columns - 1 - column, _rows - 1 - row);
+        }
+
+        private static string ReverseForRotation(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return string.Empty;
+
+            var chars = text.ToCharArray();
+            Array.Reverse(chars);
+            return new string(chars);
         }
 
         private void SendCommand(byte command)
