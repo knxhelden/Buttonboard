@@ -28,6 +28,12 @@ FRONTAIL_BASE="${FRONTAIL_BASE:-/usr/local/lib/node_modules/frontail}"  # Autode
 LIVE_LOG_PATH="${APP_DIR}/logs/live.log"
 FRONTAIL_SERVICE="/etc/systemd/system/frontail.service"
 
+# Mosquitto MQTT
+MQTT_USER="tbremus"
+MQTT_PASSWORD="buttonboard"
+MQTT_CONF_FILE="/etc/mosquitto/conf.d/buttonboard.conf"
+MQTT_PASSWORD_FILE="/etc/mosquitto/passwd"
+
 # VLC – kept here for future use (not used in this script yet)
 VLC_USER="${SUDO_USER:-${USER}}"
 VLC_HOME="$(getent passwd "${VLC_USER}" | cut -d: -f6)"
@@ -87,6 +93,20 @@ ensure_dir_owned() {
   local path="$1" user="$2"
   mkdir -p "${path}"
   chown -R "${user}:${user}" "${path}"
+}
+
+enable_ssh_and_i2c() {
+  if ! command -v raspi-config >/dev/null 2>&1; then
+    warn "raspi-config not found. Skipping SSH/I2C enablement (not a Raspberry Pi OS image?)."
+    return
+  fi
+
+  log "Enabling SSH service on Raspberry Pi…"
+  raspi-config nonint do_ssh 0
+  systemctl enable --now ssh >/dev/null 2>&1 || systemctl enable --now sshd
+
+  log "Enabling I2C interface on Raspberry Pi…"
+  raspi-config nonint do_i2c 0
 }
 
 
@@ -265,14 +285,42 @@ EOF
 }
 
 
+### ───────────────────────── Mosquitto setup ─────────────────────────
+setup_mosquitto() {
+  log "Installing and configuring Mosquitto MQTT server…"
+  apt_install mosquitto mosquitto-clients
+
+  log "Creating/updating MQTT credentials for user: ${MQTT_USER}"
+  install -d -m 0755 "$(dirname "${MQTT_PASSWORD_FILE}")"
+  mosquitto_passwd -b -c "${MQTT_PASSWORD_FILE}" "${MQTT_USER}" "${MQTT_PASSWORD}"
+  chmod 0640 "${MQTT_PASSWORD_FILE}"
+  chown root:mosquitto "${MQTT_PASSWORD_FILE}"
+
+  log "Writing Mosquitto authentication config…"
+  tee "${MQTT_CONF_FILE}" >/dev/null <<EOF
+listener 1883
+allow_anonymous false
+password_file ${MQTT_PASSWORD_FILE}
+EOF
+
+  systemctl enable --now mosquitto
+  systemctl restart mosquitto
+
+  log "Mosquitto MQTT server running at: mqtt://${PI_IP}:1883"
+  echo "  • MQTT User:      ${MQTT_USER}"
+  echo "  • MQTT Password:  ${MQTT_PASSWORD}"
+}
+
 ### ───────────────────────────── Main ─────────────────────────────────
 main() {
   require_root
   log "Detected host IP: ${PI_IP}"
+  enable_ssh_and_i2c
   prepare_fs
   setup_samba
   install_webmin
   setup_frontail
+  setup_mosquitto
 
   cat <<SUMMARY
 
@@ -285,6 +333,9 @@ main() {
 • Webmin:            https://${PI_IP}:10000/  (self-signed)
 • Frontail:          http://${PI_IP}:${FRONTAIL_PORT}/
   → Live view of:    ${LIVE_LOG_PATH}
+• Mosquitto MQTT:    mqtt://${PI_IP}:1883/
+  • Username:        ${MQTT_USER}
+  • Password:        ${MQTT_PASSWORD}
 • VLC Player:        http://${PI_IP}:8080/   (reserved; not configured here)
 
 • App Start:         Start your app manually after deployment, e.g.:

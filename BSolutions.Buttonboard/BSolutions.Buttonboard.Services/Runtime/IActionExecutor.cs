@@ -5,11 +5,11 @@ using System.Threading.Tasks;
 namespace BSolutions.Buttonboard.Services.Runtime
 {
     /// <summary>
-    /// Defines a contract for executing a single <see cref="ScenarioAssetStep"/> within a scenario.
+    /// Defines a contract for executing a single <see cref="ScenarioStepDefinition"/> within a scenario.
     /// </summary>
     /// <remarks>
-    /// Implementations interpret the <see cref="ScenarioAssetStep.Action"/> and its
-    /// associated <see cref="ScenarioAssetStep.Args"/> to perform the corresponding effect —
+    /// Implementations interpret the <see cref="ScenarioStepDefinition.Action"/> and its
+    /// associated <see cref="ScenarioStepDefinition.Args"/> to perform the corresponding effect —
     /// such as controlling GPIOs, publishing MQTT messages, or triggering audio/video playback.
     ///
     /// The <see cref="IActionExecutor"/> serves as the central dispatch component that
@@ -28,7 +28,7 @@ namespace BSolutions.Buttonboard.Services.Runtime
         /// Executes the given scenario step asynchronously.
         /// </summary>
         /// <param name="step">
-        /// The <see cref="ScenarioAssetStep"/> to execute.
+        /// The <see cref="ScenarioStepDefinition"/> to execute.
         /// Contains the action identifier, arguments, and error-handling policy.
         /// </param>
         /// <param name="ct">
@@ -38,6 +38,6 @@ namespace BSolutions.Buttonboard.Services.Runtime
         /// <returns>
         /// A <see cref="Task"/> that completes once the step has been executed.
         /// </returns>
-        Task ExecuteAsync(ScenarioAssetStep step, CancellationToken ct);
+        Task ExecuteAsync(ScenarioStepDefinition step, CancellationToken ct);
     }
 }

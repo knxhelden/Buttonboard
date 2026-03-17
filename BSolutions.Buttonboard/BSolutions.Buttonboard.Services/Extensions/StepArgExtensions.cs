@@ -85,6 +85,25 @@ namespace BSolutions.Buttonboard.Services.Extensions
             };
         }
 
+
+        /// <summary>
+        /// Returns the bool at <paramref name="key"/> or throws <see cref="ArgumentException"/> if missing/invalid.
+        /// Accepts JSON booleans and bool strings.
+        /// </summary>
+        public static bool GetRequiredBool(this Dictionary<string, JsonElement>? args, string key)
+        {
+            if (args is null) throw new ArgumentException($"Missing required arg '{key}'", key);
+            if (!args.TryGetValue(key, out var el)) throw new ArgumentException($"Missing required arg '{key}'", key);
+
+            if (el.ValueKind is JsonValueKind.True or JsonValueKind.False) return el.GetBoolean();
+
+            if (el.ValueKind == JsonValueKind.String &&
+                bool.TryParse(el.GetString(), out var b))
+                return b;
+
+            throw new ArgumentException($"Arg '{key}' must be a boolean", key);
+        }
+
         /// <summary>
         /// Returns the int at <paramref name="key"/> or throws <see cref="ArgumentException"/> if missing/invalid.
         /// Accepts JSON numbers and numeric strings.

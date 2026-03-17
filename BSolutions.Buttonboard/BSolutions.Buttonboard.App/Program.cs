@@ -2,9 +2,11 @@
 using BSolutions.Buttonboard.Scenario;
 using BSolutions.Buttonboard.Services.Gpio;
 using BSolutions.Buttonboard.Services.Loaders;
-using BSolutions.Buttonboard.Services.LyrionService;
-using BSolutions.Buttonboard.Services.MqttClients;
-using BSolutions.Buttonboard.Services.RestApiClients;
+using BSolutions.Buttonboard.Services.LcdService;
+using BSolutions.Buttonboard.Services.Integrations.Lyrion;
+using BSolutions.Buttonboard.Services.Integrations.Mqtt;
+using BSolutions.Buttonboard.Services.Integrations.OpenHab;
+using BSolutions.Buttonboard.Services.Integrations.Vlc;
 using BSolutions.Buttonboard.Services.Runtime;
 using BSolutions.Buttonboard.Services.Runtime.Actions;
 using BSolutions.Buttonboard.Services.Settings;
@@ -23,8 +25,12 @@ namespace BSolutions.Buttonboard.App
 {
     internal sealed class Program
     {
-        private static async Task Main(string[] args)
+        private static async Task<int> Main(string[] args)
         {
+            Log.Logger = new LoggerConfiguration()
+                .WriteTo.Console()
+                .CreateBootstrapLogger();
+
             try
             {
                 Log.Information("Bootstrapping host…");
@@ -58,8 +64,14 @@ namespace BSolutions.Buttonboard.App
 
                             return new ScenarioAssetsLoader(logger, path, scenarioOptions);
                         })
-                        .AddSingleton<GpioController>()
+                        .AddSingleton<GpioController>(sp =>
+                        {
+                            var logger = sp.GetRequiredService<ILogger<Program>>();
+                            logger.LogInformation("Using default GpioController (default pin numbering / BCM).");
+                            return new GpioController();
+                        })
                         .AddSingleton<IButtonboardGpioController, ButtonboardGpioController>()
+                        .AddSingleton<ILcdDisplayService, LcdDisplayService>()
                         .AddByMode<IOpenHabClient, OpenHabClient, OpenHabClientMock>(sp =>
                         {
                             var app = sp.GetRequiredService<ISettingsProvider>().Application;
@@ -78,14 +90,19 @@ namespace BSolutions.Buttonboard.App
                         .AddSingleton<IActionRouter, VideoActionRouter>()
                         .AddSingleton<IActionRouter, GpioActionRouter>()
                         .AddSingleton<IActionRouter, MqttActionRouter>()
+                        .AddSingleton<IActionRouter, LcdActionRouter>()
                         .AddSingleton<IActionRouterRegistry, ActionRouterRegistry>()
                         .AddSingleton<IActionExecutor, ActionExecutor>();
                     })
                     .RunConsoleAsync();
+
+                return 0;
             }
             catch (Exception ex)
             {
                 Log.Fatal(ex, "Host terminated unexpectedly.");
+                Console.Error.WriteLine($"Fatal startup error: {ex}");
+                return 1;
             }
             finally
             {

@@ -2,6 +2,7 @@
 using BSolutions.Buttonboard.Services.Gpio;
 using BSolutions.Buttonboard.Services.Logging;
 using BSolutions.Buttonboard.Services.Settings;
+using BSolutions.Buttonboard.Services.Integrations.Http;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Net.Http;
@@ -10,7 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BSolutions.Buttonboard.Services.RestApiClients
+namespace BSolutions.Buttonboard.Services.Integrations.OpenHab
 {
     /// <summary>
     /// HTTP client for interacting with the openHAB REST API.

@@ -39,23 +39,23 @@ Typical use cases:
 
 ### LEDs
 
-| LED                     | Farbe  | GPIO (BCM) | Pin (Board) | Resistor |
-|-------------------------|--------|------------|-------------|----------|
-| LED 1 (Top Center)      | Green  | GPIO 16    | Pin 36      | 220Ω     |
-| LED 2 (Bottom Left)     | Green  | GPIO 9     | Pin 21      | 220Ω     |
-| LED 3 (Bottom Center)   | Green  | GPIO 26    | Pin 37      | 220Ω     |
-| LED 4 (Bottom Right)    | Green  | GPIO 10    | Pin 19      | 220Ω     |
-| LED 5 (Process 1)       | Red    | GPIO 23    | Pin 16      | 220Ω     |
-| LED 6 (Process 2)       | Red    | GPIO 22    | Pin 15      | 220Ω     |
-| LED 7 (Process 3)       | Red    | GPIO 12    | Pin 32      | 220Ω     |
-| LED 8 (Process 4)       | Yellow | GPIO 20    | Pin 38      | 220Ω     |
-| LED 9 (Process 5)       | Yellow | GPIO 19    | Pin 35      | 220Ω     |
-| LED 10 (Process 6)      | Yellow | GPIO 24    | Pin 18      | 220Ω     |
-| LED 11 (Process 7)      | Green  | GPIO 25    | Pin 22      | 220Ω     |
-| LED 12 (Process 8)      | Green  | GPIO 5     | Pin 29      | 220Ω     |
-| LED 13 (Process 9)      | Green  | GPIO 6     | Pin 31      | 220Ω     |
-| LED 14 (System Ready)   | Green  | GPIO 17    | Pin 11      | 220Ω     |
-| LED 15 (System Warning) | Yellow | GPIO 18    | Pin 12      | 220Ω     |
+| LED                     | Farbe           | GPIO (BCM) | Pin (Board) | Voltage | El. Current | Resistor |
+|-------------------------|-----------------|------------|-------------|---------|-------------|----------|
+| LED 1 (Top Center)      | :green_circle:  | GPIO 16    | Pin 36      | 3.2V    | 20mA        | 2kΩ      |
+| LED 2 (Bottom Left)     | :green_circle:  | GPIO 9     | Pin 21      | 3.2V    | 20mA        | 2kΩ      |
+| LED 3 (Bottom Center)   | :green_circle:  | GPIO 26    | Pin 37      | 3.2V    | 20mA        | 2kΩ      |
+| LED 4 (Bottom Right)    | :green_circle:  | GPIO 10    | Pin 19      | 3.2V    | 20mA        | 2kΩ      |
+| LED 5 (Process 1)       | :red_circle:    | GPIO 23    | Pin 16      | 2.4V    | 20mA        | 120Ω     |
+| LED 6 (Process 2)       | :red_circle:    | GPIO 22    | Pin 15      | 2.4V    | 20mA        | 120Ω     |
+| LED 7 (Process 3)       | :red_circle:    | GPIO 12    | Pin 32      | 2.4V    | 20mA        | 120Ω     |
+| LED 8 (Process 4)       | :yellow_circle: | GPIO 20    | Pin 38      | 2.4V    | 20mA        | 120Ω     |
+| LED 9 (Process 5)       | :yellow_circle: | GPIO 19    | Pin 35      | 2.4V    | 20mA        | 120Ω     |
+| LED 10 (Process 6)      | :yellow_circle: | GPIO 24    | Pin 18      | 2.4V    | 20mA        | 120Ω     |
+| LED 11 (Process 7)      | :green_circle:  | GPIO 25    | Pin 22      | 3.2V    | 20mA        | 2kΩ      |
+| LED 12 (Process 8)      | :green_circle:  | GPIO 5     | Pin 29      | 3.2V    | 20mA        | 2kΩ      |
+| LED 13 (Process 9)      | :green_circle:  | GPIO 6     | Pin 31      | 3.2V    | 20mA        | 2kΩ      |
+| LED 14 (Scenario Ready) | :yellow_circle: | GPIO 17    | Pin 11      | 3.2V    | 20mA        | 2kΩ      |
+| LED 15 (Scenario Error) | :red_circle:    | GPIO 18    | Pin 12      | 2.4V    | 20mA        | 120Ω     |
 
 
 ***LED Series Resistor Calculation:***
@@ -66,13 +66,27 @@ Typical use cases:
 
 👉 In practice, use the next higher standard resistor value (e.g., **150Ω** or **220Ω**) to ensure safe operation.
 
+ℹ️ Higher resistors were deliberately chosen to protect the GPIOs and to maintain the same brightness across all colors.
+
+### LCD Display
+
+**Display**: HD44780 1602 LCD Module Display Bundle with I2C Interface 2x16 Characters
+
+| LCD-Display | GPIO (BCM)   | Pin (Board) |
+|-------------|--------------|-------------|
+| 5V          | 5V power     | Pin 4       |
+| GND         | Ground       | Pin 6       |
+| SDA         | GPIO 2 (SDA) | Pin 3       |
+| SCL         | GPIO 3 (SCL) | Pin 5       |
+
+
 ## 📦 Installation Guide
 
-### 📥 Raspberry Pi OS (64-bit, Bookworm)
+### 📥 Raspberry Pi OS (64-bit, Trixie)
 
-1. Flash **Raspberry Pi OS Bookworm (64-bit)** to a microSD card using the [Raspberry Pi Imager](https://www.raspberrypi.com/software/).
+1. Flash **Raspberry Pi OS Trixie (64-bit)** to a microSD card using the [Raspberry Pi Imager](https://www.raspberrypi.com/software/).
 
-2. Insert the card into the Raspberry Pi 3 B+ and power it on.
+2. Insert the card into the Raspberry Pi 5 and power it on.
 
 3. Connect the Pi to **Wi-Fi** (via desktop GUI, `nmtui`, or `nmcli`) and enable **SSH**.
 
@@ -86,21 +100,26 @@ sudo apt update && sudo apt full-upgrade -y
 
 ### 🌐 Install Buttonboard Runtime Environment
 
-1. Copy all files from the **Installation** folder to your Raspberry Pi (e.g., via **SFTP**).
+1. Copy all files from the **Installation** folder to your Raspberry Pi (e.g., via **SFTP**) and change permissions:
+
+```bash
+chmod +x install-buttonboard.sh
+```
 
 2. Run the installation script with root permissions:
 
 ```bash
-sudo bash install.sh
+sudo bash install-buttonboard.sh
 ```
 
 The script will:
 
 - Install all required dependencies
+- Enable SSH and I2C on the Raspberry Pi (when `raspi-config` is available)
 - Set up Webmin system administration tool (`https://[RASPBERRY-PI-IP]:10000`)
 - Set up frontail for log monitoring: (`http://[RASPBERRY-PI-IP]:9001`)
 - Set up VLC player for media playback: (`http://[RASPBERRY-PI-IP]:8080`)
-- Configure Samba shared folder for buttonboard app deployment
+- Configure Samba shared folder for buttonboard app deployment (User: `[Default User Name]` / Password: `buttonboard`)
   
 *(By default the app path is `/opt/buttonboard` on the Raspberry Pi and exposes it as a network share `\\buttonboard\deploy`)*
 
@@ -130,19 +149,3 @@ You can then start the application with:
 ```bash
 /opt/buttonboard/./BSolutions.Buttonboard.App
 ```
-
----
-
-## 🐞 Debugging
-
-Für das Debuggen gibt es zwei empfehlenswerte Ansätze:  
-
-1. **Visual Studio-Erweiterung „Raspberry Debugger“**  
-   👉 [RaspberryDebugger auf GitHub](https://github.com/nforgeio/RaspberryDebugger)  
-
-2. **Remote Debugging via SSH**  
-   👉 [Debuggen von .NET Core unter Linux mit SSH](https://learn.microsoft.com/de-de/visualstudio/debugger/remote-debugging-dotnet-core-linux-with-ssh?view=vs-2022)  
-
-### Installation des Visual Studio Remote Debugger
-
-[Weitere Informationen](https://github.com/nforgeio/RaspberryDebugger)

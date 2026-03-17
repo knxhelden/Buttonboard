@@ -6,7 +6,7 @@ using BSolutions.Buttonboard.Services.Enumerations;
 using BSolutions.Buttonboard.Services.Logging;
 using Microsoft.Extensions.Logging;
 
-namespace BSolutions.Buttonboard.Services.RestApiClients
+namespace BSolutions.Buttonboard.Services.Integrations.OpenHab
 {
     /// <summary>
     /// In-memory mock of <see cref="IOpenHabClient"/> for tests and offline development.

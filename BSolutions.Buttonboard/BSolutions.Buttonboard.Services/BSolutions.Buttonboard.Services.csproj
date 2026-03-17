@@ -16,7 +16,7 @@
     <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="9.0.9" />
     <PackageReference Include="MQTTnet" Version="4.3.7.1207" />
     <PackageReference Include="MQTTnet.Extensions.ManagedClient" Version="4.3.7.1207" />
-    <PackageReference Include="System.Device.Gpio" Version="4.0.1" />
+    <PackageReference Include="System.Device.Gpio" Version="4.1.0" />
   </ItemGroup>
 
 </Project>

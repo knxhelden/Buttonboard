@@ -63,6 +63,6 @@ namespace BSolutions.Buttonboard.Services.Gpio
         SystemYellow,
 
         [ButtonboardGpio(18)]
-        SystemGreen
+        SystemRed
     }
 }

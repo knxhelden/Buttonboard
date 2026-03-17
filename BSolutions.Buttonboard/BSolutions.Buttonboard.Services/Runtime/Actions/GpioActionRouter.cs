@@ -59,7 +59,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         }
 
         /// <inheritdoc />
-        public async Task ExecuteAsync(ScenarioAssetStep step, CancellationToken ct)
+        public async Task ExecuteAsync(ScenarioStepDefinition step, CancellationToken ct)
         {
             var key = step.Action?.Trim().ToLowerInvariant() ?? string.Empty;
             var (_, op) = ActionKeyHelper.Split(key);
@@ -94,7 +94,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         /// </summary>
         /// <param name="step">The scenario step containing the <c>led</c> argument.</param>
         /// <param name="ct">A <see cref="CancellationToken"/> for cooperative cancellation.</param>
-        private async Task HandleOnAsync(ScenarioAssetStep step, CancellationToken ct)
+        private async Task HandleOnAsync(ScenarioStepDefinition step, CancellationToken ct)
         {
             var ledStr = step.Args.GetString("led");
             if (string.IsNullOrWhiteSpace(ledStr))
@@ -117,7 +117,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         /// </summary>
         /// <param name="step">The scenario step containing the <c>led</c> argument.</param>
         /// <param name="ct">A <see cref="CancellationToken"/> for cooperative cancellation.</param>
-        private async Task HandleOffAsync(ScenarioAssetStep step, CancellationToken ct)
+        private async Task HandleOffAsync(ScenarioStepDefinition step, CancellationToken ct)
         {
             var ledStr = step.Args.GetString("led");
             if (string.IsNullOrWhiteSpace(ledStr))
@@ -141,7 +141,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         /// </summary>
         /// <param name="step">The scenario step containing <c>count</c> and <c>intervalMs</c> arguments.</param>
         /// <param name="ct">A <see cref="CancellationToken"/> for cooperative cancellation.</param>
-        private async Task HandleBlinkAsync(ScenarioAssetStep step, CancellationToken ct)
+        private async Task HandleBlinkAsync(ScenarioStepDefinition step, CancellationToken ct)
         {
             var count = step.Args.GetInt("count", 3);
             var interval = step.Args.GetInt("intervalMs", 100);

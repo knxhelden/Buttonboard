@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 
-namespace BSolutions.Buttonboard.Services.LyrionService
+namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
 {
     /// <summary>
     /// Defines a lightweight client interface for direct communication with

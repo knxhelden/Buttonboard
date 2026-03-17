@@ -1,0 +1,14 @@
+name: Szene 1
+
+# Groups (collections of related devices)
+
+
+
+# Timeline (time, action, optional target + arguments)
+
+00:00 gpio.on led=ProcessRed1
+00:00 gpio.on led=ProcessRed2
+00:00 gpio.on led=ProcessRed3
+00:00 gpio.off led=ButtonTopCenter
+00:01 gpio.on led=ButtonBottomLeft
+00:01 lcd.lines line1="Buttonboard" line2="Szene 2" align=center

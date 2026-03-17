@@ -46,7 +46,7 @@ namespace BSolutions.Buttonboard.Services.Gpio
         /// Reads the state of a button.
         /// </summary>
         /// <param name="button">The button to check.</param>
-        /// <returns><c>true</c> if the button is pressed (GPIO <c>High</c>); otherwise, <c>false</c>.</returns>
+        /// <returns><c>true</c> if the button is pressed (GPIO <c>Low</c> in pull-up wiring); otherwise, <c>false</c>.</returns>
         bool IsButtonPressed(Button button);
 
         /// <summary>

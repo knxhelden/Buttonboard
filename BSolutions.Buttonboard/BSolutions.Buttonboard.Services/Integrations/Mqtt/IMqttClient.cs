@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 
-namespace BSolutions.Buttonboard.Services.MqttClients
+namespace BSolutions.Buttonboard.Services.Integrations.Mqtt
 {
     /// <summary>
     /// Defines a minimal MQTT client contract for connecting, publishing messages, and graceful shutdown.
