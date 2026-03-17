@@ -11,4 +11,4 @@ name: Szene 3
 00:00 gpio.on led=ProcessGreen3
 00:00 gpio.off led=ButtonBottomCenter
 00:01 gpio.on led=ButtonBottomRight
-00:01 lcd.lines line1="Buttonboard" line2="Szene 3" align=center
+00:01 lcd.lines line1="Buttonboard" line2="Szene 4" align=center
