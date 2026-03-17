@@ -218,6 +218,10 @@ namespace BSolutions.Buttonboard.Services.Loaders
                         EnsureKey(step.Args!, "line1");
                         EnsureKey(step.Args!, "line2");
                     }
+                    else if (action.EndsWith(".backlight", StringComparison.OrdinalIgnoreCase))
+                    {
+                        EnsureKey(step.Args!, "enabled");
+                    }
                 }
             }
 
