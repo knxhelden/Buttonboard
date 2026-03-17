@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace BSolutions.Buttonboard.Services.Runtime.Actions
 {
     /// <summary>
-    /// Routes and executes LCD actions such as <c>lcd.clear</c>, <c>lcd.write</c>, <c>lcd.line</c> and <c>lcd.lines</c>.
+    /// Routes and executes LCD actions such as <c>lcd.clear</c>, <c>lcd.write</c>, <c>lcd.line</c>, <c>lcd.lines</c> and <c>lcd.backlight</c>.
     /// </summary>
     public sealed class LcdActionRouter : IActionRouter
     {
@@ -57,6 +57,10 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
 
                     case "lines":
                         HandleWriteLines(step);
+                        break;
+
+                    case "backlight":
+                        HandleBacklight(step);
                         break;
 
                     default:
@@ -120,6 +124,17 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
             _logger.LogInformation(LogEvents.ExecLcdWriteLines,
                 "lcd.lines align={Align} line1='{Line1}' line2='{Line2}'",
                 alignment, line1, line2);
+        }
+
+
+        private void HandleBacklight(ScenarioStepDefinition step)
+        {
+            var enabled = step.Args.GetRequiredBool("enabled");
+
+            _lcd.SetBacklight(enabled);
+            _logger.LogInformation(LogEvents.ExecLcdBacklight,
+                "lcd.backlight enabled={Enabled}",
+                enabled);
         }
 
         private static LcdTextAlignment ParseAlignment(string raw)

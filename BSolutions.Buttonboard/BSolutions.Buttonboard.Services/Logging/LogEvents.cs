@@ -62,6 +62,7 @@ namespace BSolutions.Buttonboard.Services.Logging
         public static readonly EventId ExecLcdWrite = new(5502, nameof(ExecLcdWrite));
         public static readonly EventId ExecLcdWriteLine = new(5503, nameof(ExecLcdWriteLine));
         public static readonly EventId ExecLcdWriteLines = new(5504, nameof(ExecLcdWriteLines));
+        public static readonly EventId ExecLcdBacklight = new(5505, nameof(ExecLcdBacklight));
 
         // ─────────────────────────────── GPIO (6000–6999)
         public static readonly EventId GpioInitialized = new(6000, nameof(GpioInitialized));
