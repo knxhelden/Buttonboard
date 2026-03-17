@@ -34,5 +34,10 @@ namespace BSolutions.Buttonboard.Services.LcdService
         /// Writes both lines of a 2-row display in one operation.
         /// </summary>
         void WriteLines(string line1, string line2, LcdTextAlignment alignment = LcdTextAlignment.Left);
+
+        /// <summary>
+        /// Turns the display backlight on or off.
+        /// </summary>
+        void SetBacklight(bool enabled);
     }
 }

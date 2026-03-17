@@ -153,6 +153,17 @@ namespace BSolutions.Buttonboard.Services.LcdService
             }
         }
 
+
+        public void SetBacklight(bool enabled)
+        {
+            lock (_sync)
+            {
+                EnsureInitialized();
+                _backlight = enabled;
+                WriteRaw((byte)(_backlight ? BacklightBit : 0x00));
+            }
+        }
+
         public void Dispose()
         {
             if (_disposed)
