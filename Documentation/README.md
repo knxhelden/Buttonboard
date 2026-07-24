@@ -1,4 +1,4 @@
-# Buttonboard Documentation 🎛️
+﻿# Buttonboard Documentation
 
 Buttonboard is a modular show-control system for running interactive setups, Halloween shows, and custom automation workflows with timed scenes.
 
@@ -18,8 +18,9 @@ Buttonboard is a modular show-control system for running interactive setups, Hal
 
 ## Table of Contents
 
-- [Configuration](./1-%20Configuration.md) – central configuration, integrations, device mappings, and logging.
-- [Scenarios](./2%20-%20Scenarios.md) – scene formats, DSL rules, groups, and target expansion.
-- [Actions](./3%20-%20Actions.md) – available audio, video, GPIO, MQTT, and LCD actions.
-- [Logging Events](./4%20-%20LoggingEvents.md) – event ID structure and log categories.
-- [Mediaplayer](./5%20-%20Mediaplayer.md) – Raspberry Pi VLC kiosk setup for video output.
+- [Installation](./Installation.md) - Raspberry Pi setup and Buttonboard runtime installation.
+- [Configuration](./1-%20Configuration.md) - central configuration, integrations, device mappings, and logging.
+- [Scenarios](./2%20-%20Scenarios.md) - scene formats, DSL rules, groups, and target expansion.
+- [Actions](./3%20-%20Actions.md) - available audio, video, GPIO, MQTT, and LCD actions.
+- [Logging Events](./4%20-%20LoggingEvents.md) - event ID structure and log categories.
+- [Mediaplayer](./5%20-%20Mediaplayer.md) - Raspberry Pi VLC kiosk setup for video output.
