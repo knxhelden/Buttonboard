@@ -19,6 +19,7 @@ Buttonboard is a modular show-control system for running interactive setups, Hal
 ## Table of Contents
 
 - [Installation](./Installation.md) - Raspberry Pi setup and Buttonboard runtime installation.
+- [Hardware](./Hardware.md) - required hardware components and complete GPIO wiring.
 - [Configuration](./1-%20Configuration.md) - central configuration, integrations, device mappings, and logging.
 - [Scenarios](./2%20-%20Scenarios.md) - scene formats, DSL rules, groups, and target expansion.
 - [Actions](./3%20-%20Actions.md) - available audio, video, GPIO, MQTT, and LCD actions.
