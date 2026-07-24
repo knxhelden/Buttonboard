@@ -20,7 +20,7 @@ Typical use cases:
 
 ## 📦 Installation Guide
 
-The complete installation guide, as well as a list of the necessary hardware and its wiring, can be found in the documentation:
+The complete **installation guide**, as well as a list of the **necessary hardware and its wiring**, can be found in the documentation:
 
 - [Documentation/Installation.md](./Documentation/Installation.md)
 - [Documentation/Hardware.md](./Documentation/Hardware.md)
