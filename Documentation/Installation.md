@@ -32,12 +32,17 @@ sudo bash install-buttonboard.sh
 
 ## What The Script Sets Up
 
-- ✅ Required dependencies
-- ✅ SSH and I2C, if `raspi-config` is available
+- ✅ Base packages: `ca-certificates`, `curl`, `gnupg`, `lsb-release`
+- ✅ SSH service and I2C interface, if `raspi-config` is available
+- ✅ Application directory `/opt/buttonboard`
+- ✅ Log directory `/opt/buttonboard/logs` and live log file `/opt/buttonboard/logs/live.log`
+- ✅ Samba deployment share `deploy` for `/opt/buttonboard`
 - ✅ Webmin: `https://[RASPBERRY-PI-IP]:10000`
-- ✅ frontail: `http://[RASPBERRY-PI-IP]:9001`
-- ✅ VLC: `http://[RASPBERRY-PI-IP]:8080`
-- ✅ Samba deployment share
+- ✅ Node.js and `npm` as prerequisites for frontail
+- ✅ frontail including systemd service: `http://[RASPBERRY-PI-IP]:9001`
+- ✅ Mosquitto MQTT broker on port `1883` including configured local user/password authentication
+
+> Note: The script currently does **not** install or configure VLC. The VLC URL shown by the script is only reserved for future use.
 
 ## Default Paths And Access
 
