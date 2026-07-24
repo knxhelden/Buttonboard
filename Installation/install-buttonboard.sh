@@ -34,12 +34,6 @@ MQTT_PASSWORD="buttonboard"
 MQTT_CONF_FILE="/etc/mosquitto/conf.d/buttonboard.conf"
 MQTT_PASSWORD_FILE="/etc/mosquitto/passwd"
 
-# VLC – kept here for future use (not used in this script yet)
-VLC_USER="${SUDO_USER:-${USER}}"
-VLC_HOME="$(getent passwd "${VLC_USER}" | cut -d: -f6)"
-VLC_CFG_DIR="${VLC_HOME}/.config/vlc"
-VLC_CFG_DST="${VLC_CFG_DIR}/vlcrc"
-
 
 ### ─────────────────────────── Logging ────────────────────────────────
 log()  { echo -e "\033[1;32m[+] $*\033[0m"; }
@@ -336,7 +330,6 @@ main() {
 • Mosquitto MQTT:    mqtt://${PI_IP}:1883/
   • Username:        ${MQTT_USER}
   • Password:        ${MQTT_PASSWORD}
-• VLC Player:        http://${PI_IP}:8080/   (reserved; not configured here)
 
 • App Start:         Start your app manually after deployment, e.g.:
   ${APP_DIR}/./BSolutions.Buttonboard.App

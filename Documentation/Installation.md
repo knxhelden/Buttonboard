@@ -42,8 +42,6 @@ sudo bash install-buttonboard.sh
 - ✅ frontail including systemd service: `http://[RASPBERRY-PI-IP]:9001`
 - ✅ Mosquitto MQTT broker on port `1883` including configured local user/password authentication
 
-> Note: The script currently does **not** install or configure VLC. The VLC URL shown by the script is only reserved for future use.
-
 ## Default Paths And Access
 
 - App path: `/opt/buttonboard`
