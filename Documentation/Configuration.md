@@ -70,7 +70,7 @@ Each entry in `OpenHAB:Audio` uses:
 - `StreamItem` *(string)*
 - `VolumeItem` *(string)*
 
-> Hinweis: Die aktuelle Action-Runtime steuert Audio über `Lyrion` (`audio.*`), nicht über OpenHAB-Actions.
+> Hinweis: Die aktuelle Action-Runtime steuert Lyrion/Squeezebox über `lms.*`. Das Präfix `audio.*` ist für eine spätere lokale Audio-Ausgabe vorgesehen.
 
 ---
 

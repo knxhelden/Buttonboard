@@ -23,7 +23,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         /// <summary>
         /// Determines whether this router can handle the specified action key.
         /// </summary>
-        /// <param name="actionKey">The normalized action key (e.g., <c>"audio.play"</c>).</param>
+        /// <param name="actionKey">The normalized action key (e.g., <c>"lms.play"</c>).</param>
         /// <returns>
         /// <c>true</c> if this router is responsible for the given action; otherwise <c>false</c>.
         /// </returns>

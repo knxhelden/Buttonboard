@@ -195,7 +195,7 @@ namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
                     _ = await ReadLineAsync(stream, buffer, sb, TimeSpan.FromSeconds(1)).ConfigureAwait(false);
                 }
 
-                _logger.LogInformation(LogEvents.ExecAudioPlay, "Lyrion CLI -> {Command}", command);
+                _logger.LogInformation(LogEvents.ExecLmsPlay, "Lyrion CLI -> {Command}", command);
                 await WriteLineAsync(stream, command, ct).ConfigureAwait(false);
 
                 // Attempt to read one response line; missing response is acceptable.

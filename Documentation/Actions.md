@@ -1,4 +1,4 @@
-# Actions ⚡
+# Actions
 
 Actions define what Buttonboard should **do** at a given time during a scene.  
 They are referenced directly in each DSL scene step with the **`<action>`** keyword.
@@ -12,10 +12,39 @@ All actions follow the pattern:
 Each action type may have specific arguments.  
 Values with spaces must be quoted.
 
+## Inhaltsverzeichnis
+
+### Audio
+- [`audio.play`](#audioplay)
+- [`audio.pause`](#audiopause)
+- [`audio.volume`](#audiovolume)
+
+### Video
+- [`video.next`](#videonext)
+- [`video.pause`](#videopause)
+- [`video.playItem`](#videoplayitem)
+
+### GPIO
+- [Available LED IDs](#available-led-ids)
+- [`gpio.on`](#gpioon)
+- [`gpio.off`](#gpiooff)
+- [`gpio.blink`](#gpioblink)
+
+### LCD
+- [`lcd.clear`](#lcdclear)
+- [`lcd.write`](#lcdwrite)
+- [`lcd.line`](#lcdline)
+- [`lcd.lines`](#lcdlines)
+- [`lcd.backlight`](#lcdbacklight)
+
+### MQTT
+- [`mqtt.pub`](#mqttpub)
+
 ---
 
-## 🎵 Audio Actions
+## Audio Actions
 
+<a id="audioplay"></a>
 ### `audio.play`
 Starts audio playback from a Squeezelite player controlled via Lyrion Music Server.
 
@@ -24,11 +53,12 @@ Starts audio playback from a Squeezelite player controlled via Lyrion Music Serv
 ```
 
 **Arguments:**
-- `player` *(string, required)* – target audio player (defined in `appsettings.json` → `Lyrion → Players`)
-- `url` *(string, required)* – URL to an MP3 file
+- `player` *(string, required)* - target audio player (defined in `appsettings.json` -> `Lyrion -> Players`)
+- `url` *(string, required)* - URL to an MP3 file
 
 ---
 
+<a id="audiopause"></a>
 ### `audio.pause`
 Pauses or resumes playback on a Squeezelite player.
 
@@ -37,11 +67,12 @@ Pauses or resumes playback on a Squeezelite player.
 ```
 
 **Arguments:**
-- `player` *(string, required)* – target audio player (defined in `appsettings.json` → `Lyrion → Players`)
-- `paused` *(bool, optional, default=true)* – `true` pauses, `false` resumes
+- `player` *(string, required)* - target audio player (defined in `appsettings.json` -> `Lyrion -> Players`)
+- `paused` *(bool, optional, default=true)* - `true` pauses, `false` resumes
 
 ---
 
+<a id="audiovolume"></a>
 ### `audio.volume`
 Sets the playback volume on a Squeezelite player.
 
@@ -50,12 +81,14 @@ Sets the playback volume on a Squeezelite player.
 ```
 
 **Arguments:**
-- `player` *(string, required)* – target audio player (defined in `appsettings.json` → `Lyrion → Players`)
-- `level` *(int, required)* – volume level in percent (`0–100`)
+- `player` *(string, required)* - target audio player (defined in `appsettings.json` -> `Lyrion -> Players`)
+- `level` *(int, required)* - volume level in percent (`0-100`)
 
+---
 
-## 🎬 Video Actions
+## Video Actions
 
+<a id="videonext"></a>
 ### `video.next`
 Skips to the next item in a VLC playlist.
 
@@ -64,10 +97,11 @@ Skips to the next item in a VLC playlist.
 ```
 
 **Arguments:**
-- `player` *(string, required)* – target VLC player (defined in `appsettings.json` → `VLC → Devices`)
+- `player` *(string, required)* - target VLC player (defined in `appsettings.json` -> `VLC -> Devices`)
 
 ---
 
+<a id="videopause"></a>
 ### `video.pause`
 Toggles pause/resume on a VLC player.
 
@@ -76,10 +110,11 @@ Toggles pause/resume on a VLC player.
 ```
 
 **Arguments:**
-- `player` *(string, required)* – target VLC player (defined in `appsettings.json` → `VLC → Devices`)
+- `player` *(string, required)* - target VLC player (defined in `appsettings.json` -> `VLC -> Devices`)
 
 ---
 
+<a id="videoplayitem"></a>
 ### `video.playItem`
 Plays a specific playlist entry by its 1-based position (`1 = first item`).
 
@@ -88,12 +123,14 @@ Plays a specific playlist entry by its 1-based position (`1 = first item`).
 ```
 
 **Arguments:**
-- `player` *(string, required)* – target VLC player (defined in `appsettings.json` → `VLC → Devices`)
-- `position` *(int, required)* – playlist position (starts with `1`)
+- `player` *(string, required)* - target VLC player (defined in `appsettings.json` -> `VLC -> Devices`)
+- `position` *(int, required)* - playlist position (starts with `1`)
 
+---
 
-## 💡 GPIO Actions
+## GPIO Actions
 
+<a id="available-led-ids"></a>
 ### Available LED IDs
 
 | Logical Name           | GPIO Pin | Group       | Description                    |
@@ -116,6 +153,7 @@ Plays a specific playlist entry by its 1-based position (`1 = first item`).
 
 ---
 
+<a id="gpioon"></a>
 ### `gpio.on`
 Turns an LED **on**.
 
@@ -124,10 +162,11 @@ Turns an LED **on**.
 ```
 
 **Arguments:**
-- `led` *(string, required)* – logical LED name (e.g., `ButtonTopCenter`, `ButtonBottomLeft`)
+- `led` *(string, required)* - logical LED name (e.g. `ButtonTopCenter`, `ButtonBottomLeft`)
 
 ---
 
+<a id="gpiooff"></a>
 ### `gpio.off`
 Turns an LED **off**.
 
@@ -136,10 +175,11 @@ Turns an LED **off**.
 ```
 
 **Arguments:**
-- `led` *(string, required)* – logical LED name (e.g., `ButtonTopCenter`, `ButtonBottomLeft`)
+- `led` *(string, required)* - logical LED name (e.g. `ButtonTopCenter`, `ButtonBottomLeft`)
 
 ---
 
+<a id="gpioblink"></a>
 ### `gpio.blink`
 Blinks **all configured LEDs** multiple times.
 
@@ -148,14 +188,15 @@ Blinks **all configured LEDs** multiple times.
 ```
 
 **Arguments:**
-- `count` *(int, optional, default=3)* – number of blink cycles
-- `intervalMs` *(int, optional, default=100)* – on/off interval in milliseconds
+- `count` *(int, optional, default=3)* - number of blink cycles
+- `intervalMs` *(int, optional, default=100)* - on/off interval in milliseconds
 
 **Note:**
 - `gpio.blink` does **not** use a `led` argument. It currently blinks all LEDs.
 
+---
 
-## 📺 LCD Actions
+## LCD Actions
 
 LCD actions control the connected character display.  
 They can clear the display, write text at the current or a specific cursor position, render one or two aligned lines, and control the backlight.
@@ -167,6 +208,7 @@ Supported alignment values are:
 
 ---
 
+<a id="lcdclear"></a>
 ### `lcd.clear`
 Clears the entire LCD display.
 
@@ -179,6 +221,7 @@ Clears the entire LCD display.
 
 ---
 
+<a id="lcdwrite"></a>
 ### `lcd.write`
 Writes text to the LCD at the current cursor position.  
 Optionally, a cursor position can be set before writing.
@@ -194,9 +237,9 @@ With explicit cursor position:
 ```
 
 **Arguments:**
-- `text` *(string, required)* – text to write
-- `row` *(int, optional)* – target row index
-- `column` *(int, optional)* – target column index
+- `text` *(string, required)* - text to write
+- `row` *(int, optional)* - target row index
+- `column` *(int, optional)* - target column index
 
 **Notes:**
 - If `row` or `column` is provided, the cursor is moved before writing.
@@ -205,6 +248,7 @@ With explicit cursor position:
 
 ---
 
+<a id="lcdline"></a>
 ### `lcd.line`
 Writes text to a specific LCD row using optional alignment.
 
@@ -225,13 +269,14 @@ Right-aligned text without clearing the row first:
 ```
 
 **Arguments:**
-- `row` *(int, required)* – target row index
-- `text` *(string, required)* – text to display
-- `align` *(string, optional, default=`left`)* – text alignment: `left`, `center` / `centre`, or `right`
-- `clearRow` *(bool, optional, default=`true`)* – whether the row should be cleared before writing
+- `row` *(int, required)* - target row index
+- `text` *(string, required)* - text to display
+- `align` *(string, optional, default=`left`)* - text alignment: `left`, `center` / `centre`, or `right`
+- `clearRow` *(bool, optional, default=`true`)* - whether the row should be cleared before writing
 
 ---
 
+<a id="lcdlines"></a>
 ### `lcd.lines`
 Writes two lines to the LCD at once using a shared alignment.
 
@@ -246,12 +291,13 @@ Single-line usage with empty second line:
 ```
 
 **Arguments:**
-- `line1` *(string, required)* – text for the first line
-- `line2` *(string, optional, default=`""`)* – text for the second line
-- `align` *(string, optional, default=`left`)* – text alignment: `left`, `center` / `centre`, or `right`
+- `line1` *(string, required)* - text for the first line
+- `line2` *(string, optional, default=`""`)* - text for the second line
+- `align` *(string, optional, default=`left`)* - text alignment: `left`, `center` / `centre`, or `right`
 
 ---
 
+<a id="lcdbacklight"></a>
 ### `lcd.backlight`
 Enables or disables the LCD backlight.
 
@@ -260,18 +306,20 @@ Enables or disables the LCD backlight.
 ```
 
 **Arguments:**
-- `enabled` *(bool, required)* – `true` to enable backlight, `false` to disable
+- `enabled` *(bool, required)* - `true` to enable backlight, `false` to disable
 
+---
 
-## 📡 MQTT Actions
+## MQTT Actions
 
+<a id="mqttpub"></a>
 ### `mqtt.pub`
-Publishes a message to an MQTT broker. The broker is defined in `appsettings.json` → `Mqtt`.
+Publishes a message to an MQTT broker. The broker is defined in `appsettings.json` -> `Mqtt`.
 
 ```text
 00:00 mqtt.pub topic=buttonboard/test payload=ON
 ```
 
 **Arguments:**
-- `topic` *(string, required)* – MQTT topic
-- `payload` *(string, optional, default=`ON`)* – message content
+- `topic` *(string, required)* - MQTT topic
+- `payload` *(string, optional, default=`ON`)* - message content

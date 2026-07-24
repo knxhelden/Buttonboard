@@ -27,7 +27,7 @@ public static readonly EventId LoaderStarted = new(1000, nameof(LoaderStarted));
 | Asset Load Errors | 3000–3999 | Unexpected load failures |
 | Runtime | 4000–4999 | Scenario runtime state and step execution |
 | Executor Core | 5000–5099 | Generic dispatch/validation failures |
-| Audio Actions | 5100–5199 | `audio.*` action events |
+| LMS Actions | 5100–5199 | `lms.*` action events |
 | Video Actions | 5200–5299 | `video.*` action events |
 | GPIO Actions | 5300–5399 | `gpio.*` action events |
 | MQTT Actions | 5400–5499 | `mqtt.*` action events |
@@ -87,13 +87,13 @@ public static readonly EventId LoaderStarted = new(1000, nameof(LoaderStarted));
 | `ExecActionArgInvalid` | 5004 | Action handler arg validation failed |
 | `ExecActionFailed` | 5005 | Action handler failed unexpectedly |
 
-## Audio Actions (5100–5199)
+## LMS Actions (5100–5199)
 
 | Event | ID | Description |
 |---|---:|---|
-| `ExecAudioPlay` | 5100 | Audio play action |
-| `ExecAudioPause` | 5101 | Audio pause/resume action |
-| `ExecAudioVolume` | 5102 | Audio volume action |
+| `ExecLmsPlay` | 5100 | LMS play action |
+| `ExecLmsPause` | 5101 | LMS pause/resume action |
+| `ExecLmsVolume` | 5102 | LMS volume action |
 
 ## Video Actions (5200–5299)
 

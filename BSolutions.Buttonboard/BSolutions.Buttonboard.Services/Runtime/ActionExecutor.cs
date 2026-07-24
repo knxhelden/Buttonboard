@@ -14,7 +14,7 @@ namespace BSolutions.Buttonboard.Services.Runtime
     /// <remarks>
     /// The <see cref="ActionExecutor"/> serves as the central entry point for executing
     /// <see cref="ScenarioStepDefinition"/> instances. It determines the responsible
-    /// <see cref="IActionRouter"/> by inspecting the action key prefix (e.g., <c>audio.play</c>, <c>gpio.on</c>)
+    /// <see cref="IActionRouter"/> by inspecting the action key prefix (e.g., <c>lms.play</c>, <c>gpio.on</c>)
     /// and delegates execution to it.
     ///
     /// Responsibilities:

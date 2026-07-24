@@ -86,7 +86,7 @@ namespace BSolutions.Buttonboard.App
                         .AddSingleton<IVlcPlayerClient, VlcPlayerClient>()
                         .AddSingleton<IScenarioRuntime, ScenarioRuntime>()
                         .AddSingleton<IScenarioAssetRuntime, ScenarioAssetRuntime>()
-                        .AddSingleton<IActionRouter, AudioActionRouter>()
+                        .AddSingleton<IActionRouter, LmsActionRouter>()
                         .AddSingleton<IActionRouter, VideoActionRouter>()
                         .AddSingleton<IActionRouter, GpioActionRouter>()
                         .AddSingleton<IActionRouter, MqttActionRouter>()

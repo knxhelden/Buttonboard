@@ -11,7 +11,7 @@
     {
       "name": "Audio Player 1: PLAY",
       "atMs": 0,
-      "action": "audio.play",
+      "action": "lms.play",
       "args": {
         "url": "file:///mnt/usb/Halloween/02 - Szene 2.MP3",
         "player": "Halloween1"
