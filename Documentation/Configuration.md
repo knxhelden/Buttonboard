@@ -101,12 +101,12 @@ Each entry in `OpenHAB:Audio` uses:
 - `StreamItem` *(string)*
 - `VolumeItem` *(string)*
 
-> Note: Lyrion/Squeezebox continues to be controlled through `lms.*`. The `audio.*` actions are exclusively intended for the local sound card.
+> Note: Lyrion continues to be controlled through `lyrion.*`. The `audio.*` actions are exclusively intended for the local sound card.
 
 ---
 
 ### `Lyrion`
-Controls **Lyrion / Squeezebox** players for audio playback.
+Controls **Lyrion** players for audio playback.
 
 | Key | Type | Description |
 |-----|------|-------------|

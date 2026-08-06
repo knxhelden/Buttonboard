@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
 {
     /// <summary>
-    /// Provides a TCP-based client implementation for the Lyrion (Logitech) Media Server CLI (default port 9090).
+    /// Provides a TCP-based client implementation for the Lyrion CLI (default port 9090).
     /// </summary>
     /// <remarks>
     /// Responsibilities:
@@ -195,7 +195,7 @@ namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
                     _ = await ReadLineAsync(stream, buffer, sb, TimeSpan.FromSeconds(1)).ConfigureAwait(false);
                 }
 
-                _logger.LogInformation(LogEvents.ExecLmsPlay, "Lyrion CLI -> {Command}", command);
+                _logger.LogInformation(LogEvents.ExecLyrionPlay, "Lyrion CLI -> {Command}", command);
                 await WriteLineAsync(stream, command, ct).ConfigureAwait(false);
 
                 // Attempt to read one response line; missing response is acceptable.

@@ -19,6 +19,11 @@ Values with spaces must be quoted.
 - [`audio.stop`](#audiostop)
 - [`audio.stopAll`](#audiostopall)
 
+### Lyrion
+- [`lyrion.play`](#lyrionplay)
+- [`lyrion.pause`](#lyrionpause)
+- [`lyrion.volume`](#lyrionvolume)
+
 ### Video
 - [`video.next`](#videonext)
 - [`video.pause`](#videopause)
@@ -86,6 +91,50 @@ Stops all local sound output started by Buttonboard. This is useful in setup/res
 
 **Arguments:**
 - none
+
+---
+
+## Lyrion Actions
+
+<a id="lyrionplay"></a>
+### `lyrion.play`
+Starts playback of a URL on a configured Lyrion player.
+
+```text
+00:00 lyrion.play player=Player1 url="http://example.local/media/intro.mp3"
+```
+
+**Arguments:**
+- `player` *(string, required)* - target player (defined in `appsettings.json` -> `Lyrion` -> `Players`)
+- `url` *(string, required)* - URL of the media file to play
+
+---
+
+<a id="lyrionpause"></a>
+### `lyrion.pause`
+Pauses or resumes playback on a configured Lyrion player.
+
+```text
+10:00 lyrion.pause player=Player1 paused=true
+```
+
+**Arguments:**
+- `player` *(string, required)* - target player (defined in `appsettings.json` -> `Lyrion` -> `Players`)
+- `paused` *(bool, optional, default=`true`)* - `true` pauses playback; `false` resumes it
+
+---
+
+<a id="lyrionvolume"></a>
+### `lyrion.volume`
+Sets the playback volume on a configured Lyrion player.
+
+```text
+00:05 lyrion.volume player=Player1 level=35
+```
+
+**Arguments:**
+- `player` *(string, required)* - target player (defined in `appsettings.json` -> `Lyrion` -> `Players`)
+- `level` *(int, required)* - volume level in percent (`0-100`)
 
 ---
 

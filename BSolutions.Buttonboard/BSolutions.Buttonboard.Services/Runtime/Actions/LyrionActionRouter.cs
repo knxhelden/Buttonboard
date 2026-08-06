@@ -11,30 +11,30 @@ using System.Threading.Tasks;
 namespace BSolutions.Buttonboard.Services.Runtime.Actions
 {
     /// <summary>
-    /// Routes and executes LMS-related actions such as <c>lms.play</c>, <c>lms.pause</c>, and <c>lms.volume</c>.
+    /// Routes and executes Lyrion-related actions such as <c>lyrion.play</c>, <c>lyrion.pause</c>, and <c>lyrion.volume</c>.
     /// </summary>
     /// <remarks>
-    /// Dispatches LMS commands to Lyrion (Logitech Media Server) players via <see cref="ILyrionClient"/>.
+    /// Dispatches commands to configured Lyrion players via <see cref="ILyrionClient"/>.
     /// Required arguments:
     /// <list type="bullet">
-    ///   <item><description><c>lms.play</c> → <c>player</c>, <c>url</c></description></item>
-    ///   <item><description><c>lms.pause</c> → <c>player</c> (optional: <c>paused</c>, default: <c>true</c>)</description></item>
-    ///   <item><description><c>lms.volume</c> → <c>player</c>, <c>level</c> (0–100)</description></item>
+    ///   <item><description><c>lyrion.play</c> → <c>player</c>, <c>url</c></description></item>
+    ///   <item><description><c>lyrion.pause</c> → <c>player</c> (optional: <c>paused</c>, default: <c>true</c>)</description></item>
+    ///   <item><description><c>lyrion.volume</c> → <c>player</c>, <c>level</c> (0–100)</description></item>
     /// </list>
     /// </remarks>
-    public sealed class LmsActionRouter : IActionRouter
+    public sealed class LyrionActionRouter : IActionRouter
     {
         private readonly ILogger _logger;
         private readonly ISettingsProvider _settings;
         private readonly ILyrionClient _lyrion;
 
         /// <inheritdoc />
-        public string Domain => "lms";
+        public string Domain => "lyrion";
 
         #region --- Constructor ---
 
-        public LmsActionRouter(
-            ILogger<LmsActionRouter> logger,
+        public LyrionActionRouter(
+            ILogger<LyrionActionRouter> logger,
             ISettingsProvider settings,
             ILyrionClient lyrion)
         {
@@ -77,13 +77,13 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
                         break;
 
                     default:
-                        _logger.LogWarning(LogEvents.ExecUnknownAction, "Unknown LMS action {Action}", key);
+                        _logger.LogWarning(LogEvents.ExecUnknownAction, "Unknown Lyrion action {Action}", key);
                         break;
                 }
             }
             catch (ArgumentException ex)
             {
-                _logger.LogWarning(LogEvents.ExecActionArgInvalid, "LMS action argument error: {Message}", ex.Message);
+                _logger.LogWarning(LogEvents.ExecActionArgInvalid, "Lyrion action argument error: {Message}", ex.Message);
             }
             catch (OperationCanceledException)
             {
@@ -91,7 +91,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
             }
             catch (Exception ex)
             {
-                _logger.LogError(LogEvents.ExecActionFailed, ex, "LMS action failed for {Action}", key);
+                _logger.LogError(LogEvents.ExecActionFailed, ex, "Lyrion action failed for {Action}", key);
                 throw;
             }
         }
@@ -101,7 +101,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
         #region --- Handlers ---
 
         /// <summary>
-        /// Executes <c>lms.play</c> — plays the given URL on the specified player.
+        /// Executes <c>lyrion.play</c> — plays the given URL on the specified player.
         /// Required args: <c>player</c>, <c>url</c>.
         /// </summary>
         private async Task HandlePlayAsync(ScenarioStepDefinition step, CancellationToken ct)
@@ -111,14 +111,14 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
 
             EnsureKnownPlayer(playerName);
 
-            _logger.LogInformation(LogEvents.ExecLmsPlay,
-                "lms.play via Lyrion → {Player} -> {Url}", playerName, url);
+            _logger.LogInformation(LogEvents.ExecLyrionPlay,
+                "lyrion.play via Lyrion → {Player} -> {Url}", playerName, url);
 
             await _lyrion.PlayUrlAsync(playerName, url, ct).ConfigureAwait(false);
         }
 
         /// <summary>
-        /// Executes <c>lms.pause</c> — pauses/resumes the specified player.
+        /// Executes <c>lyrion.pause</c> — pauses/resumes the specified player.
         /// Required args: <c>player</c>. Optional: <c>paused</c> (default: <c>true</c>).
         /// </summary>
         private async Task HandlePauseAsync(ScenarioStepDefinition step, CancellationToken ct)
@@ -128,14 +128,14 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
 
             EnsureKnownPlayer(playerName);
 
-            _logger.LogInformation(LogEvents.ExecLmsPause,
-                "lms.pause via Lyrion → {Player}, paused={Paused}", playerName, paused);
+            _logger.LogInformation(LogEvents.ExecLyrionPause,
+                "lyrion.pause via Lyrion → {Player}, paused={Paused}", playerName, paused);
 
             await _lyrion.PauseAsync(playerName, paused, ct).ConfigureAwait(false);
         }
 
         /// <summary>
-        /// Executes <c>lms.volume</c> — sets playback volume (0–100) for the specified player.
+        /// Executes <c>lyrion.volume</c> — sets playback volume (0–100) for the specified player.
         /// Required args: <c>player</c>, <c>level</c>.
         /// </summary>
         private async Task HandleVolumeAsync(ScenarioStepDefinition step, CancellationToken ct)
@@ -147,8 +147,8 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
 
             EnsureKnownPlayer(playerName);
 
-            _logger.LogInformation(LogEvents.ExecLmsVolume,
-                "lms.volume via Lyrion → {Player} -> {Level}%", playerName, level);
+            _logger.LogInformation(LogEvents.ExecLyrionVolume,
+                "lyrion.volume via Lyrion → {Player} -> {Level}%", playerName, level);
 
             await _lyrion.SetVolumeAsync(playerName, level, ct).ConfigureAwait(false);
         }
