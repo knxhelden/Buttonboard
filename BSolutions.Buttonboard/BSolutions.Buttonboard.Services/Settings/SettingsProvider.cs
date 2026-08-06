@@ -30,6 +30,7 @@ namespace BSolutions.Buttonboard.Services.Settings
             VLC = o.VLC;
             Mqtt = o.Mqtt;
             Lcd = o.Lcd;
+            Audio = o.Audio;
         }
 
         /// <inheritdoc />
@@ -49,5 +50,8 @@ namespace BSolutions.Buttonboard.Services.Settings
 
         /// <inheritdoc />
         public LcdOptions Lcd { get; }
+
+        /// <inheritdoc />
+        public AudioOptions Audio { get; }
     }
 }

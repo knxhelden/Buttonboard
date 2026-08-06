@@ -47,5 +47,8 @@
         /// Gets the configuration for the HD44780 LCD display on I2C.
         /// </summary>
         LcdOptions Lcd { get; }
+
+        /// <summary>Gets the settings for playback through the Raspberry Pi sound card.</summary>
+        AudioOptions Audio { get; }
     }
 }

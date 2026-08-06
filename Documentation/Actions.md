@@ -12,12 +12,12 @@ All actions follow the pattern:
 Each action type may have specific arguments.  
 Values with spaces must be quoted.
 
-## Inhaltsverzeichnis
+## Table of Contents
 
 ### Audio
 - [`audio.play`](#audioplay)
-- [`audio.pause`](#audiopause)
-- [`audio.volume`](#audiovolume)
+- [`audio.stop`](#audiostop)
+- [`audio.stopAll`](#audiostopall)
 
 ### Video
 - [`video.next`](#videonext)
@@ -46,43 +46,46 @@ Values with spaces must be quoted.
 
 <a id="audioplay"></a>
 ### `audio.play`
-Starts audio playback from a Squeezelite player controlled via Lyrion Music Server.
+Plays a file from the Raspberry Pi's audio directory through its default sound card. A named
+channel allows background music and sound effects to run in parallel; starting another file on the
+same channel replaces the previous one. Paths are resolved below `Audio:MediaFolder`, and attempts
+to leave that directory are rejected.
 
 ```text
-00:00 audio.play player=Player1 url="http://example.local/media/intro.mp3"
+00:00 audio.play file="music/intro.mp3" channel=music volume=70 loop=true
 ```
 
 **Arguments:**
-- `player` *(string, required)* - target audio player (defined in `appsettings.json` -> `Lyrion -> Players`)
-- `url` *(string, required)* - URL to an MP3 file
+- `file` *(string, required)* - relative path below the configured local media folder
+- `channel` *(string, optional, default=`main`)* - logical playback channel
+- `volume` *(int, optional)* - playback volume (`0-100`); defaults to `Audio:DefaultVolume`
+- `loop` *(bool, optional, default=`false`)* - repeats the file until the channel is stopped
 
 ---
 
-<a id="audiopause"></a>
-### `audio.pause`
-Pauses or resumes playback on a Squeezelite player.
+<a id="audiostop"></a>
+### `audio.stop`
+Stops playback on one channel.
 
 ```text
-10:00 audio.pause player=Player1
+00:30 audio.stop channel=music
 ```
 
 **Arguments:**
-- `player` *(string, required)* - target audio player (defined in `appsettings.json` -> `Lyrion -> Players`)
-- `paused` *(bool, optional, default=true)* - `true` pauses, `false` resumes
+- `channel` *(string, optional, default=`main`)* - channel to stop
 
 ---
 
-<a id="audiovolume"></a>
-### `audio.volume`
-Sets the playback volume on a Squeezelite player.
+<a id="audiostopall"></a>
+### `audio.stopAll`
+Stops all local sound output started by Buttonboard. This is useful in setup/reset scenes.
 
 ```text
-00:05 audio.volume player=Player1 level=35
+00:00 audio.stopAll
 ```
 
 **Arguments:**
-- `player` *(string, required)* - target audio player (defined in `appsettings.json` -> `Lyrion -> Players`)
-- `level` *(int, required)* - volume level in percent (`0-100`)
+- none
 
 ---
 

@@ -38,7 +38,7 @@ public static readonly EventId LoaderStarted = new(1000, nameof(LoaderStarted));
 | VLC | 8200–8299 | VLC command/HTTP events |
 | Lyrion | 8300–8399 | Lyrion reset/command/response events |
 
-> Hinweis: Im Code ist der Kommentar für den Executor-Block als `5000–5999` bezeichnet, die aktuell belegten IDs liegen aber bis `5505` (inkl. LCD-Actions-Block).
+> Note: The code labels the executor block as `5000–5999`; the IDs currently in use extend through `5505`, including the LCD actions block.
 
 ---
 
