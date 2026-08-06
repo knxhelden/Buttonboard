@@ -50,3 +50,15 @@ sudo bash install-buttonboard.sh
 - Samba password: `buttonboard`
 
 > Tip for maintainers: keep placeholders like `[RASPBERRY-PI-IP]` and `[Default User Name]` up to date so the guide stays reusable and easy to adapt.
+
+## Raspberry Pi OS Update
+
+The system can be cleanly updated using the following commands:
+
+```bash
+sudo apt update
+sudo apt full-upgrade
+sudo apt autoremove
+sudo apt autoclean
+sudo reboot
+```
