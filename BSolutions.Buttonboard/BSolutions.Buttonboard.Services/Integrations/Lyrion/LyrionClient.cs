@@ -75,12 +75,22 @@ namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
 
                 try
                 {
-                    _ = await SendAsync(cmd, ct).ConfigureAwait(false);
+                    _ = await SendAsync(cmd, ct, logErrors: false).ConfigureAwait(false);
                     paused++;
                 }
                 catch (OperationCanceledException)
                 {
                     throw;
+                }
+                catch (SocketException ex)
+                {
+                    // An offline player/server is expected during a best-effort reset.
+                    // Keep the console useful without hiding unexpected failures.
+                    _logger.LogWarning(
+                        "Lyrion reset: player '{PlayerName}' (id={PlayerId}) is unavailable ({SocketError}).",
+                        name,
+                        id,
+                        ex.SocketErrorCode);
                 }
                 catch (Exception ex)
                 {
@@ -159,11 +169,12 @@ namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
         /// </summary>
         /// <param name="command">Full CLI command line to send (already assembled).</param>
         /// <param name="ct">Cancellation token for cooperative cancellation.</param>
+        /// <param name="logErrors">Whether failures should be logged before they are propagated.</param>
         /// <returns>The raw response line if available; otherwise an empty string.</returns>
         /// <exception cref="InvalidOperationException">Thrown if settings are incomplete.</exception>
         /// <exception cref="OperationCanceledException">Thrown on cooperative cancellation.</exception>
         /// <exception cref="SocketException">Thrown on network errors.</exception>
-        private async Task<string> SendAsync(string command, CancellationToken ct)
+        private async Task<string> SendAsync(string command, CancellationToken ct, bool logErrors = true)
         {
             var lyr = _settings.Lyrion ?? throw new InvalidOperationException("Lyrion settings missing");
 
@@ -214,7 +225,8 @@ namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
             }
             catch (Exception ex)
             {
-                _logger.LogError(LogEvents.OpenHabError, ex, "Lyrion CLI error for command: {Cmd}", command);
+                if (logErrors)
+                    _logger.LogError(LogEvents.LyrionError, ex, "Lyrion CLI error for command: {Cmd}", command);
                 throw;
             }
             finally
