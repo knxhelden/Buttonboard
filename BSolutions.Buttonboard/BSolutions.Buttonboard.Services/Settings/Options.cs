@@ -99,7 +99,7 @@ namespace BSolutions.Buttonboard.Services.Settings
 
     public sealed class MqttOptions
     {
-        [Required] public required string Server { get; init; }
+        [Required, MinLength(1)] public string Server { get; init; } = "localhost";
         [Range(1, 65535)] public int Port { get; init; } = 1883;
         [Required] public required string Username { get; init; }
         [Required] public required string Password { get; init; }

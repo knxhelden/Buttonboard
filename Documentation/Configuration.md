@@ -167,7 +167,7 @@ Defines MQTT broker connectivity, status topics, and reset-capable devices.
 
 | Key | Description |
 |-----|-------------|
-| `Server` | MQTT broker host |
+| `Server` | Optional MQTT broker host (default `localhost`, which uses the broker installed on the Buttonboard host) |
 | `Port` | Broker port (default `1883`) |
 | `Username` / `Password` | Broker credentials |
 | `WillTopic` | Topic used for Last Will message (`offline`) |
@@ -184,6 +184,7 @@ Device entry schema:
 ```
 
 Behavior:
+- The bundled `appsettings.json` sets `Server` to `localhost`, so Buttonboard connects to the internal broker by default. Set it to a different host to use another broker. If the key is omitted, `localhost` remains the fallback.
 - On MQTT connect, Buttonboard publishes retained `online` to `OnlineTopic`.
 - Last Will is configured as retained `offline` on `WillTopic`.
 - On scenario reset, each configured device with non-empty `Topic` and `Reset` receives its reset payload.
