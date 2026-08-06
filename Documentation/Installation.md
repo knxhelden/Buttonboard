@@ -1,6 +1,6 @@
 ﻿# Buttonboard Installation
 
-> Prepare a Raspberry Pi and install the Buttonboard runtime in a few focused steps.
+Prepare a Raspberry Pi and install the Buttonboard runtime in a few focused steps.
 
 ## Quick Start
 
@@ -46,10 +46,8 @@ sudo bash install-buttonboard.sh
 
 - App path: `/opt/buttonboard`
 - Network share: `\\buttonboard\deploy`
-- Samba user: `[Default User Name]`
+- Samba user: `[DEFAULT USER NAME]`
 - Samba password: `buttonboard`
-
-> Tip for maintainers: keep placeholders like `[RASPBERRY-PI-IP]` and `[Default User Name]` up to date so the guide stays reusable and easy to adapt.
 
 ## Raspberry Pi OS Update
 
