@@ -4,9 +4,10 @@ This page documents the required hardware components and the GPIO wiring used by
 
 ## Required Hardware
 
-- **Raspberry Pi 3 B+** running Raspberry Pi OS (64-bit, Bookworm)
-- **4 control buttons** with integrated status LEDs
-- **9-segment LED process bar** for visual progress indication
+- **Raspberry Pi 5 Model B** running Raspberry Pi OS (64-bit, Trixie) ([Affilliate Link to Amazon](https://link.amazon/B000CqJ9d))
+- **GPIO Expansion Breakout Board** for Raspberry Pi 5 ([Affilliate Link to Amazon](https://link.amazon/B0cnPFlSY))
+- **4 control buttons** with integrated status LEDs ([Affilliate Link to Amazon](https://link.amazon/B0c9oBth1))
+- **9-segment LED process bar** for visual progress indication ([Affilliate Link to Amazon](https://link.amazon/B0ePVLgGw))
 - Dedicated **"System Ready"** and **"System Warning"** LEDs
 - **Custom enclosure** with mounting hardware for reliable installation
 
