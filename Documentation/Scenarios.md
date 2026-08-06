@@ -32,7 +32,7 @@ group RGB_Red = cmnd/bremus/entertainment/rgblight1/POWER, cmnd/bremus/entertain
 group RGB_Blue = cmnd/bremus/entertainment/rgblight4/POWER, cmnd/bremus/entertainment/rgblight5/POWER
 group Beacons = cmnd/bremus/entertainment/beaconcontroller1/POWER1, cmnd/bremus/entertainment/beaconcontroller1/POWER2, cmnd/bremus/entertainment/beaconcontroller1/POWER3, cmnd/bremus/entertainment/beaconcontroller1/POWER4
 
-00:00 lms.play player=Halloween1 url="file:///mnt/usb/Halloween/03 - Szene 3.MP3"
+00:00 lyrion.play player=Halloween1 url="file:///mnt/usb/Halloween/03 - Szene 3.MP3"
 00:00 video.playItem V[1-4] position=1
 00:00 video.playItem Videoplayer5 position=3
 00:30 mqtt.pub Fog payload=ON

@@ -27,7 +27,7 @@ public static readonly EventId LoaderStarted = new(1000, nameof(LoaderStarted));
 | Asset Load Errors | 3000–3999 | Unexpected load failures |
 | Runtime | 4000–4999 | Scenario runtime state and step execution |
 | Executor Core | 5000–5099 | Generic dispatch/validation failures |
-| LMS Actions | 5100–5199 | `lms.*` action events |
+| Lyrion Actions | 5100–5199 | `lyrion.*` action events |
 | Video Actions | 5200–5299 | `video.*` action events |
 | GPIO Actions | 5300–5399 | `gpio.*` action events |
 | MQTT Actions | 5400–5499 | `mqtt.*` action events |
@@ -87,13 +87,13 @@ public static readonly EventId LoaderStarted = new(1000, nameof(LoaderStarted));
 | `ExecActionArgInvalid` | 5004 | Action handler arg validation failed |
 | `ExecActionFailed` | 5005 | Action handler failed unexpectedly |
 
-## LMS Actions (5100–5199)
+## Lyrion Actions (5100–5199)
 
 | Event | ID | Description |
 |---|---:|---|
-| `ExecLmsPlay` | 5100 | LMS play action |
-| `ExecLmsPause` | 5101 | LMS pause/resume action |
-| `ExecLmsVolume` | 5102 | LMS volume action |
+| `ExecLyrionPlay` | 5100 | Lyrion play action |
+| `ExecLyrionPause` | 5101 | Lyrion pause/resume action |
+| `ExecLyrionVolume` | 5102 | Lyrion volume action |
 
 ## Video Actions (5200–5299)
 

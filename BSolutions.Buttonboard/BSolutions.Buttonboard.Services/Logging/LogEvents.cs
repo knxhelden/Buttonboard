@@ -38,10 +38,10 @@ namespace BSolutions.Buttonboard.Services.Logging
         public static readonly EventId ExecActionArgInvalid = new(5004, nameof(ExecActionArgInvalid));  // new
         public static readonly EventId ExecActionFailed = new(5005, nameof(ExecActionFailed));      // new
 
-        // ─── LMS Actions (5100–5199)
-        public static readonly EventId ExecLmsPlay = new(5100, nameof(ExecLmsPlay));
-        public static readonly EventId ExecLmsPause = new(5101, nameof(ExecLmsPause));
-        public static readonly EventId ExecLmsVolume = new(5102, nameof(ExecLmsVolume));
+        // ─── Lyrion Actions (5100–5199)
+        public static readonly EventId ExecLyrionPlay = new(5100, nameof(ExecLyrionPlay));
+        public static readonly EventId ExecLyrionPause = new(5101, nameof(ExecLyrionPause));
+        public static readonly EventId ExecLyrionVolume = new(5102, nameof(ExecLyrionVolume));
 
         // ─── Video Actions (5200–5299)
         public static readonly EventId ExecVideoNext = new(5200, nameof(ExecVideoNext));

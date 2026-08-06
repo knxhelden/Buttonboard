@@ -88,7 +88,7 @@ namespace BSolutions.Buttonboard.App
                         .AddSingleton<IAudioPlayer, AudioPlayer>()
                         .AddSingleton<IScenarioRuntime, ScenarioRuntime>()
                         .AddSingleton<IScenarioAssetRuntime, ScenarioAssetRuntime>()
-                        .AddSingleton<IActionRouter, LmsActionRouter>()
+                        .AddSingleton<IActionRouter, LyrionActionRouter>()
                         .AddSingleton<IActionRouter, AudioActionRouter>()
                         .AddSingleton<IActionRouter, VideoActionRouter>()
                         .AddSingleton<IActionRouter, GpioActionRouter>()

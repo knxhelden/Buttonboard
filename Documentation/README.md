@@ -7,7 +7,7 @@ Buttonboard is a modular show-control system for running interactive setups, Hal
 - Scene control using human-readable DSL files (`*.scene`) with continued support for JSON scenes.
 - Timed execution of audio, video, GPIO, MQTT, and LCD actions.
 - Group definitions and target expansion in scenes, for example for multiple VLC players, MQTT topics, or LEDs.
-- LMS playback, pause/resume, and volume control through Lyrion/Squeezebox players.
+- Playback, pause/resume, and volume control through Lyrion players.
 - VLC-based video control for playlist next, pause/resume, and playing specific playlist entries.
 - GPIO control for button, process, and system LEDs, including blink support.
 - LCD output with clear, text write, one-line or two-line views, alignment, and backlight control.
@@ -22,6 +22,6 @@ Buttonboard is a modular show-control system for running interactive setups, Hal
 - [Hardware](./Hardware.md) - required hardware components and complete GPIO wiring.
 - [Configuration](./Configuration.md) - central configuration, integrations, device mappings, and logging.
 - [Scenarios](./Scenarios.md) - scene formats, DSL rules, groups, and target expansion.
-- [Actions](./Actions.md) - available LMS, video, GPIO, MQTT, and LCD actions.
+- [Actions](./Actions.md) - available Lyrion, video, GPIO, MQTT, and LCD actions.
 - [Logging Events](./LoggingEvents.md) - event ID structure and log categories.
 - [Mediaplayer](./Mediaplayer.md) - Raspberry Pi VLC kiosk setup for video output.

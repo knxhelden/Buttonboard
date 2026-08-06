@@ -5,7 +5,7 @@ namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
 {
     /// <summary>
     /// Defines a lightweight client interface for direct communication with
-    /// the Lyrion Media Server (formerly Logitech Media Server) via its CLI interface (TCP port 9090).
+    /// the Lyrion server via its CLI interface (TCP port 9090).
     /// </summary>
     /// <remarks>
     /// Implementations are responsible for:
