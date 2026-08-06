@@ -51,6 +51,7 @@ sudo bash install-buttonboard.sh
 ## What The Script Sets Up
 
 - ✅ Base packages: `ca-certificates`, `curl`, `gnupg`, `lsb-release`
+- ✅ `mpv` for integrations that play audio or other media
 - ✅ SSH service and I2C interface, if `raspi-config` is available
 - ✅ Application directory `/opt/buttonboard`
 - ✅ Log directory `/opt/buttonboard/logs` and live log file `/opt/buttonboard/logs/live.log`

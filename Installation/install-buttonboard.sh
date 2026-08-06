@@ -106,8 +106,8 @@ enable_ssh_and_i2c() {
 
 ### ─────────────────────── Prepare filesystem ─────────────────────────
 prepare_fs() {
-  log "Installing base packages…"
-  apt_install ca-certificates curl gnupg lsb-release
+  log "Installing base packages and media playback support…"
+  apt_install ca-certificates curl gnupg lsb-release mpv
 
   log "Preparing app directory…"
   ensure_dir_owned "${APP_DIR}" "${SAMBA_USER}"
