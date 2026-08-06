@@ -15,6 +15,20 @@ Prepare a Raspberry Pi and install the Buttonboard runtime in a few focused step
 sudo apt update && sudo apt full-upgrade -y
 ```
 
+### 2. Test Sound Card
+
+1. Connect the **external USB sound card** to the Raspberry Pi.
+2. Verify that it is detected:
+```bash
+cat /proc/asound/cards
+```
+3. Note the card number and use it in the playback test:
+```bash
+speaker-test -D plughw:2,0 -c 2 -t wav
+```
+
+> Replace `2` with the card number shown for the USB sound card. Press `Ctrl+C` to stop the test.
+
 ### 2. Install Buttonboard
 
 - 📁 Copy the files from the `Installation` folder to the Raspberry Pi, for example via **SFTP**.
