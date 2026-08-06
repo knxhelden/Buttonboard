@@ -32,6 +32,37 @@ Example paths in current config:
 
 ---
 
+### `Audio`
+Controls playback of local files through the Raspberry Pi's default ALSA/PulseAudio sound card.
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `MediaFolder` | `string` | Folder containing audio assets, relative to the application directory (default: `audio`). |
+| `OutputDevice` | `string` | mpv audio device name; `auto` uses the system default. |
+| `DefaultVolume` | `int` | Default playback volume from `0` to `100`. |
+
+The installation script installs `mpv` and creates `/opt/buttonboard/audio`. Files may be organized
+in subdirectories and are addressed relatively in scenes, for example `file="effects/thunder.ogg"`.
+
+Available device names can be listed on the Raspberry Pi with `mpv --audio-device=help`. Typical
+configurations are:
+
+```json
+"OutputDevice": "alsa/plughw:CARD=Headphones,DEV=0"
+```
+
+The example above commonly addresses the integrated analogue output on a Raspberry Pi 3. For a
+USB sound card on a Raspberry Pi 5, a configuration can look like this:
+
+```json
+"OutputDevice": "alsa/plughw:CARD=Device,DEV=0"
+```
+
+Because ALSA card names depend on the installed hardware and OS image, the value returned by
+`mpv --audio-device=help` should always be preferred over copying an example unchanged.
+
+---
+
 ### `Scenario`
 Describes setup scene and the ordered scene/button mapping.
 
@@ -70,7 +101,7 @@ Each entry in `OpenHAB:Audio` uses:
 - `StreamItem` *(string)*
 - `VolumeItem` *(string)*
 
-> Hinweis: Die aktuelle Action-Runtime steuert Lyrion/Squeezebox über `lms.*`. Das Präfix `audio.*` ist für eine spätere lokale Audio-Ausgabe vorgesehen.
+> Note: Lyrion/Squeezebox continues to be controlled through `lms.*`. The `audio.*` actions are exclusively intended for the local sound card.
 
 ---
 

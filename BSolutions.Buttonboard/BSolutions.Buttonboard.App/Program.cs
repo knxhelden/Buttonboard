@@ -7,6 +7,7 @@ using BSolutions.Buttonboard.Services.Integrations.Lyrion;
 using BSolutions.Buttonboard.Services.Integrations.Mqtt;
 using BSolutions.Buttonboard.Services.Integrations.OpenHab;
 using BSolutions.Buttonboard.Services.Integrations.Vlc;
+using BSolutions.Buttonboard.Services.Integrations.Audio;
 using BSolutions.Buttonboard.Services.Runtime;
 using BSolutions.Buttonboard.Services.Runtime.Actions;
 using BSolutions.Buttonboard.Services.Settings;
@@ -84,9 +85,11 @@ namespace BSolutions.Buttonboard.App
                         })
                         .AddSingleton<ILyrionClient, LyrionClient>()
                         .AddSingleton<IVlcPlayerClient, VlcPlayerClient>()
+                        .AddSingleton<IAudioPlayer, AudioPlayer>()
                         .AddSingleton<IScenarioRuntime, ScenarioRuntime>()
                         .AddSingleton<IScenarioAssetRuntime, ScenarioAssetRuntime>()
                         .AddSingleton<IActionRouter, LmsActionRouter>()
+                        .AddSingleton<IActionRouter, AudioActionRouter>()
                         .AddSingleton<IActionRouter, VideoActionRouter>()
                         .AddSingleton<IActionRouter, GpioActionRouter>()
                         .AddSingleton<IActionRouter, MqttActionRouter>()

@@ -15,6 +15,14 @@ namespace BSolutions.Buttonboard.Services.Settings
         [Required] public required VlcOptions VLC { get; init; }
         [Required] public required MqttOptions Mqtt { get; init; }
         [Required] public required LcdOptions Lcd { get; init; }
+        [Required] public required AudioOptions Audio { get; init; }
+    }
+
+    public sealed class AudioOptions
+    {
+        [Required, MinLength(1)] public string MediaFolder { get; init; } = "audio";
+        [Required, MinLength(1)] public string OutputDevice { get; init; } = "auto";
+        [Range(0, 100)] public int DefaultVolume { get; init; } = 80;
     }
 
     public sealed class ApplicationOptions
