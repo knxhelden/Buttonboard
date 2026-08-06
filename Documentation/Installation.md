@@ -1,30 +1,48 @@
 ﻿# Buttonboard Installation
 
-> Prepare a Raspberry Pi and install the Buttonboard runtime in a few focused steps.
+Prepare a Raspberry Pi and install the Buttonboard runtime in a few focused steps.
 
 ## Quick Start
 
 ### 1. Prepare Raspberry Pi OS
 
-- 🖴 Flash **Raspberry Pi OS Trixie (64-bit)** to a microSD card with the [Raspberry Pi Imager](https://www.raspberrypi.com/software/).
-- 🔌 Insert the card into the **Raspberry Pi 5** and power it on.
-- 📶 Connect the Pi to **Wi-Fi** and enable **SSH**.
-- ⬆️ Update the system:
+1. Flash **Raspberry Pi OS Trixie (64-bit)** to a microSD card with the [Raspberry Pi Imager](https://www.raspberrypi.com/software/).
+2. Insert the card into the **Raspberry Pi 5** and power it on.
+3. Connect the Pi to **Wi-Fi** and enable **SSH**.
+4. Update the system:
 
 ```bash
 sudo apt update && sudo apt full-upgrade -y
 ```
 
-### 2. Install Buttonboard
+---
 
-- 📁 Copy the files from the `Installation` folder to the Raspberry Pi, for example via **SFTP**.
-- 🔐 Make the script executable:
+### 2. Test Sound Card
+
+1. Connect the **external USB sound card** to the Raspberry Pi.
+2. Verify that it is detected:
+```bash
+cat /proc/asound/cards
+```
+3. Note the card number and use it in the playback test:
+```bash
+speaker-test -D plughw:2,0 -c 2 -t wav
+```
+
+> Replace `2` with the card number shown for the USB sound card. Press `Ctrl+C` to stop the test.
+
+---
+
+### 3. Install Buttonboard
+
+1. Copy the files from the `Installation` folder to the Raspberry Pi, for example via **SFTP**.
+2. Make the script executable:
 
 ```bash
 chmod +x install-buttonboard.sh
 ```
 
-- ▶️ Start the installation:
+3. Start the installation:
 
 ```bash
 sudo bash install-buttonboard.sh
@@ -33,6 +51,7 @@ sudo bash install-buttonboard.sh
 ## What The Script Sets Up
 
 - ✅ Base packages: `ca-certificates`, `curl`, `gnupg`, `lsb-release`
+- ✅ `mpv` for integrations that play audio or other media
 - ✅ SSH service and I2C interface, if `raspi-config` is available
 - ✅ Application directory `/opt/buttonboard`
 - ✅ Log directory `/opt/buttonboard/logs` and live log file `/opt/buttonboard/logs/live.log`
@@ -46,7 +65,17 @@ sudo bash install-buttonboard.sh
 
 - App path: `/opt/buttonboard`
 - Network share: `\\buttonboard\deploy`
-- Samba user: `[Default User Name]`
+- Samba user: `[DEFAULT USER NAME]`
 - Samba password: `buttonboard`
 
-> Tip for maintainers: keep placeholders like `[RASPBERRY-PI-IP]` and `[Default User Name]` up to date so the guide stays reusable and easy to adapt.
+## Raspberry Pi OS Update
+
+The system can be cleanly updated using the following commands:
+
+```bash
+sudo apt update
+sudo apt full-upgrade
+sudo apt autoremove
+sudo apt autoclean
+sudo reboot
+```
