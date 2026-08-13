@@ -1,5 +1,4 @@
 ﻿using BSolutions.Buttonboard.Services.Gpio;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -86,9 +85,7 @@ namespace BSolutions.Buttonboard.Services.Settings
 
     public sealed class VlcOptions
     {
-        [ConfigurationKeyName("")]
-        [Required, MinLength(1)]
-        public required Dictionary<string, VlcPlayerOptions> Devices { get; init; }
+        public Dictionary<string, VlcPlayerOptions> Devices { get; init; } = new();
     }
 
     public sealed class VlcPlayerOptions
@@ -107,7 +104,7 @@ namespace BSolutions.Buttonboard.Services.Settings
         [Required] public required string WillTopic { get; init; }
         [Required] public required string OnlineTopic { get; init; }
 
-        public IReadOnlyList<MqttDeviceOption>? Devices { get; init; }
+        public IReadOnlyList<MqttDeviceOption> Devices { get; init; } = Array.Empty<MqttDeviceOption>();
     }
 
     public sealed class MqttDeviceOption

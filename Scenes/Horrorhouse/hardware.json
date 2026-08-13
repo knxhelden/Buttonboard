@@ -1,0 +1,102 @@
+{
+  "Lyrion": {
+    "Players": {}
+  },
+  "VLC": {
+    "Devices": {}
+  },
+  "Mqtt": {
+    "Devices": [
+      {
+        "Name": "Nebelmaschine 1",
+        "Topic": "cmnd/bremus/entertainment/fogmachine1/POWER",
+        "Reset": "OFF"
+      },
+      {
+        "Name": "Nebelmaschine 2",
+        "Topic": "cmnd/bremus/entertainment/fogmachine2/POWER",
+        "Reset": "OFF"
+      },
+      {
+        "Name": "Nebelmaschine 3",
+        "Topic": "cmnd/bremus/entertainment/fogmachine3/POWER",
+        "Reset": "OFF"
+      },
+      {
+        "Name": "Nebelmaschine 4",
+        "Topic": "cmnd/bremus/entertainment/fogmachine4/POWER",
+        "Reset": "OFF"
+      },
+      {
+        "Name": "RGB Strahler 1",
+        "Topic": "cmnd/bremus/entertainment/rgblight1/POWER",
+        "Reset": "OFF"
+      },
+      {
+        "Name": "RGB Strahler 2",
+        "Topic": "cmnd/bremus/entertainment/rgblight2/POWER",
+        "Reset": "OFF"
+      },
+      {
+        "Name": "RGB Strahler 3",
+        "Topic": "cmnd/bremus/entertainment/rgblight3/POWER",
+        "Reset": "OFF"
+      },
+      {
+        "Name": "RGB Strahler 4",
+        "Topic": "cmnd/bremus/entertainment/rgblight4/POWER",
+        "Reset": "OFF"
+      },
+      {
+        "Name": "RGB Strahler 5",
+        "Topic": "cmnd/bremus/entertainment/rgblight5/POWER",
+        "Reset": "OFF"
+      },
+      {
+        "Name": "RGB Strahler 6",
+        "Topic": "cmnd/bremus/entertainment/rgblight6/POWER",
+        "Reset": "OFF"
+      },
+      {
+        "Name": "Strobo 3",
+        "Topic": "cmnd/bremus/entertainment/strobo3/POWER",
+        "Reset": "OFF"
+      },
+      {
+        "Name": "Strobo 4",
+        "Topic": "cmnd/bremus/entertainment/strobo4/POWER",
+        "Reset": "OFF"
+      },
+      {
+        "Name": "RGB Strobo 1",
+        "Topic": "cmnd/bremus/entertainment/rgbstrobo1/POWER",
+        "Reset": "OFF"
+      },
+      {
+        "Name": "RGB Strobo 2",
+        "Topic": "cmnd/bremus/entertainment/rgbstrobo2/POWER",
+        "Reset": "OFF"
+      },
+      {
+        "Name": "Beacon 1",
+        "Topic": "cmnd/bremus/entertainment/beaconcontroller1/POWER1",
+        "Reset": "OFF"
+      },
+      {
+        "Name": "Beacon 2",
+        "Topic": "cmnd/bremus/entertainment/beaconcontroller1/POWER2",
+        "Reset": "OFF"
+      },
+      {
+        "Name": "Beacon 3",
+        "Topic": "cmnd/bremus/entertainment/beaconcontroller1/POWER3",
+        "Reset": "OFF"
+      },
+      {
+        "Name": "Beacon 4",
+        "Topic": "cmnd/bremus/entertainment/beaconcontroller1/POWER4",
+        "Reset": "OFF"
+      }
+    ]
+  }
+}

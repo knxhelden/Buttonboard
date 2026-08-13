@@ -1,0 +1,11 @@
+{
+  "Lyrion": {
+    "Players": {}
+  },
+  "VLC": {
+    "Devices": {}
+  },
+  "Mqtt": {
+    "Devices": []
+  }
+}

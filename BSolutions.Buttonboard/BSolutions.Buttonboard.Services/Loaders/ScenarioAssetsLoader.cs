@@ -25,6 +25,7 @@ namespace BSolutions.Buttonboard.Services.Loaders
         #region --- Constants / Static ---
 
         private static readonly string[] SearchPatterns = new[] { "*.json", "*.scene" };
+        private const string HardwareConfigurationFileName = "hardware.json";
         private static readonly StringComparer KeyComparer = StringComparer.OrdinalIgnoreCase;
 
         #endregion
@@ -84,7 +85,8 @@ namespace BSolutions.Buttonboard.Services.Loaders
 
         public async Task StartAsync(CancellationToken ct = default)
         {
-            foreach (var file in EnumerateAllFiles(_assetsDirectory, SearchPatterns))
+            foreach (var file in EnumerateAllFiles(_assetsDirectory, SearchPatterns)
+                .Where(file => !IsHardwareConfiguration(file)))
             {
                 ct.ThrowIfCancellationRequested();
                 await LoadAssetToCacheAsync(file).ConfigureAwait(false);
@@ -95,6 +97,12 @@ namespace BSolutions.Buttonboard.Services.Loaders
             _logger.LogInformation(LogEvents.LoaderStarted,
                 "ScenarioAssetsLoader started. Watching directory {Dir} for *.json and *.scene", _assetsDirectory);
         }
+
+        private static bool IsHardwareConfiguration(string path)
+            => string.Equals(
+                Path.GetFileName(path),
+                HardwareConfigurationFileName,
+                StringComparison.OrdinalIgnoreCase);
 
         public Task StopAsync(CancellationToken ct = default)
         {
@@ -124,6 +132,9 @@ namespace BSolutions.Buttonboard.Services.Loaders
 
         private static bool IsInteresting(string path)
         {
+            if (IsHardwareConfiguration(path))
+                return false;
+
             var ext = Path.GetExtension(path);
             return ext.Equals(".json", StringComparison.OrdinalIgnoreCase)
                 || ext.Equals(".scene", StringComparison.OrdinalIgnoreCase);

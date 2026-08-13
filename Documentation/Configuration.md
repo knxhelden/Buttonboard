@@ -1,7 +1,8 @@
 # Configuration ⚙️
 
-Buttonboard uses a central configuration file named **`appsettings.json`**.  
-It defines runtime behavior, integrations, device mappings, display settings, and logging.
+Buttonboard uses **`appsettings.json`** for global runtime and connection settings. The device
+inventory is stored separately in **`hardware.json`** inside the selected scenario directory. This
+keeps resets limited to the devices used by that scenario.
 
 ---
 
@@ -112,14 +113,11 @@ Controls **Lyrion** players for audio playback.
 |-----|------|-------------|
 | `BaseUri` | `string` | Base address of the Lyrion server (e.g. `tcp://192.168.20.28:9090`). |
 | `Username` / `Password` | `string` | Optional credentials for secured servers. |
-| `Players` | `object` | Dictionary of logical player names to player IDs (MAC addresses). |
+| `Players` | `object` | Scenario-specific dictionary of logical player names to player IDs (MAC addresses), configured in `hardware.json`. |
 
 Example:
 ```json
-"Lyrion": {
-  "BaseUri": "tcp://192.168.20.28:9090",
-  "Players": { "Halloween1": "b8:27:eb:75:e2:fa" }
-}
+"Lyrion": { "Players": { "Halloween1": "b8:27:eb:75:e2:fa" } }
 ```
 
 ---
@@ -129,7 +127,7 @@ Configuration of VLC players used for video output.
 
 | Key | Type | Description |
 |-----|------|-------------|
-| `Devices` | `object` | Dictionary of VLC devices. Key is the logical player name used by `video.*` actions. |
+| `Devices` | `object` | Scenario-specific dictionary of VLC devices in `hardware.json`. The key is the logical player name used by `video.*` actions. |
 
 Each device entry:
 - `BaseUri` *(string, required)*
@@ -172,7 +170,7 @@ Defines MQTT broker connectivity, status topics, and reset-capable devices.
 | `Username` / `Password` | Broker credentials |
 | `WillTopic` | Topic used for Last Will message (`offline`) |
 | `OnlineTopic` | Topic used to announce `online` after connect |
-| `Devices` | List of devices with optional startup/reset publish payload |
+| `Devices` | Scenario-specific list in `hardware.json` with optional startup/reset publish payload |
 
 Device entry schema:
 ```json
@@ -188,3 +186,44 @@ Behavior:
 - On MQTT connect, Buttonboard publishes retained `online` to `OnlineTopic`.
 - Last Will is configured as retained `offline` on `WillTopic`.
 - On scenario reset, each configured device with non-empty `Topic` and `Reset` receives its reset payload.
+
+---
+
+## Scenario-specific `hardware.json`
+
+Place `hardware.json` next to the scene files in the directory selected by
+`Application:ScenarioAssetsFolder`. The file is optional; omitted collections are treated as empty.
+It is loaded after `appsettings.json`, so only the device inventories belong here. Connection data
+such as the MQTT broker and Lyrion server remains in `appsettings.json`.
+
+```json
+{
+  "Lyrion": {
+    "Players": {
+      "Halloween1": "b8:27:eb:75:e2:fa"
+    }
+  },
+  "VLC": {
+    "Devices": {
+      "Videoplayer1": {
+        "BaseUri": "http://videoplayer1:8080/",
+        "Password": "videoplayer"
+      }
+    }
+  },
+  "Mqtt": {
+    "Devices": [
+      {
+        "Name": "Beacon 1",
+        "Topic": "cmnd/example/beacon/POWER1",
+        "Reset": "OFF"
+      }
+    ]
+  }
+}
+```
+
+Only players and devices listed in this file are resolved by actions and contacted during a
+scenario reset. The scenario loader reserves the filename `hardware.json` and does not interpret it
+as a JSON scene. Restart Buttonboard after changing the file, because integration clients consume
+their configuration when the host starts.

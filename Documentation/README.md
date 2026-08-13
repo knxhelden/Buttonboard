@@ -12,7 +12,7 @@ Buttonboard is a modular show-control system for running interactive setups, Hal
 - GPIO control for button, process, and system LEDs, including blink support.
 - LCD output with clear, text write, one-line or two-line views, alignment, and backlight control.
 - MQTT integration with online/offline status, publish actions, and reset payloads for configured devices.
-- Central configuration via `appsettings.json` for runtime mode, scenes, OpenHAB, Lyrion, VLC, LCD, MQTT, and logging.
+- Global configuration via `appsettings.json` plus scenario-specific device inventories in `hardware.json`.
 - Structured logs with stable event IDs for the asset loader, runtime, actions, and integrations.
 - Raspberry Pi mediaplayer setup for fullscreen VLC kiosk playback with HTTP control and autostart.
 
