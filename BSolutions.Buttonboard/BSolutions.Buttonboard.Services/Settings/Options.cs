@@ -80,7 +80,12 @@ namespace BSolutions.Buttonboard.Services.Settings
         public string? Username { get; set; }
         public string? Password { get; set; }
 
-        public Dictionary<string, string> Players { get; set; } = new();
+        public Dictionary<string, LyrionPlayerOptions> Devices { get; set; } = new();
+    }
+
+    public sealed class LyrionPlayerOptions
+    {
+        [Required, MinLength(1)] public required string PlayerId { get; init; }
     }
 
     public sealed class VlcOptions
@@ -104,12 +109,11 @@ namespace BSolutions.Buttonboard.Services.Settings
         [Required] public required string WillTopic { get; init; }
         [Required] public required string OnlineTopic { get; init; }
 
-        public IReadOnlyList<MqttDeviceOption> Devices { get; init; } = Array.Empty<MqttDeviceOption>();
+        public Dictionary<string, MqttDeviceOption> Devices { get; init; } = new();
     }
 
     public sealed class MqttDeviceOption
     {
-        public string? Name { get; init; }
         public string? Topic { get; init; }
         public string? Reset { get; init; }
     }

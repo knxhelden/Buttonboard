@@ -50,7 +50,7 @@ namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
         {
             var lyr = _settings.Lyrion ?? throw new InvalidOperationException("Lyrion settings missing");
 
-            if (lyr.Players is null || lyr.Players.Count == 0)
+            if (lyr.Devices is null || lyr.Devices.Count == 0)
             {
                 _logger.LogInformation("Lyrion reset: no players configured.");
                 return;
@@ -58,12 +58,12 @@ namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
 
             var paused = 0;
 
-            foreach (var kvp in lyr.Players)
+            foreach (var kvp in lyr.Devices)
             {
                 ct.ThrowIfCancellationRequested();
 
                 var name = kvp.Key;
-                var id = kvp.Value;
+                var id = kvp.Value?.PlayerId;
 
                 if (string.IsNullOrWhiteSpace(id))
                 {
@@ -151,10 +151,11 @@ namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
         {
             var lyr = _settings.Lyrion ?? throw new InvalidOperationException("Lyrion settings missing");
 
-            if (!lyr.Players.TryGetValue(playerName ?? "", out var id) || string.IsNullOrWhiteSpace(id))
-                throw new ArgumentException($"Unknown Lyrion player '{playerName}' (Players map).");
+            if (!lyr.Devices.TryGetValue(playerName ?? "", out var player) ||
+                string.IsNullOrWhiteSpace(player?.PlayerId))
+                throw new ArgumentException($"Unknown Lyrion player '{playerName}' (Devices map).");
 
-            return id;
+            return player.PlayerId;
         }
 
         /// <summary>

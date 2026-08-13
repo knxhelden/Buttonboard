@@ -171,7 +171,7 @@ namespace BSolutions.Buttonboard.Services.Integrations.Mqtt
             {
                 ct.ThrowIfCancellationRequested();
 
-                var devices = _mqttOptions.Devices ?? Array.Empty<BSolutions.Buttonboard.Services.Settings.MqttDeviceOption>();
+                var devices = _mqttOptions.Devices;
                 if (devices.Count == 0)
                 {
                     _logger.LogInformation(LogEvents.MqttResetNoDevices,
@@ -182,21 +182,21 @@ namespace BSolutions.Buttonboard.Services.Integrations.Mqtt
                 _logger.LogInformation(LogEvents.MqttResetStart,
                     "MQTT reset: resetting {Count} device(s)…", devices.Count);
 
-                foreach (var d in devices)
+                foreach (var (name, d) in devices)
                 {
                     ct.ThrowIfCancellationRequested();
 
                     if (string.IsNullOrWhiteSpace(d.Topic))
                     {
                         _logger.LogWarning(LogEvents.MqttResetSkippedEmptyTopic,
-                            "MQTT reset skipped for {Name}: empty Topic", d.Name ?? "(unnamed)");
+                            "MQTT reset skipped for {Name}: empty Topic", name);
                         continue;
                     }
                     if (string.IsNullOrWhiteSpace(d.Reset))
                     {
                         _logger.LogWarning(LogEvents.MqttResetSkippedEmptyPayload,
                             "MQTT reset skipped for {Name} ({Topic}): Reset payload is null or empty",
-                            d.Name ?? "(unnamed)", d.Topic);
+                            name, d.Topic);
                         continue;
                     }
 
@@ -212,7 +212,7 @@ namespace BSolutions.Buttonboard.Services.Integrations.Mqtt
                         await _client.EnqueueAsync(msg).ConfigureAwait(false);
                         _logger.LogInformation(LogEvents.MqttResetEnqueued,
                             "MQTT reset enqueued → {Name} ({Topic}) ← {Payload}",
-                            d.Name ?? "(unnamed)", d.Topic, d.Reset);
+                            name, d.Topic, d.Reset);
                     }
                     catch (OperationCanceledException)
                     {

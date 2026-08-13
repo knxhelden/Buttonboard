@@ -159,7 +159,7 @@ namespace BSolutions.Buttonboard.Services.Runtime.Actions
 
         private void EnsureKnownPlayer(string playerName)
         {
-            if (!_settings.Lyrion.Players.ContainsKey(playerName))
+            if (!_settings.Lyrion.Devices.ContainsKey(playerName))
                 throw new ArgumentException($"Unknown Lyrion player '{playerName}'", nameof(playerName));
         }
 
