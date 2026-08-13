@@ -113,11 +113,15 @@ Controls **Lyrion** players for audio playback.
 |-----|------|-------------|
 | `BaseUri` | `string` | Base address of the Lyrion server (e.g. `tcp://192.168.20.28:9090`). |
 | `Username` / `Password` | `string` | Optional credentials for secured servers. |
-| `Players` | `object` | Scenario-specific dictionary of logical player names to player IDs (MAC addresses), configured in `hardware.json`. |
+| `Devices` | `object` | Scenario-specific dictionary of logical player names to structured player settings, configured in `hardware.json`. |
 
 Example:
 ```json
-"Lyrion": { "Players": { "Halloween1": "b8:27:eb:75:e2:fa" } }
+"Lyrion": {
+  "Devices": {
+    "Halloween1": { "PlayerId": "b8:27:eb:75:e2:fa" }
+  }
+}
 ```
 
 ---
@@ -170,14 +174,15 @@ Defines MQTT broker connectivity, status topics, and reset-capable devices.
 | `Username` / `Password` | Broker credentials |
 | `WillTopic` | Topic used for Last Will message (`offline`) |
 | `OnlineTopic` | Topic used to announce `online` after connect |
-| `Devices` | Scenario-specific list in `hardware.json` with optional startup/reset publish payload |
+| `Devices` | Scenario-specific dictionary in `hardware.json`; each key is the logical device name and each value contains its reset settings |
 
-Device entry schema:
+Device entry schema (the dictionary key is the logical name):
 ```json
-{
-  "Name": "Beacon 1",
-  "Topic": "cmnd/bremus/entertainment/beaconcontroller1/POWER1",
-  "Reset": "OFF"
+"Devices": {
+  "Beacon 1": {
+    "Topic": "cmnd/bremus/entertainment/beaconcontroller1/POWER1",
+    "Reset": "OFF"
+  }
 }
 ```
 
@@ -199,8 +204,10 @@ such as the MQTT broker and Lyrion server remains in `appsettings.json`.
 ```json
 {
   "Lyrion": {
-    "Players": {
-      "Halloween1": "b8:27:eb:75:e2:fa"
+    "Devices": {
+      "Halloween1": {
+        "PlayerId": "b8:27:eb:75:e2:fa"
+      }
     }
   },
   "VLC": {
@@ -212,18 +219,18 @@ such as the MQTT broker and Lyrion server remains in `appsettings.json`.
     }
   },
   "Mqtt": {
-    "Devices": [
-      {
-        "Name": "Beacon 1",
+    "Devices": {
+      "Beacon 1": {
         "Topic": "cmnd/example/beacon/POWER1",
         "Reset": "OFF"
       }
-    ]
+    }
   }
 }
 ```
 
-Only players and devices listed in this file are resolved by actions and contacted during a
-scenario reset. The scenario loader reserves the filename `hardware.json` and does not interpret it
-as a JSON scene. Restart Buttonboard after changing the file, because integration clients consume
-their configuration when the host starts.
+All three hardware types now use the same structure: `Devices` is a dictionary keyed by the logical
+name, and each value is a settings object. Only players and devices listed in this file are resolved
+by actions and contacted during a scenario reset. The scenario loader reserves the filename
+`hardware.json` and does not interpret it as a JSON scene. Restart Buttonboard after changing the
+file, because integration clients consume their configuration when the host starts.

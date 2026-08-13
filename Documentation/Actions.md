@@ -105,7 +105,7 @@ Starts playback of a URL on a configured Lyrion player.
 ```
 
 **Arguments:**
-- `player` *(string, required)* - target player (defined in the scenario's `hardware.json` -> `Lyrion` -> `Players`)
+- `player` *(string, required)* - target player (defined in the scenario's `hardware.json` -> `Lyrion` -> `Devices`)
 - `url` *(string, required)* - URL of the media file to play
 
 ---
@@ -119,7 +119,7 @@ Pauses or resumes playback on a configured Lyrion player.
 ```
 
 **Arguments:**
-- `player` *(string, required)* - target player (defined in the scenario's `hardware.json` -> `Lyrion` -> `Players`)
+- `player` *(string, required)* - target player (defined in the scenario's `hardware.json` -> `Lyrion` -> `Devices`)
 - `paused` *(bool, optional, default=`true`)* - `true` pauses playback; `false` resumes it
 
 ---
@@ -133,7 +133,7 @@ Sets the playback volume on a configured Lyrion player.
 ```
 
 **Arguments:**
-- `player` *(string, required)* - target player (defined in the scenario's `hardware.json` -> `Lyrion` -> `Players`)
+- `player` *(string, required)* - target player (defined in the scenario's `hardware.json` -> `Lyrion` -> `Devices`)
 - `level` *(int, required)* - volume level in percent (`0-100`)
 
 ---
