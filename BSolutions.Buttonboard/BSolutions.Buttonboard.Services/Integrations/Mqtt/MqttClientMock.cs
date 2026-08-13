@@ -93,7 +93,7 @@ namespace BSolutions.Buttonboard.Services.Integrations.Mqtt
                 if (devices.Count == 0)
                 {
                     _logger.LogInformation(LogEvents.MqttResetNoDevices,
-                        "MQTT reset: no devices configured in appsettings (Mqtt:Devices).");
+                        "MQTT reset: no devices configured for this scenario (Mqtt:Devices).");
                     return;
                 }
 

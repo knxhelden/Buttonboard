@@ -105,7 +105,7 @@ Starts playback of a URL on a configured Lyrion player.
 ```
 
 **Arguments:**
-- `player` *(string, required)* - target player (defined in `appsettings.json` -> `Lyrion` -> `Players`)
+- `player` *(string, required)* - target player (defined in the scenario's `hardware.json` -> `Lyrion` -> `Players`)
 - `url` *(string, required)* - URL of the media file to play
 
 ---
@@ -119,7 +119,7 @@ Pauses or resumes playback on a configured Lyrion player.
 ```
 
 **Arguments:**
-- `player` *(string, required)* - target player (defined in `appsettings.json` -> `Lyrion` -> `Players`)
+- `player` *(string, required)* - target player (defined in the scenario's `hardware.json` -> `Lyrion` -> `Players`)
 - `paused` *(bool, optional, default=`true`)* - `true` pauses playback; `false` resumes it
 
 ---
@@ -133,7 +133,7 @@ Sets the playback volume on a configured Lyrion player.
 ```
 
 **Arguments:**
-- `player` *(string, required)* - target player (defined in `appsettings.json` -> `Lyrion` -> `Players`)
+- `player` *(string, required)* - target player (defined in the scenario's `hardware.json` -> `Lyrion` -> `Players`)
 - `level` *(int, required)* - volume level in percent (`0-100`)
 
 ---
@@ -149,7 +149,7 @@ Skips to the next item in a VLC playlist.
 ```
 
 **Arguments:**
-- `player` *(string, required)* - target VLC player (defined in `appsettings.json` -> `VLC -> Devices`)
+- `player` *(string, required)* - target VLC player (defined in the scenario's `hardware.json` -> `VLC -> Devices`)
 
 ---
 
@@ -162,7 +162,7 @@ Toggles pause/resume on a VLC player.
 ```
 
 **Arguments:**
-- `player` *(string, required)* - target VLC player (defined in `appsettings.json` -> `VLC -> Devices`)
+- `player` *(string, required)* - target VLC player (defined in the scenario's `hardware.json` -> `VLC -> Devices`)
 
 ---
 
@@ -175,7 +175,7 @@ Plays a specific playlist entry by its 1-based position (`1 = first item`).
 ```
 
 **Arguments:**
-- `player` *(string, required)* - target VLC player (defined in `appsettings.json` -> `VLC -> Devices`)
+- `player` *(string, required)* - target VLC player (defined in the scenario's `hardware.json` -> `VLC -> Devices`)
 - `position` *(int, required)* - playlist position (starts with `1`)
 
 ---

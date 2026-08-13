@@ -7,6 +7,10 @@ Two file formats are supported:
 - **DSL scene files** (`*.scene`) – recommended for authoring
 - **JSON scene files** (`*.json`) – still supported and loaded by the same runtime
 
+The directory can additionally contain a reserved **`hardware.json`** file that lists only the
+Lyrion, VLC, and MQTT devices used by this scenario. It is configuration rather than a scene and is
+therefore ignored by the scene asset loader. See [Configuration](Configuration.md#scenario-specific-hardwarejson).
+
 There are also two runtime kinds of assets:
 - **Setup asset** → file key equals `Scenario:Setup:Key` (default `setup`)
 - **Scene assets** → all other files
