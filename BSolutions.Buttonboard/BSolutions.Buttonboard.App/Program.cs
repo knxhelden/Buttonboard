@@ -51,13 +51,16 @@ namespace BSolutions.Buttonboard.App
                         // Device inventories belong to the selected scenario. Loading this file
                         // after appsettings.json lets its Lyrion/VLC/MQTT collections override
                         // global defaults while broker and server connection settings stay global.
-                        using var bootstrapConfiguration = configuration.Build();
-                        var assetsFolder = bootstrapConfiguration["Application:ScenarioAssetsFolder"];
-                        if (!string.IsNullOrWhiteSpace(assetsFolder))
+                        var bootstrapConfiguration = configuration.Build();
+                        using (bootstrapConfiguration as IDisposable)
                         {
-                            var hardwareConfiguration = Path.GetFullPath(
-                                Path.Combine(AppContext.BaseDirectory, assetsFolder, "hardware.json"));
-                            configuration.AddJsonFile(hardwareConfiguration, optional: true, reloadOnChange: true);
+                            var assetsFolder = bootstrapConfiguration["Application:ScenarioAssetsFolder"];
+                            if (!string.IsNullOrWhiteSpace(assetsFolder))
+                            {
+                                var hardwareConfiguration = Path.GetFullPath(
+                                    Path.Combine(AppContext.BaseDirectory, assetsFolder, "hardware.json"));
+                                configuration.AddJsonFile(hardwareConfiguration, optional: true, reloadOnChange: true);
+                            }
                         }
                     })
                     .ConfigureServices((context, services) =>
