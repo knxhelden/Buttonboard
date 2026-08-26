@@ -1,5 +1,4 @@
 ﻿using BSolutions.Buttonboard.Services.Gpio;
-using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -15,6 +14,14 @@ namespace BSolutions.Buttonboard.Services.Settings
         [Required] public required VlcOptions VLC { get; init; }
         [Required] public required MqttOptions Mqtt { get; init; }
         [Required] public required LcdOptions Lcd { get; init; }
+        [Required] public required AudioOptions Audio { get; init; }
+    }
+
+    public sealed class AudioOptions
+    {
+        [Required, MinLength(1)] public string MediaFolder { get; init; } = "audio";
+        [Required, MinLength(1)] public string OutputDevice { get; init; } = "auto";
+        [Range(0, 100)] public int DefaultVolume { get; init; } = 80;
     }
 
     public sealed class ApplicationOptions
@@ -73,14 +80,17 @@ namespace BSolutions.Buttonboard.Services.Settings
         public string? Username { get; set; }
         public string? Password { get; set; }
 
-        public Dictionary<string, string> Players { get; set; } = new();
+        public Dictionary<string, LyrionPlayerOptions> Devices { get; set; } = new();
+    }
+
+    public sealed class LyrionPlayerOptions
+    {
+        [Required, MinLength(1)] public required string PlayerId { get; init; }
     }
 
     public sealed class VlcOptions
     {
-        [ConfigurationKeyName("")]
-        [Required, MinLength(1)]
-        public required Dictionary<string, VlcPlayerOptions> Devices { get; init; }
+        public Dictionary<string, VlcPlayerOptions> Devices { get; init; } = new();
     }
 
     public sealed class VlcPlayerOptions
@@ -91,7 +101,7 @@ namespace BSolutions.Buttonboard.Services.Settings
 
     public sealed class MqttOptions
     {
-        [Required] public required string Server { get; init; }
+        [Required, MinLength(1)] public string Server { get; init; } = "localhost";
         [Range(1, 65535)] public int Port { get; init; } = 1883;
         [Required] public required string Username { get; init; }
         [Required] public required string Password { get; init; }
@@ -99,12 +109,11 @@ namespace BSolutions.Buttonboard.Services.Settings
         [Required] public required string WillTopic { get; init; }
         [Required] public required string OnlineTopic { get; init; }
 
-        public IReadOnlyList<MqttDeviceOption>? Devices { get; init; }
+        public Dictionary<string, MqttDeviceOption> Devices { get; init; } = new();
     }
 
     public sealed class MqttDeviceOption
     {
-        public string? Name { get; init; }
         public string? Topic { get; init; }
         public string? Reset { get; init; }
     }

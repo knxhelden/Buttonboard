@@ -132,6 +132,16 @@ namespace BSolutions.Buttonboard.Services.Integrations.Vlc
                     ok++;
                 }
                 catch (OperationCanceledException) { throw; }
+                catch (HttpRequestException ex) when (TryGetSocketException(ex, out var socketException))
+                {
+                    // An offline player is expected during a best-effort reset. Avoid
+                    // printing an entire exception stack for this anticipated condition.
+                    _logger.LogWarning(
+                        "VLC Reset: player '{Player}' at {Endpoint} is unavailable ({SocketError}).",
+                        playerName,
+                        device.BaseUri,
+                        socketException.SocketErrorCode);
+                }
                 catch (Exception ex)
                 {
                     _logger.LogWarning(ex, "VLC Reset: failed for '{Player}'.", playerName);
@@ -338,6 +348,21 @@ namespace BSolutions.Buttonboard.Services.Integrations.Vlc
 
         private static string CreateBasicToken(string? password)
             => $":{password ?? string.Empty}".Base64Encode();
+
+        private static bool TryGetSocketException(Exception exception, out SocketException socketException)
+        {
+            for (Exception? current = exception; current is not null; current = current.InnerException)
+            {
+                if (current is SocketException socket)
+                {
+                    socketException = socket;
+                    return true;
+                }
+            }
+
+            socketException = null!;
+            return false;
+        }
 
         private async Task<XDocument> GetXmlAsync(Uri uri, string basicToken, CancellationToken ct)
         {

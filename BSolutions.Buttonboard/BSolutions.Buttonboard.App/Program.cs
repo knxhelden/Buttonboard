@@ -7,6 +7,7 @@ using BSolutions.Buttonboard.Services.Integrations.Lyrion;
 using BSolutions.Buttonboard.Services.Integrations.Mqtt;
 using BSolutions.Buttonboard.Services.Integrations.OpenHab;
 using BSolutions.Buttonboard.Services.Integrations.Vlc;
+using BSolutions.Buttonboard.Services.Integrations.Audio;
 using BSolutions.Buttonboard.Services.Runtime;
 using BSolutions.Buttonboard.Services.Runtime.Actions;
 using BSolutions.Buttonboard.Services.Settings;
@@ -46,6 +47,21 @@ namespace BSolutions.Buttonboard.App
                     {
                         configuration.SetBasePath(context.HostingEnvironment.ContentRootPath);
                         configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+
+                        // Device inventories belong to the selected scenario. Loading this file
+                        // after appsettings.json lets its Lyrion/VLC/MQTT collections override
+                        // global defaults while broker and server connection settings stay global.
+                        var bootstrapConfiguration = configuration.Build();
+                        using (bootstrapConfiguration as IDisposable)
+                        {
+                            var assetsFolder = bootstrapConfiguration["Application:ScenarioAssetsFolder"];
+                            if (!string.IsNullOrWhiteSpace(assetsFolder))
+                            {
+                                var hardwareConfiguration = Path.GetFullPath(
+                                    Path.Combine(AppContext.BaseDirectory, assetsFolder, "hardware.json"));
+                                configuration.AddJsonFile(hardwareConfiguration, optional: true, reloadOnChange: true);
+                            }
+                        }
                     })
                     .ConfigureServices((context, services) =>
                     {
@@ -84,8 +100,10 @@ namespace BSolutions.Buttonboard.App
                         })
                         .AddSingleton<ILyrionClient, LyrionClient>()
                         .AddSingleton<IVlcPlayerClient, VlcPlayerClient>()
+                        .AddSingleton<IAudioPlayer, AudioPlayer>()
                         .AddSingleton<IScenarioRuntime, ScenarioRuntime>()
                         .AddSingleton<IScenarioAssetRuntime, ScenarioAssetRuntime>()
+                        .AddSingleton<IActionRouter, LyrionActionRouter>()
                         .AddSingleton<IActionRouter, AudioActionRouter>()
                         .AddSingleton<IActionRouter, VideoActionRouter>()
                         .AddSingleton<IActionRouter, GpioActionRouter>()

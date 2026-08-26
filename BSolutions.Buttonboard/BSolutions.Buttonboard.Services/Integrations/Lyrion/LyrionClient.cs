@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
 {
     /// <summary>
-    /// Provides a TCP-based client implementation for the Lyrion (Logitech) Media Server CLI (default port 9090).
+    /// Provides a TCP-based client implementation for the Lyrion CLI (default port 9090).
     /// </summary>
     /// <remarks>
     /// Responsibilities:
@@ -50,7 +50,7 @@ namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
         {
             var lyr = _settings.Lyrion ?? throw new InvalidOperationException("Lyrion settings missing");
 
-            if (lyr.Players is null || lyr.Players.Count == 0)
+            if (lyr.Devices is null || lyr.Devices.Count == 0)
             {
                 _logger.LogInformation("Lyrion reset: no players configured.");
                 return;
@@ -58,12 +58,12 @@ namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
 
             var paused = 0;
 
-            foreach (var kvp in lyr.Players)
+            foreach (var kvp in lyr.Devices)
             {
                 ct.ThrowIfCancellationRequested();
 
                 var name = kvp.Key;
-                var id = kvp.Value;
+                var id = kvp.Value?.PlayerId;
 
                 if (string.IsNullOrWhiteSpace(id))
                 {
@@ -75,12 +75,22 @@ namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
 
                 try
                 {
-                    _ = await SendAsync(cmd, ct).ConfigureAwait(false);
+                    _ = await SendAsync(cmd, ct, logErrors: false).ConfigureAwait(false);
                     paused++;
                 }
                 catch (OperationCanceledException)
                 {
                     throw;
+                }
+                catch (SocketException ex)
+                {
+                    // An offline player/server is expected during a best-effort reset.
+                    // Keep the console useful without hiding unexpected failures.
+                    _logger.LogWarning(
+                        "Lyrion reset: player '{PlayerName}' (id={PlayerId}) is unavailable ({SocketError}).",
+                        name,
+                        id,
+                        ex.SocketErrorCode);
                 }
                 catch (Exception ex)
                 {
@@ -141,10 +151,11 @@ namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
         {
             var lyr = _settings.Lyrion ?? throw new InvalidOperationException("Lyrion settings missing");
 
-            if (!lyr.Players.TryGetValue(playerName ?? "", out var id) || string.IsNullOrWhiteSpace(id))
-                throw new ArgumentException($"Unknown Lyrion player '{playerName}' (Players map).");
+            if (!lyr.Devices.TryGetValue(playerName ?? "", out var player) ||
+                string.IsNullOrWhiteSpace(player?.PlayerId))
+                throw new ArgumentException($"Unknown Lyrion player '{playerName}' (Devices map).");
 
-            return id;
+            return player.PlayerId;
         }
 
         /// <summary>
@@ -159,11 +170,12 @@ namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
         /// </summary>
         /// <param name="command">Full CLI command line to send (already assembled).</param>
         /// <param name="ct">Cancellation token for cooperative cancellation.</param>
+        /// <param name="logErrors">Whether failures should be logged before they are propagated.</param>
         /// <returns>The raw response line if available; otherwise an empty string.</returns>
         /// <exception cref="InvalidOperationException">Thrown if settings are incomplete.</exception>
         /// <exception cref="OperationCanceledException">Thrown on cooperative cancellation.</exception>
         /// <exception cref="SocketException">Thrown on network errors.</exception>
-        private async Task<string> SendAsync(string command, CancellationToken ct)
+        private async Task<string> SendAsync(string command, CancellationToken ct, bool logErrors = true)
         {
             var lyr = _settings.Lyrion ?? throw new InvalidOperationException("Lyrion settings missing");
 
@@ -195,7 +207,7 @@ namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
                     _ = await ReadLineAsync(stream, buffer, sb, TimeSpan.FromSeconds(1)).ConfigureAwait(false);
                 }
 
-                _logger.LogInformation(LogEvents.ExecAudioPlay, "Lyrion CLI -> {Command}", command);
+                _logger.LogInformation(LogEvents.ExecLyrionPlay, "Lyrion CLI -> {Command}", command);
                 await WriteLineAsync(stream, command, ct).ConfigureAwait(false);
 
                 // Attempt to read one response line; missing response is acceptable.
@@ -214,7 +226,8 @@ namespace BSolutions.Buttonboard.Services.Integrations.Lyrion
             }
             catch (Exception ex)
             {
-                _logger.LogError(LogEvents.OpenHabError, ex, "Lyrion CLI error for command: {Cmd}", command);
+                if (logErrors)
+                    _logger.LogError(LogEvents.LyrionError, ex, "Lyrion CLI error for command: {Cmd}", command);
                 throw;
             }
             finally

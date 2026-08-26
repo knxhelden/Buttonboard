@@ -7,7 +7,7 @@
     {
       "name": "Audio Player 1: PLAY",
       "atMs": 0,
-      "action": "audio.play",
+      "action": "lyrion.play",
       "args": {
         "url": "file:///mnt/usb/Halloween/03 - Szene 3.MP3",
         "player": "Halloween1"

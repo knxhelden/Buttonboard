@@ -5,7 +5,7 @@
     /// </summary>
     /// <remarks>
     /// Action keys follow the pattern <c>&lt;domain&gt;.&lt;operation&gt;</c>,
-    /// for example: <c>"audio.play"</c> or <c>"gpio.set"</c>.
+    /// for example: <c>"lyrion.play"</c> or <c>"gpio.set"</c>.
     /// This helper class splits and normalizes such keys for consistent routing.
     /// </remarks>
     internal static class ActionKeyHelper
@@ -13,7 +13,7 @@
         /// <summary>
         /// Splits an action key into its domain and operation parts.
         /// </summary>
-        /// <param name="actionKey">The raw action key string to split (e.g., <c>"audio.play"</c>).</param>
+        /// <param name="actionKey">The raw action key string to split (e.g., <c>"lyrion.play"</c>).</param>
         /// <returns>
         /// A tuple containing:
         /// <list type="bullet">

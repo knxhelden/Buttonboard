@@ -31,7 +31,7 @@ namespace BSolutions.Buttonboard.Services.Loaders
         /// Action identifier to execute.
         /// <para>
         /// Supported examples include:
-        /// <c>gpio.on</c>, <c>gpio.off</c>, <c>audio.play</c>, <c>video.next</c>, <c>mqtt.pub</c>.
+        /// <c>gpio.on</c>, <c>gpio.off</c>, <c>lyrion.play</c>, <c>video.next</c>, <c>mqtt.pub</c>.
         /// </para>
         /// </summary>
         [JsonPropertyName("action")]

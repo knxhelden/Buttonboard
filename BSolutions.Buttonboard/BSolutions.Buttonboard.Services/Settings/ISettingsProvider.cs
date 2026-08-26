@@ -5,7 +5,8 @@
     /// </summary>
     /// <remarks>
     /// The <see cref="ISettingsProvider"/> acts as a centralized abstraction over the application's
-    /// configuration model (typically backed by <c>appsettings.json</c>).
+    /// configuration model (typically backed by <c>appsettings.json</c> and scenario-specific
+    /// <c>hardware.json</c>).
     /// It exposes grouped option objects for each subsystem:
     /// <list type="bullet">
     /// <item><description><see cref="Application"/> – Core runtime and operation mode settings.</description></item>
@@ -47,5 +48,8 @@
         /// Gets the configuration for the HD44780 LCD display on I2C.
         /// </summary>
         LcdOptions Lcd { get; }
+
+        /// <summary>Gets the settings for playback through the Raspberry Pi sound card.</summary>
+        AudioOptions Audio { get; }
     }
 }

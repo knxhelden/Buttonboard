@@ -5,7 +5,7 @@
     {
       "name": "Audio Player 1: VOLUME",
       "atMs": 0,
-      "action": "audio.volume",
+      "action": "lyrion.volume",
       "args": {
         "level": 50,
         "player": "Halloween1"

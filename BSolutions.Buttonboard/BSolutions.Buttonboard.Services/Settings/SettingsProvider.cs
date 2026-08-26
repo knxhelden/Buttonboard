@@ -10,7 +10,8 @@ namespace BSolutions.Buttonboard.Services.Settings
     /// This provider binds to the composite <see cref="ButtonboardOptions"/> object supplied via
     /// <see cref="IOptions{TOptions}"/> and exposes its sub-sections as immutable properties.
     ///
-    /// The settings are typically populated from <c>appsettings.json</c> and injected once
+    /// The settings are typically populated from <c>appsettings.json</c> and the selected
+    /// scenario's <c>hardware.json</c>, then injected once
     /// at application startup through .NET's configuration system.
     /// </remarks>
     public sealed class SettingsProvider : ISettingsProvider
@@ -30,6 +31,7 @@ namespace BSolutions.Buttonboard.Services.Settings
             VLC = o.VLC;
             Mqtt = o.Mqtt;
             Lcd = o.Lcd;
+            Audio = o.Audio;
         }
 
         /// <inheritdoc />
@@ -49,5 +51,8 @@ namespace BSolutions.Buttonboard.Services.Settings
 
         /// <inheritdoc />
         public LcdOptions Lcd { get; }
+
+        /// <inheritdoc />
+        public AudioOptions Audio { get; }
     }
 }
