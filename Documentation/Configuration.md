@@ -156,11 +156,25 @@ Settings for the HD44780-compatible I2C LCD display.
 
 | Key | Type | Description |
 |-----|------|-------------|
+| `Enabled` | `bool` | Enables LCD support (default `true`). Set to `false` on hardware without a display; LCD scene actions then become no-ops. |
+| `FailOnError` | `bool` | If `true`, an I2C access error aborts startup. The default `false` logs a warning and continues without the display. |
 | `BusId` | `int` | I2C bus ID (valid range: `0–10`, default `1`). |
 | `Address` | `int` | I2C address (valid range: `0x03–0x77`, default `0x27`). |
 | `Columns` | `int` | Display width (valid range: `8–40`, default `16`). |
 | `Rows` | `int` | Display height (valid range: `1–4`, default `2`). |
 | `DefaultBacklight` | `bool` | Initial backlight state used during LCD initialization. |
+
+For boards without an LCD, use:
+
+```json
+"Lcd": {
+  "Enabled": false
+}
+```
+
+When LCD support is enabled but the configured device cannot be opened or addressed, Buttonboard
+continues to run by default. Set `FailOnError` to `true` if a working display is mandatory and such
+an error should stop the application.
 
 ---
 

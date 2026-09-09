@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using System;
 using System.Device.I2c;
+using System.IO;
 using System.Threading;
 
 namespace BSolutions.Buttonboard.Services.LcdService
@@ -20,7 +21,9 @@ namespace BSolutions.Buttonboard.Services.LcdService
         private readonly int _columns;
         private readonly int _rows;
         private readonly bool _defaultBacklight;
-        private readonly I2cDevice _device;
+        private readonly I2cConnectionSettings _connection;
+        private readonly bool _failOnError;
+        private I2cDevice? _device;
 
         private bool _backlight;
         private bool _initialized;
@@ -37,19 +40,8 @@ namespace BSolutions.Buttonboard.Services.LcdService
             _columns = config.Columns;
             _rows = config.Rows;
             _defaultBacklight = config.DefaultBacklight;
-
-            var connection = new I2cConnectionSettings(config.BusId, config.Address);
-            try
-            {
-                _device = I2cDevice.Create(connection);
-            }
-            catch (Exception ex) when (ex is System.IO.IOException || ex is UnauthorizedAccessException)
-            {
-                throw new InvalidOperationException(
-                    $"Unable to open LCD I2C device '/dev/i2c-{config.BusId}' at address 0x{config.Address:X2}. " +
-                    "Please verify I2C is enabled on the Raspberry Pi (raspi-config), wiring on SDA/SCL, and appsettings Lcd:BusId/Address.",
-                    ex);
-            }
+            _failOnError = config.FailOnError;
+            _connection = new I2cConnectionSettings(config.BusId, config.Address);
         }
 
         public void Initialize()
@@ -58,30 +50,42 @@ namespace BSolutions.Buttonboard.Services.LcdService
             {
                 ThrowIfDisposed();
 
-                Thread.Sleep(50);
+                try
+                {
+                    _device = I2cDevice.Create(_connection);
+                    Thread.Sleep(50);
 
-                Write4Bits(0x03, false);
-                Thread.Sleep(5);
-                Write4Bits(0x03, false);
-                Thread.Sleep(1);
-                Write4Bits(0x03, false);
-                Write4Bits(0x02, false);
+                    Write4Bits(0x03, false);
+                    Thread.Sleep(5);
+                    Write4Bits(0x03, false);
+                    Thread.Sleep(1);
+                    Write4Bits(0x03, false);
+                    Write4Bits(0x02, false);
 
-                SendCommand(0x28); // 4-bit mode, 2 lines, 5x8 dots
-                SendCommand(0x08); // display off
-                SendCommand(0x01); // clear
-                Thread.Sleep(2);
-                SendCommand(0x06); // entry mode: increment, no shift
-                _backlight = _defaultBacklight;
-                WriteRaw((byte)(_backlight ? BacklightBit : 0x00));
-                SendCommand(0x0C); // display on, cursor off, blink off
+                    SendCommand(0x28); // 4-bit mode, 2 lines, 5x8 dots
+                    SendCommand(0x08); // display off
+                    SendCommand(0x01); // clear
+                    Thread.Sleep(2);
+                    SendCommand(0x06); // entry mode: increment, no shift
+                    _backlight = _defaultBacklight;
+                    WriteRaw((byte)(_backlight ? BacklightBit : 0x00));
+                    SendCommand(0x0C); // display on, cursor off, blink off
 
+                    _logger.LogInformation("LCD initialized on I2C bus {BusId} address 0x{Address:X2} ({Columns}x{Rows})",
+                        _connection.BusId, _connection.DeviceAddress, _columns, _rows);
+                }
+                catch (Exception ex) when (!_failOnError && IsHardwareAccessError(ex))
+                {
+                    _device?.Dispose();
+                    _device = null;
+                    _logger.LogWarning(ex,
+                        "LCD is unavailable on I2C bus {BusId} address 0x{Address:X2}; continuing without a display. " +
+                        "Check the wiring/address, set Lcd:Enabled to false, or set Lcd:FailOnError to true to abort startup.",
+                        _connection.BusId, _connection.DeviceAddress);
+                }
+
+                // An unavailable optional display intentionally behaves as a no-op.
                 _initialized = true;
-                _logger.LogInformation("LCD initialized on I2C bus {BusId} address 0x{Address:X2} ({Columns}x{Rows})",
-                    _device.ConnectionSettings.BusId,
-                    _device.ConnectionSettings.DeviceAddress,
-                    _columns,
-                    _rows);
             }
         }
 
@@ -175,7 +179,7 @@ namespace BSolutions.Buttonboard.Services.LcdService
                     return;
 
                 _disposed = true;
-                _device.Dispose();
+                _device?.Dispose();
             }
         }
 
@@ -227,7 +231,26 @@ namespace BSolutions.Buttonboard.Services.LcdService
         }
 
         private void WriteRaw(byte value)
-            => _device.WriteByte(value);
+        {
+            if (_device == null)
+                return;
+
+            try
+            {
+                _device.WriteByte(value);
+            }
+            catch (Exception ex) when (_initialized && !_failOnError && IsHardwareAccessError(ex))
+            {
+                _device.Dispose();
+                _device = null;
+                _logger.LogWarning(ex,
+                    "LCD became unavailable on I2C bus {BusId} address 0x{Address:X2}; disabling display output.",
+                    _connection.BusId, _connection.DeviceAddress);
+            }
+        }
+
+        private static bool IsHardwareAccessError(Exception exception)
+            => exception is IOException or UnauthorizedAccessException;
 
         private void ValidatePosition(int column, int row)
         {
