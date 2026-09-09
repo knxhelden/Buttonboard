@@ -87,7 +87,16 @@ namespace BSolutions.Buttonboard.App
                             return new GpioController();
                         })
                         .AddSingleton<IButtonboardGpioController, ButtonboardGpioController>()
-                        .AddSingleton<ILcdDisplayService, LcdDisplayService>()
+                        .AddSingleton<ILcdDisplayService>(sp =>
+                        {
+                            var settings = sp.GetRequiredService<ISettingsProvider>();
+                            if (settings.Lcd.Enabled)
+                                return ActivatorUtilities.CreateInstance<LcdDisplayService>(sp);
+
+                            sp.GetRequiredService<ILogger<Program>>()
+                                .LogInformation("LCD is disabled by configuration; continuing without a display.");
+                            return new NullLcdDisplayService();
+                        })
                         .AddByMode<IOpenHabClient, OpenHabClient, OpenHabClientMock>(sp =>
                         {
                             var app = sp.GetRequiredService<ISettingsProvider>().Application;

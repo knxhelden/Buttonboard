@@ -120,6 +120,8 @@ namespace BSolutions.Buttonboard.Services.Settings
 
     public sealed class LcdOptions
     {
+        public bool Enabled { get; init; } = true;
+        public bool FailOnError { get; init; }
         [Range(0, 10)] public int BusId { get; init; } = 1;
         [Range(0x03, 0x77)] public int Address { get; init; } = 0x27;
         [Range(8, 40)] public int Columns { get; init; } = 16;
