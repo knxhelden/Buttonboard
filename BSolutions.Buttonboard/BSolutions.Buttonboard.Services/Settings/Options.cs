@@ -11,7 +11,7 @@ namespace BSolutions.Buttonboard.Services.Settings
         [Required] public required ScenarioOptions Scenario { get; init; }
         [Required] public required OpenHabOptions OpenHAB { get; init; }
         [Required] public required LyrionOptions Lyrion { get; init; }
-        [Required] public required VlcOptions VLC { get; init; }
+        public VlcOptions VLC { get; init; } = new();
         [Required] public required MqttOptions Mqtt { get; init; }
         [Required] public required LcdOptions Lcd { get; init; }
         [Required] public required AudioOptions Audio { get; init; }
